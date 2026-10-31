@@ -5,6 +5,8 @@ projects that NavSentry tests. A consumer using the skill or CLI against another
 follows that application's own rules; see [skills/navsentry/SKILL.md](skills/navsentry/SKILL.md).
 
 ## Sources of truth
+- For consumer scan, report, fix-verification or Computer Use requests, read `skills/navsentry/SKILL.md` before execution even if it is missing from the host's skill list. For repository maintenance, use this file and DEVELOPMENT.md; the consumer skill does not replace maintainer rules.
+- Resolve repository paths from the repository root, not the shell's current directory. On resume, inspect the working tree and existing evidence before repeating actions. Record pending checks and blockers; never infer a successful run from an earlier plan.
 - Behavior and taxonomy: `src/catalog.ts` (cases), `src/types.ts` (wire model), `src/scope.ts` (safety).
 - Generated docs: `docs/cases/CASE-CATALOG.md`, `docs/ISSUE-CVE-MATRIX.md` — regenerate with `npm run docs:catalog`; never hand-edit.
 - Architecture/decisions: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/adr/](docs/adr/). Process: [DEVELOPMENT.md](DEVELOPMENT.md).

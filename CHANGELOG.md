@@ -4,6 +4,10 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 
 ## [Unreleased]
 
+### Fixed
+- Add Codex repository skill discovery and explicit fallback loading, checkout-relative resource resolution and interruption recovery guidance.
+- Clarify that Computer Use is unavailable as a scan transport and that manual browser evidence cannot silently become automated PASS results.
+
 ## [0.1.0] - 2026-10-31
 
 ### Added
