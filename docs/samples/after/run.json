@@ -1,0 +1,2476 @@
+{
+  "schemaVersion": "1",
+  "tool": {
+    "name": "navsentry",
+    "version": "0.1.0",
+    "node": "26.13.0",
+    "platform": "win32-x64"
+  },
+  "runId": "18c3ac9b-f65d-454a-9457-82b4f6cb42a8",
+  "startedAt": "2026-10-31T06:06:20.338Z",
+  "finishedAt": "2026-10-31T06:06:21.459Z",
+  "project": "demo-after",
+  "environment": "local",
+  "mode": "observe",
+  "scope": {
+    "origins": [
+      "http://127.0.0.1:4174"
+    ],
+    "allowedPaths": [
+      "/**"
+    ],
+    "deniedPaths": [
+      "/admin/**"
+    ]
+  },
+  "executionStatus": "COMPLETE",
+  "incompleteReasons": [],
+  "transports": [
+    {
+      "id": "direct-http",
+      "available": true,
+      "usable": true,
+      "reason": "built-in node:http/https",
+      "version": "26.13.0"
+    },
+    {
+      "id": "playwright-browser",
+      "available": false,
+      "usable": false,
+      "reason": "optional package 'playwright' is not installed (NavSentry never installs it automatically)"
+    },
+    {
+      "id": "curl-cli",
+      "available": true,
+      "usable": false,
+      "reason": "detected; request execution is scheduled for milestone M3 (argv builder implemented and tested)",
+      "version": "curl 8.21.0 (Windows) libcurl/8.21.0 Schannel zlib/1.3.2 WinIDN WinLDAP"
+    },
+    {
+      "id": "powershell-http",
+      "available": true,
+      "usable": false,
+      "reason": "detected; request execution is scheduled for milestone M3 (argv builder implemented and tested)",
+      "version": "7.6.9"
+    },
+    {
+      "id": "visual-computer-use",
+      "available": false,
+      "usable": false,
+      "reason": "no visual provider configured; interface only (provider terms must be reviewed before integration)"
+    },
+    {
+      "id": "zap-passive",
+      "available": false,
+      "usable": false,
+      "reason": "phase-2 integration; not implemented"
+    }
+  ],
+  "requests": [
+    {
+      "id": "f561668e-9402-4619-bde5-8fb1ea94599a",
+      "transport": "direct-http",
+      "actor": "anonymous",
+      "method": "GET",
+      "url": "http://127.0.0.1:4174/",
+      "requestHeaders": {
+        "user-agent": "NavSentry/0.1 (+authorized-security-test)",
+        "accept": "*/*",
+        "accept-encoding": "identity",
+        "x-navsentry-run": "18c3ac9b-f65d-454a-9457-82b4f6cb42a8"
+      },
+      "startedAt": "2026-10-31T06:06:20.657Z",
+      "durationMs": 1,
+      "status": 200,
+      "responseHeaders": {
+        "x-content-type-options": [
+          "nosniff"
+        ],
+        "content-security-policy": [
+          "default-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'"
+        ],
+        "referrer-policy": [
+          "no-referrer"
+        ],
+        "set-cookie": [
+          "SESSIONID=[REDACTED]; Path=/; HttpOnly; SameSite=Lax"
+        ],
+        "cache-control": [
+          "no-store"
+        ],
+        "content-type": [
+          "text/html; charset=utf-8"
+        ],
+        "date": [
+          "Sat, 31 Oct 2026 06:06:20 GMT"
+        ],
+        "connection": [
+          "close"
+        ],
+        "transfer-encoding": [
+          "chunked"
+        ]
+      },
+      "bodyExcerpt": "<!doctype html><title>Demo</title><h1>Demo app</h1>",
+      "bodyBytes": 51,
+      "contract": {
+        "status": 200,
+        "contentType": "text/html",
+        "headerNames": [
+          "content-type"
+        ],
+        "bodyLengthBucket": "2^5"
+      },
+      "redaction": {
+        "applied": false,
+        "count": 0,
+        "kinds": [],
+        "safe": true
+      }
+    },
+    {
+      "id": "465e3b11-e5e5-40ce-ad75-ea27c3fec3c9",
+      "transport": "direct-http",
+      "actor": "anonymous",
+      "method": "GET",
+      "url": "http://127.0.0.1:4174/",
+      "requestHeaders": {
+        "user-agent": "NavSentry/0.1 (+authorized-security-test)",
+        "accept": "*/*",
+        "accept-encoding": "identity",
+        "origin": "https://navsentry-cors-probe.invalid",
+        "x-navsentry-run": "18c3ac9b-f65d-454a-9457-82b4f6cb42a8"
+      },
+      "startedAt": "2026-10-31T06:06:20.708Z",
+      "durationMs": 3,
+      "status": 200,
+      "responseHeaders": {
+        "x-content-type-options": [
+          "nosniff"
+        ],
+        "content-security-policy": [
+          "default-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'"
+        ],
+        "referrer-policy": [
+          "no-referrer"
+        ],
+        "set-cookie": [
+          "SESSIONID=[REDACTED]; Path=/; HttpOnly; SameSite=Lax"
+        ],
+        "cache-control": [
+          "no-store"
+        ],
+        "content-type": [
+          "text/html; charset=utf-8"
+        ],
+        "date": [
+          "Sat, 31 Oct 2026 06:06:20 GMT"
+        ],
+        "connection": [
+          "close"
+        ],
+        "transfer-encoding": [
+          "chunked"
+        ]
+      },
+      "bodyExcerpt": "<!doctype html><title>Demo</title><h1>Demo app</h1>",
+      "bodyBytes": 51,
+      "contract": {
+        "status": 200,
+        "contentType": "text/html",
+        "headerNames": [
+          "content-type"
+        ],
+        "bodyLengthBucket": "2^5"
+      },
+      "redaction": {
+        "applied": false,
+        "count": 0,
+        "kinds": [],
+        "safe": true
+      }
+    },
+    {
+      "id": "f5d57656-be0a-44f5-a167-3ffd9cbb6aac",
+      "transport": "direct-http",
+      "actor": "anonymous",
+      "method": "OPTIONS",
+      "url": "http://127.0.0.1:4174/",
+      "requestHeaders": {
+        "user-agent": "NavSentry/0.1 (+authorized-security-test)",
+        "accept": "*/*",
+        "accept-encoding": "identity",
+        "x-navsentry-run": "18c3ac9b-f65d-454a-9457-82b4f6cb42a8"
+      },
+      "startedAt": "2026-10-31T06:06:20.773Z",
+      "durationMs": 14,
+      "status": 204,
+      "responseHeaders": {
+        "x-content-type-options": [
+          "nosniff"
+        ],
+        "content-security-policy": [
+          "default-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'"
+        ],
+        "referrer-policy": [
+          "no-referrer"
+        ],
+        "allow": [
+          "GET, OPTIONS"
+        ],
+        "date": [
+          "Sat, 31 Oct 2026 06:06:20 GMT"
+        ],
+        "connection": [
+          "close"
+        ]
+      },
+      "bodyExcerpt": "",
+      "bodyBytes": 0,
+      "contract": {
+        "status": 204,
+        "contentType": "",
+        "headerNames": [
+          "allow"
+        ],
+        "bodyLengthBucket": "0"
+      },
+      "redaction": {
+        "applied": false,
+        "count": 0,
+        "kinds": [],
+        "safe": true
+      }
+    },
+    {
+      "id": "8f13ccb0-7f62-427f-a31f-802866feb1ce",
+      "transport": "direct-http",
+      "actor": "anonymous",
+      "method": "GET",
+      "url": "http://127.0.0.1:4174/api/profile",
+      "requestHeaders": {
+        "user-agent": "NavSentry/0.1 (+authorized-security-test)",
+        "accept": "*/*",
+        "accept-encoding": "identity",
+        "x-navsentry-run": "18c3ac9b-f65d-454a-9457-82b4f6cb42a8"
+      },
+      "startedAt": "2026-10-31T06:06:20.834Z",
+      "durationMs": 3,
+      "status": 200,
+      "responseHeaders": {
+        "x-content-type-options": [
+          "nosniff"
+        ],
+        "content-security-policy": [
+          "default-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'"
+        ],
+        "referrer-policy": [
+          "no-referrer"
+        ],
+        "cache-control": [
+          "no-store"
+        ],
+        "content-type": [
+          "application/json"
+        ],
+        "date": [
+          "Sat, 31 Oct 2026 06:06:20 GMT"
+        ],
+        "connection": [
+          "close"
+        ],
+        "transfer-encoding": [
+          "chunked"
+        ]
+      },
+      "bodyExcerpt": "{\"name\":\"Test User\",\"email\":\"\",\"nationalId\":\"x-xxxx-xxxxx-36-6\",\"node\":\"api\"}",
+      "bodyBytes": 77,
+      "contract": {
+        "status": 200,
+        "contentType": "application/json",
+        "headerNames": [
+          "content-type"
+        ],
+        "bodyLengthBucket": "2^6",
+        "jsonShapeHash": "b8aa170afed285df"
+      },
+      "redaction": {
+        "applied": false,
+        "count": 0,
+        "kinds": [],
+        "safe": true
+      }
+    },
+    {
+      "id": "7d69e017-aea5-4040-ab1e-506395154f77",
+      "transport": "direct-http",
+      "actor": "anonymous",
+      "method": "GET",
+      "url": "http://127.0.0.1:4174/api/profile",
+      "requestHeaders": {
+        "user-agent": "NavSentry/0.1 (+authorized-security-test)",
+        "accept": "*/*",
+        "accept-encoding": "identity",
+        "origin": "https://navsentry-cors-probe.invalid",
+        "x-navsentry-run": "18c3ac9b-f65d-454a-9457-82b4f6cb42a8"
+      },
+      "startedAt": "2026-10-31T06:06:20.889Z",
+      "durationMs": 3,
+      "status": 200,
+      "responseHeaders": {
+        "x-content-type-options": [
+          "nosniff"
+        ],
+        "content-security-policy": [
+          "default-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'"
+        ],
+        "referrer-policy": [
+          "no-referrer"
+        ],
+        "cache-control": [
+          "no-store"
+        ],
+        "content-type": [
+          "application/json"
+        ],
+        "date": [
+          "Sat, 31 Oct 2026 06:06:20 GMT"
+        ],
+        "connection": [
+          "close"
+        ],
+        "transfer-encoding": [
+          "chunked"
+        ]
+      },
+      "bodyExcerpt": "{\"name\":\"Test User\",\"email\":\"\",\"nationalId\":\"x-xxxx-xxxxx-36-6\",\"node\":\"api\"}",
+      "bodyBytes": 77,
+      "contract": {
+        "status": 200,
+        "contentType": "application/json",
+        "headerNames": [
+          "content-type"
+        ],
+        "bodyLengthBucket": "2^6",
+        "jsonShapeHash": "b8aa170afed285df"
+      },
+      "redaction": {
+        "applied": false,
+        "count": 0,
+        "kinds": [],
+        "safe": true
+      }
+    },
+    {
+      "id": "04175f47-fb26-4aae-bd9b-8b80d26fbb6a",
+      "transport": "direct-http",
+      "actor": "anonymous",
+      "method": "OPTIONS",
+      "url": "http://127.0.0.1:4174/api/profile",
+      "requestHeaders": {
+        "user-agent": "NavSentry/0.1 (+authorized-security-test)",
+        "accept": "*/*",
+        "accept-encoding": "identity",
+        "x-navsentry-run": "18c3ac9b-f65d-454a-9457-82b4f6cb42a8"
+      },
+      "startedAt": "2026-10-31T06:06:20.941Z",
+      "durationMs": 2,
+      "status": 204,
+      "responseHeaders": {
+        "x-content-type-options": [
+          "nosniff"
+        ],
+        "content-security-policy": [
+          "default-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'"
+        ],
+        "referrer-policy": [
+          "no-referrer"
+        ],
+        "allow": [
+          "GET, OPTIONS"
+        ],
+        "date": [
+          "Sat, 31 Oct 2026 06:06:20 GMT"
+        ],
+        "connection": [
+          "close"
+        ]
+      },
+      "bodyExcerpt": "",
+      "bodyBytes": 0,
+      "contract": {
+        "status": 204,
+        "contentType": "",
+        "headerNames": [
+          "allow"
+        ],
+        "bodyLengthBucket": "0"
+      },
+      "redaction": {
+        "applied": false,
+        "count": 0,
+        "kinds": [],
+        "safe": true
+      }
+    },
+    {
+      "id": "eb596a72-9eb8-4b99-a781-0d281b5e7582",
+      "transport": "direct-http",
+      "actor": "anonymous",
+      "method": "GET",
+      "url": "http://127.0.0.1:4174/api/error",
+      "requestHeaders": {
+        "user-agent": "NavSentry/0.1 (+authorized-security-test)",
+        "accept": "*/*",
+        "accept-encoding": "identity",
+        "x-navsentry-run": "18c3ac9b-f65d-454a-9457-82b4f6cb42a8"
+      },
+      "startedAt": "2026-10-31T06:06:20.992Z",
+      "durationMs": 3,
+      "status": 500,
+      "responseHeaders": {
+        "x-content-type-options": [
+          "nosniff"
+        ],
+        "content-security-policy": [
+          "default-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'"
+        ],
+        "referrer-policy": [
+          "no-referrer"
+        ],
+        "content-type": [
+          "application/json"
+        ],
+        "date": [
+          "Sat, 31 Oct 2026 06:06:20 GMT"
+        ],
+        "connection": [
+          "close"
+        ],
+        "transfer-encoding": [
+          "chunked"
+        ]
+      },
+      "bodyExcerpt": "{\"success\":false,\"code\":\"E500\",\"message\":\"Internal error, reference 7f3a\"}",
+      "bodyBytes": 74,
+      "contract": {
+        "status": 500,
+        "contentType": "application/json",
+        "headerNames": [
+          "content-type"
+        ],
+        "bodyLengthBucket": "2^6",
+        "jsonShapeHash": "7a9ed05ffff4e0e1"
+      },
+      "redaction": {
+        "applied": false,
+        "count": 0,
+        "kinds": [],
+        "safe": true
+      }
+    },
+    {
+      "id": "3188a356-d701-4c3a-afde-be34dc1f7b58",
+      "transport": "direct-http",
+      "actor": "anonymous",
+      "method": "GET",
+      "url": "http://127.0.0.1:4174/api/error",
+      "requestHeaders": {
+        "user-agent": "NavSentry/0.1 (+authorized-security-test)",
+        "accept": "*/*",
+        "accept-encoding": "identity",
+        "origin": "https://navsentry-cors-probe.invalid",
+        "x-navsentry-run": "18c3ac9b-f65d-454a-9457-82b4f6cb42a8"
+      },
+      "startedAt": "2026-10-31T06:06:21.058Z",
+      "durationMs": 3,
+      "status": 500,
+      "responseHeaders": {
+        "x-content-type-options": [
+          "nosniff"
+        ],
+        "content-security-policy": [
+          "default-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'"
+        ],
+        "referrer-policy": [
+          "no-referrer"
+        ],
+        "content-type": [
+          "application/json"
+        ],
+        "date": [
+          "Sat, 31 Oct 2026 06:06:21 GMT"
+        ],
+        "connection": [
+          "close"
+        ],
+        "transfer-encoding": [
+          "chunked"
+        ]
+      },
+      "bodyExcerpt": "{\"success\":false,\"code\":\"E500\",\"message\":\"Internal error, reference 7f3a\"}",
+      "bodyBytes": 74,
+      "contract": {
+        "status": 500,
+        "contentType": "application/json",
+        "headerNames": [
+          "content-type"
+        ],
+        "bodyLengthBucket": "2^6",
+        "jsonShapeHash": "7a9ed05ffff4e0e1"
+      },
+      "redaction": {
+        "applied": false,
+        "count": 0,
+        "kinds": [],
+        "safe": true
+      }
+    },
+    {
+      "id": "7007ea75-dcec-47d7-b9c5-bc70d29567ae",
+      "transport": "direct-http",
+      "actor": "anonymous",
+      "method": "OPTIONS",
+      "url": "http://127.0.0.1:4174/api/error",
+      "requestHeaders": {
+        "user-agent": "NavSentry/0.1 (+authorized-security-test)",
+        "accept": "*/*",
+        "accept-encoding": "identity",
+        "x-navsentry-run": "18c3ac9b-f65d-454a-9457-82b4f6cb42a8"
+      },
+      "startedAt": "2026-10-31T06:06:21.110Z",
+      "durationMs": 2,
+      "status": 204,
+      "responseHeaders": {
+        "x-content-type-options": [
+          "nosniff"
+        ],
+        "content-security-policy": [
+          "default-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'"
+        ],
+        "referrer-policy": [
+          "no-referrer"
+        ],
+        "allow": [
+          "GET, OPTIONS"
+        ],
+        "date": [
+          "Sat, 31 Oct 2026 06:06:21 GMT"
+        ],
+        "connection": [
+          "close"
+        ]
+      },
+      "bodyExcerpt": "",
+      "bodyBytes": 0,
+      "contract": {
+        "status": 204,
+        "contentType": "",
+        "headerNames": [
+          "allow"
+        ],
+        "bodyLengthBucket": "0"
+      },
+      "redaction": {
+        "applied": false,
+        "count": 0,
+        "kinds": [],
+        "safe": true
+      }
+    },
+    {
+      "id": "978a5022-2ef5-4ff9-979a-3aabdaddd227",
+      "transport": "direct-http",
+      "actor": "anonymous",
+      "method": "GET",
+      "url": "http://127.0.0.1:4174/api/token",
+      "requestHeaders": {
+        "user-agent": "NavSentry/0.1 (+authorized-security-test)",
+        "accept": "*/*",
+        "accept-encoding": "identity",
+        "x-navsentry-run": "18c3ac9b-f65d-454a-9457-82b4f6cb42a8"
+      },
+      "startedAt": "2026-10-31T06:06:21.171Z",
+      "durationMs": 3,
+      "status": 200,
+      "responseHeaders": {
+        "x-content-type-options": [
+          "nosniff"
+        ],
+        "content-security-policy": [
+          "default-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'"
+        ],
+        "referrer-policy": [
+          "no-referrer"
+        ],
+        "content-type": [
+          "application/json"
+        ],
+        "cache-control": [
+          "no-store"
+        ],
+        "date": [
+          "Sat, 31 Oct 2026 06:06:21 GMT"
+        ],
+        "connection": [
+          "close"
+        ],
+        "transfer-encoding": [
+          "chunked"
+        ]
+      },
+      "bodyExcerpt": "{\"token\":\"[REDACTED:jwt]\"}",
+      "bodyBytes": 164,
+      "contract": {
+        "status": 200,
+        "contentType": "application/json",
+        "headerNames": [
+          "content-type"
+        ],
+        "bodyLengthBucket": "2^7",
+        "jsonShapeHash": "c14e4be8e33fcdcc"
+      },
+      "redaction": {
+        "applied": true,
+        "count": 1,
+        "kinds": [
+          "jwt"
+        ],
+        "safe": true
+      }
+    },
+    {
+      "id": "abf4b1ee-3b35-442c-bcba-5fb077a12849",
+      "transport": "direct-http",
+      "actor": "anonymous",
+      "method": "GET",
+      "url": "http://127.0.0.1:4174/api/token",
+      "requestHeaders": {
+        "user-agent": "NavSentry/0.1 (+authorized-security-test)",
+        "accept": "*/*",
+        "accept-encoding": "identity",
+        "origin": "https://navsentry-cors-probe.invalid",
+        "x-navsentry-run": "18c3ac9b-f65d-454a-9457-82b4f6cb42a8"
+      },
+      "startedAt": "2026-10-31T06:06:21.238Z",
+      "durationMs": 1,
+      "status": 200,
+      "responseHeaders": {
+        "x-content-type-options": [
+          "nosniff"
+        ],
+        "content-security-policy": [
+          "default-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'"
+        ],
+        "referrer-policy": [
+          "no-referrer"
+        ],
+        "content-type": [
+          "application/json"
+        ],
+        "cache-control": [
+          "no-store"
+        ],
+        "date": [
+          "Sat, 31 Oct 2026 06:06:21 GMT"
+        ],
+        "connection": [
+          "close"
+        ],
+        "transfer-encoding": [
+          "chunked"
+        ]
+      },
+      "bodyExcerpt": "{\"token\":\"[REDACTED:jwt]\"}",
+      "bodyBytes": 164,
+      "contract": {
+        "status": 200,
+        "contentType": "application/json",
+        "headerNames": [
+          "content-type"
+        ],
+        "bodyLengthBucket": "2^7",
+        "jsonShapeHash": "c14e4be8e33fcdcc"
+      },
+      "redaction": {
+        "applied": true,
+        "count": 1,
+        "kinds": [
+          "jwt"
+        ],
+        "safe": true
+      }
+    },
+    {
+      "id": "931dcb5e-ac13-492c-baf7-1b96fe41a364",
+      "transport": "direct-http",
+      "actor": "anonymous",
+      "method": "OPTIONS",
+      "url": "http://127.0.0.1:4174/api/token",
+      "requestHeaders": {
+        "user-agent": "NavSentry/0.1 (+authorized-security-test)",
+        "accept": "*/*",
+        "accept-encoding": "identity",
+        "x-navsentry-run": "18c3ac9b-f65d-454a-9457-82b4f6cb42a8"
+      },
+      "startedAt": "2026-10-31T06:06:21.292Z",
+      "durationMs": 2,
+      "status": 204,
+      "responseHeaders": {
+        "x-content-type-options": [
+          "nosniff"
+        ],
+        "content-security-policy": [
+          "default-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'"
+        ],
+        "referrer-policy": [
+          "no-referrer"
+        ],
+        "allow": [
+          "GET, OPTIONS"
+        ],
+        "date": [
+          "Sat, 31 Oct 2026 06:06:21 GMT"
+        ],
+        "connection": [
+          "close"
+        ]
+      },
+      "bodyExcerpt": "",
+      "bodyBytes": 0,
+      "contract": {
+        "status": 204,
+        "contentType": "",
+        "headerNames": [
+          "allow"
+        ],
+        "bodyLengthBucket": "0"
+      },
+      "redaction": {
+        "applied": false,
+        "count": 0,
+        "kinds": [],
+        "safe": true
+      }
+    },
+    {
+      "id": "9826c957-8565-4bea-a6e8-e059e80f8efc",
+      "transport": "direct-http",
+      "actor": "anonymous",
+      "method": "GET",
+      "url": "http://127.0.0.1:4174/go-out",
+      "requestHeaders": {
+        "user-agent": "NavSentry/0.1 (+authorized-security-test)",
+        "accept": "*/*",
+        "accept-encoding": "identity",
+        "x-navsentry-run": "18c3ac9b-f65d-454a-9457-82b4f6cb42a8"
+      },
+      "startedAt": "2026-10-31T06:06:21.342Z",
+      "durationMs": 2,
+      "status": 302,
+      "responseHeaders": {
+        "x-content-type-options": [
+          "nosniff"
+        ],
+        "content-security-policy": [
+          "default-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'"
+        ],
+        "referrer-policy": [
+          "no-referrer"
+        ],
+        "location": [
+          "http://evil.example/steal"
+        ],
+        "date": [
+          "Sat, 31 Oct 2026 06:06:21 GMT"
+        ],
+        "connection": [
+          "close"
+        ],
+        "transfer-encoding": [
+          "chunked"
+        ]
+      },
+      "bodyExcerpt": "",
+      "bodyBytes": 0,
+      "contract": {
+        "status": 302,
+        "contentType": "",
+        "headerNames": [
+          "location"
+        ],
+        "bodyLengthBucket": "0"
+      },
+      "redaction": {
+        "applied": false,
+        "count": 0,
+        "kinds": [],
+        "safe": true
+      }
+    },
+    {
+      "id": "d9e1bcbd-686e-4ebf-b1a4-b73ae213b9ce",
+      "transport": "direct-http",
+      "actor": "anonymous",
+      "method": "GET",
+      "url": "http://127.0.0.1:4174/go-out",
+      "requestHeaders": {
+        "user-agent": "NavSentry/0.1 (+authorized-security-test)",
+        "accept": "*/*",
+        "accept-encoding": "identity",
+        "origin": "https://navsentry-cors-probe.invalid",
+        "x-navsentry-run": "18c3ac9b-f65d-454a-9457-82b4f6cb42a8"
+      },
+      "startedAt": "2026-10-31T06:06:21.407Z",
+      "durationMs": 3,
+      "status": 302,
+      "responseHeaders": {
+        "x-content-type-options": [
+          "nosniff"
+        ],
+        "content-security-policy": [
+          "default-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'"
+        ],
+        "referrer-policy": [
+          "no-referrer"
+        ],
+        "location": [
+          "http://evil.example/steal"
+        ],
+        "date": [
+          "Sat, 31 Oct 2026 06:06:21 GMT"
+        ],
+        "connection": [
+          "close"
+        ],
+        "transfer-encoding": [
+          "chunked"
+        ]
+      },
+      "bodyExcerpt": "",
+      "bodyBytes": 0,
+      "contract": {
+        "status": 302,
+        "contentType": "",
+        "headerNames": [
+          "location"
+        ],
+        "bodyLengthBucket": "0"
+      },
+      "redaction": {
+        "applied": false,
+        "count": 0,
+        "kinds": [],
+        "safe": true
+      }
+    },
+    {
+      "id": "1bb760ea-c4de-4640-a9fe-a7de70294dc9",
+      "transport": "direct-http",
+      "actor": "anonymous",
+      "method": "OPTIONS",
+      "url": "http://127.0.0.1:4174/go-out",
+      "requestHeaders": {
+        "user-agent": "NavSentry/0.1 (+authorized-security-test)",
+        "accept": "*/*",
+        "accept-encoding": "identity",
+        "x-navsentry-run": "18c3ac9b-f65d-454a-9457-82b4f6cb42a8"
+      },
+      "startedAt": "2026-10-31T06:06:21.457Z",
+      "durationMs": 2,
+      "status": 204,
+      "responseHeaders": {
+        "x-content-type-options": [
+          "nosniff"
+        ],
+        "content-security-policy": [
+          "default-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'"
+        ],
+        "referrer-policy": [
+          "no-referrer"
+        ],
+        "allow": [
+          "GET, OPTIONS"
+        ],
+        "date": [
+          "Sat, 31 Oct 2026 06:06:21 GMT"
+        ],
+        "connection": [
+          "close"
+        ]
+      },
+      "bodyExcerpt": "",
+      "bodyBytes": 0,
+      "contract": {
+        "status": 204,
+        "contentType": "",
+        "headerNames": [
+          "allow"
+        ],
+        "bodyLengthBucket": "0"
+      },
+      "redaction": {
+        "applied": false,
+        "count": 0,
+        "kinds": [],
+        "safe": true
+      }
+    }
+  ],
+  "checks": [
+    {
+      "ruleId": "NSC-CONF-001",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/",
+      "transport": "direct-http",
+      "summary": "HSTS applies to HTTPS responses only",
+      "observations": [],
+      "requestIds": [
+        "f561668e-9402-4619-bde5-8fb1ea94599a"
+      ],
+      "reason": "plain HTTP target"
+    },
+    {
+      "ruleId": "NSC-CONF-002",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/",
+      "transport": "direct-http",
+      "summary": "Enforcing CSP without unsafe script sources",
+      "observations": [],
+      "requestIds": [
+        "f561668e-9402-4619-bde5-8fb1ea94599a"
+      ]
+    },
+    {
+      "ruleId": "NSC-CONF-003",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/",
+      "transport": "direct-http",
+      "summary": "CSP frame-ancestors 'self'",
+      "observations": [],
+      "requestIds": [
+        "f561668e-9402-4619-bde5-8fb1ea94599a"
+      ]
+    },
+    {
+      "ruleId": "NSC-CONF-004",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/",
+      "transport": "direct-http",
+      "summary": "Explicit Content-Type and nosniff",
+      "observations": [],
+      "requestIds": [
+        "f561668e-9402-4619-bde5-8fb1ea94599a"
+      ]
+    },
+    {
+      "ruleId": "NSC-CONF-007",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/",
+      "transport": "direct-http",
+      "summary": "Cache-Control: no-store",
+      "observations": [],
+      "requestIds": [
+        "f561668e-9402-4619-bde5-8fb1ea94599a"
+      ]
+    },
+    {
+      "ruleId": "NSC-INFO-001",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/",
+      "transport": "direct-http",
+      "summary": "No version numbers in headers or error page",
+      "observations": [],
+      "requestIds": [
+        "f561668e-9402-4619-bde5-8fb1ea94599a"
+      ]
+    },
+    {
+      "ruleId": "NSC-ERR-001",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/",
+      "transport": "direct-http",
+      "summary": "No stack trace or internal error signature",
+      "observations": [],
+      "requestIds": [
+        "f561668e-9402-4619-bde5-8fb1ea94599a"
+      ]
+    },
+    {
+      "ruleId": "NSC-INFO-003",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/",
+      "transport": "direct-http",
+      "summary": "No private IP literals",
+      "observations": [],
+      "requestIds": [
+        "f561668e-9402-4619-bde5-8fb1ea94599a"
+      ]
+    },
+    {
+      "ruleId": "NSC-INFO-004",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/",
+      "transport": "direct-http",
+      "summary": "No email addresses",
+      "observations": [],
+      "requestIds": [
+        "f561668e-9402-4619-bde5-8fb1ea94599a"
+      ]
+    },
+    {
+      "ruleId": "NSC-PRIV-001",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/",
+      "transport": "direct-http",
+      "summary": "No checksum-valid national ID or card numbers",
+      "observations": [],
+      "requestIds": [
+        "f561668e-9402-4619-bde5-8fb1ea94599a"
+      ]
+    },
+    {
+      "ruleId": "NSC-PRIV-002",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/",
+      "transport": "direct-http",
+      "summary": "No sensitive parameter names in URL or redirect",
+      "observations": [],
+      "requestIds": [
+        "f561668e-9402-4619-bde5-8fb1ea94599a"
+      ]
+    },
+    {
+      "ruleId": "NSC-SESS-001",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/",
+      "transport": "direct-http",
+      "summary": "Secure flag evaluated on HTTPS responses only",
+      "observations": [],
+      "requestIds": [
+        "f561668e-9402-4619-bde5-8fb1ea94599a"
+      ],
+      "reason": "plain HTTP target"
+    },
+    {
+      "ruleId": "NSC-SESS-002",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/",
+      "transport": "direct-http",
+      "summary": "Session-like cookies are HttpOnly",
+      "observations": [
+        "cookie: SESSIONID"
+      ],
+      "requestIds": [
+        "f561668e-9402-4619-bde5-8fb1ea94599a"
+      ]
+    },
+    {
+      "ruleId": "NSC-SESS-003",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/",
+      "transport": "direct-http",
+      "summary": "SameSite set consistently",
+      "observations": [
+        "cookie: SESSIONID"
+      ],
+      "requestIds": [
+        "f561668e-9402-4619-bde5-8fb1ea94599a"
+      ]
+    },
+    {
+      "ruleId": "NSC-SESS-004",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/",
+      "transport": "direct-http",
+      "summary": "No JWT observed in response",
+      "observations": [],
+      "requestIds": [
+        "f561668e-9402-4619-bde5-8fb1ea94599a"
+      ],
+      "reason": "no token"
+    },
+    {
+      "ruleId": "NSC-CRYPT-006",
+      "status": "FAIL",
+      "target": "GET http://127.0.0.1:4174/",
+      "transport": "direct-http",
+      "summary": "Plain HTTP serves content (HTTP 200) without HTTPS redirect",
+      "observations": [
+        "no redirect"
+      ],
+      "requestIds": [
+        "f561668e-9402-4619-bde5-8fb1ea94599a"
+      ]
+    },
+    {
+      "ruleId": "NSC-AC-004",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/",
+      "transport": "direct-http",
+      "summary": "Untrusted origin not granted CORS access",
+      "observations": [],
+      "requestIds": [
+        "465e3b11-e5e5-40ce-ad75-ea27c3fec3c9"
+      ]
+    },
+    {
+      "ruleId": "NSC-CONF-006",
+      "status": "PASS",
+      "target": "OPTIONS http://127.0.0.1:4174/",
+      "transport": "direct-http",
+      "summary": "Advertised: GET, OPTIONS",
+      "observations": [],
+      "requestIds": [
+        "f5d57656-be0a-44f5-a167-3ffd9cbb6aac"
+      ]
+    },
+    {
+      "ruleId": "NSC-CONF-001",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/api/profile",
+      "transport": "direct-http",
+      "summary": "HSTS applies to HTTPS responses only",
+      "observations": [],
+      "requestIds": [
+        "8f13ccb0-7f62-427f-a31f-802866feb1ce"
+      ],
+      "reason": "plain HTTP target"
+    },
+    {
+      "ruleId": "NSC-CONF-002",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/api/profile",
+      "transport": "direct-http",
+      "summary": "CSP is evaluated on HTML documents only",
+      "observations": [],
+      "requestIds": [
+        "8f13ccb0-7f62-427f-a31f-802866feb1ce"
+      ],
+      "reason": "not an HTML document"
+    },
+    {
+      "ruleId": "NSC-CONF-003",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/api/profile",
+      "transport": "direct-http",
+      "summary": "Framing protection is evaluated on HTML documents only",
+      "observations": [],
+      "requestIds": [
+        "8f13ccb0-7f62-427f-a31f-802866feb1ce"
+      ],
+      "reason": "not an HTML document"
+    },
+    {
+      "ruleId": "NSC-CONF-004",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/api/profile",
+      "transport": "direct-http",
+      "summary": "Explicit Content-Type and nosniff",
+      "observations": [],
+      "requestIds": [
+        "8f13ccb0-7f62-427f-a31f-802866feb1ce"
+      ]
+    },
+    {
+      "ruleId": "NSC-CONF-007",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/api/profile",
+      "transport": "direct-http",
+      "summary": "Response is neither authenticated nor session-setting",
+      "observations": [],
+      "requestIds": [
+        "8f13ccb0-7f62-427f-a31f-802866feb1ce"
+      ],
+      "reason": "not sensitive"
+    },
+    {
+      "ruleId": "NSC-INFO-001",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/api/profile",
+      "transport": "direct-http",
+      "summary": "No version numbers in headers or error page",
+      "observations": [],
+      "requestIds": [
+        "8f13ccb0-7f62-427f-a31f-802866feb1ce"
+      ]
+    },
+    {
+      "ruleId": "NSC-ERR-001",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/api/profile",
+      "transport": "direct-http",
+      "summary": "No stack trace or internal error signature",
+      "observations": [],
+      "requestIds": [
+        "8f13ccb0-7f62-427f-a31f-802866feb1ce"
+      ]
+    },
+    {
+      "ruleId": "NSC-INFO-003",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/api/profile",
+      "transport": "direct-http",
+      "summary": "No private IP literals",
+      "observations": [],
+      "requestIds": [
+        "8f13ccb0-7f62-427f-a31f-802866feb1ce"
+      ]
+    },
+    {
+      "ruleId": "NSC-INFO-004",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/api/profile",
+      "transport": "direct-http",
+      "summary": "No email addresses",
+      "observations": [],
+      "requestIds": [
+        "8f13ccb0-7f62-427f-a31f-802866feb1ce"
+      ]
+    },
+    {
+      "ruleId": "NSC-PRIV-001",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/api/profile",
+      "transport": "direct-http",
+      "summary": "No checksum-valid national ID or card numbers",
+      "observations": [],
+      "requestIds": [
+        "8f13ccb0-7f62-427f-a31f-802866feb1ce"
+      ]
+    },
+    {
+      "ruleId": "NSC-PRIV-002",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/api/profile",
+      "transport": "direct-http",
+      "summary": "No sensitive parameter names in URL or redirect",
+      "observations": [],
+      "requestIds": [
+        "8f13ccb0-7f62-427f-a31f-802866feb1ce"
+      ]
+    },
+    {
+      "ruleId": "NSC-SESS-001",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/api/profile",
+      "transport": "direct-http",
+      "summary": "No Set-Cookie in response",
+      "observations": [],
+      "requestIds": [
+        "8f13ccb0-7f62-427f-a31f-802866feb1ce"
+      ],
+      "reason": "no cookies"
+    },
+    {
+      "ruleId": "NSC-SESS-002",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/api/profile",
+      "transport": "direct-http",
+      "summary": "No Set-Cookie in response",
+      "observations": [],
+      "requestIds": [
+        "8f13ccb0-7f62-427f-a31f-802866feb1ce"
+      ],
+      "reason": "no cookies"
+    },
+    {
+      "ruleId": "NSC-SESS-003",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/api/profile",
+      "transport": "direct-http",
+      "summary": "No Set-Cookie in response",
+      "observations": [],
+      "requestIds": [
+        "8f13ccb0-7f62-427f-a31f-802866feb1ce"
+      ],
+      "reason": "no cookies"
+    },
+    {
+      "ruleId": "NSC-SESS-004",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/api/profile",
+      "transport": "direct-http",
+      "summary": "No JWT observed in response",
+      "observations": [],
+      "requestIds": [
+        "8f13ccb0-7f62-427f-a31f-802866feb1ce"
+      ],
+      "reason": "no token"
+    },
+    {
+      "ruleId": "NSC-CRYPT-006",
+      "status": "FAIL",
+      "target": "GET http://127.0.0.1:4174/api/profile",
+      "transport": "direct-http",
+      "summary": "Plain HTTP serves content (HTTP 200) without HTTPS redirect",
+      "observations": [
+        "no redirect"
+      ],
+      "requestIds": [
+        "8f13ccb0-7f62-427f-a31f-802866feb1ce"
+      ]
+    },
+    {
+      "ruleId": "NSC-AC-004",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/api/profile",
+      "transport": "direct-http",
+      "summary": "Untrusted origin not granted CORS access",
+      "observations": [],
+      "requestIds": [
+        "7d69e017-aea5-4040-ab1e-506395154f77"
+      ]
+    },
+    {
+      "ruleId": "NSC-CONF-006",
+      "status": "PASS",
+      "target": "OPTIONS http://127.0.0.1:4174/api/profile",
+      "transport": "direct-http",
+      "summary": "Advertised: GET, OPTIONS",
+      "observations": [],
+      "requestIds": [
+        "04175f47-fb26-4aae-bd9b-8b80d26fbb6a"
+      ]
+    },
+    {
+      "ruleId": "NSC-CONF-001",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/api/error",
+      "transport": "direct-http",
+      "summary": "HSTS applies to HTTPS responses only",
+      "observations": [],
+      "requestIds": [
+        "eb596a72-9eb8-4b99-a781-0d281b5e7582"
+      ],
+      "reason": "plain HTTP target"
+    },
+    {
+      "ruleId": "NSC-CONF-002",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/api/error",
+      "transport": "direct-http",
+      "summary": "CSP is evaluated on HTML documents only",
+      "observations": [],
+      "requestIds": [
+        "eb596a72-9eb8-4b99-a781-0d281b5e7582"
+      ],
+      "reason": "not an HTML document"
+    },
+    {
+      "ruleId": "NSC-CONF-003",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/api/error",
+      "transport": "direct-http",
+      "summary": "Framing protection is evaluated on HTML documents only",
+      "observations": [],
+      "requestIds": [
+        "eb596a72-9eb8-4b99-a781-0d281b5e7582"
+      ],
+      "reason": "not an HTML document"
+    },
+    {
+      "ruleId": "NSC-CONF-004",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/api/error",
+      "transport": "direct-http",
+      "summary": "Explicit Content-Type and nosniff",
+      "observations": [],
+      "requestIds": [
+        "eb596a72-9eb8-4b99-a781-0d281b5e7582"
+      ]
+    },
+    {
+      "ruleId": "NSC-CONF-007",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/api/error",
+      "transport": "direct-http",
+      "summary": "Response is neither authenticated nor session-setting",
+      "observations": [],
+      "requestIds": [
+        "eb596a72-9eb8-4b99-a781-0d281b5e7582"
+      ],
+      "reason": "not sensitive"
+    },
+    {
+      "ruleId": "NSC-INFO-001",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/api/error",
+      "transport": "direct-http",
+      "summary": "No version numbers in headers or error page",
+      "observations": [],
+      "requestIds": [
+        "eb596a72-9eb8-4b99-a781-0d281b5e7582"
+      ]
+    },
+    {
+      "ruleId": "NSC-ERR-001",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/api/error",
+      "transport": "direct-http",
+      "summary": "No stack trace or internal error signature",
+      "observations": [],
+      "requestIds": [
+        "eb596a72-9eb8-4b99-a781-0d281b5e7582"
+      ]
+    },
+    {
+      "ruleId": "NSC-INFO-003",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/api/error",
+      "transport": "direct-http",
+      "summary": "No private IP literals",
+      "observations": [],
+      "requestIds": [
+        "eb596a72-9eb8-4b99-a781-0d281b5e7582"
+      ]
+    },
+    {
+      "ruleId": "NSC-INFO-004",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/api/error",
+      "transport": "direct-http",
+      "summary": "No email addresses",
+      "observations": [],
+      "requestIds": [
+        "eb596a72-9eb8-4b99-a781-0d281b5e7582"
+      ]
+    },
+    {
+      "ruleId": "NSC-PRIV-001",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/api/error",
+      "transport": "direct-http",
+      "summary": "No checksum-valid national ID or card numbers",
+      "observations": [],
+      "requestIds": [
+        "eb596a72-9eb8-4b99-a781-0d281b5e7582"
+      ]
+    },
+    {
+      "ruleId": "NSC-PRIV-002",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/api/error",
+      "transport": "direct-http",
+      "summary": "No sensitive parameter names in URL or redirect",
+      "observations": [],
+      "requestIds": [
+        "eb596a72-9eb8-4b99-a781-0d281b5e7582"
+      ]
+    },
+    {
+      "ruleId": "NSC-SESS-001",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/api/error",
+      "transport": "direct-http",
+      "summary": "No Set-Cookie in response",
+      "observations": [],
+      "requestIds": [
+        "eb596a72-9eb8-4b99-a781-0d281b5e7582"
+      ],
+      "reason": "no cookies"
+    },
+    {
+      "ruleId": "NSC-SESS-002",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/api/error",
+      "transport": "direct-http",
+      "summary": "No Set-Cookie in response",
+      "observations": [],
+      "requestIds": [
+        "eb596a72-9eb8-4b99-a781-0d281b5e7582"
+      ],
+      "reason": "no cookies"
+    },
+    {
+      "ruleId": "NSC-SESS-003",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/api/error",
+      "transport": "direct-http",
+      "summary": "No Set-Cookie in response",
+      "observations": [],
+      "requestIds": [
+        "eb596a72-9eb8-4b99-a781-0d281b5e7582"
+      ],
+      "reason": "no cookies"
+    },
+    {
+      "ruleId": "NSC-SESS-004",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/api/error",
+      "transport": "direct-http",
+      "summary": "No JWT observed in response",
+      "observations": [],
+      "requestIds": [
+        "eb596a72-9eb8-4b99-a781-0d281b5e7582"
+      ],
+      "reason": "no token"
+    },
+    {
+      "ruleId": "NSC-CRYPT-006",
+      "status": "FAIL",
+      "target": "GET http://127.0.0.1:4174/api/error",
+      "transport": "direct-http",
+      "summary": "Plain HTTP serves content (HTTP 500) without HTTPS redirect",
+      "observations": [
+        "no redirect"
+      ],
+      "requestIds": [
+        "eb596a72-9eb8-4b99-a781-0d281b5e7582"
+      ]
+    },
+    {
+      "ruleId": "NSC-AC-004",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/api/error",
+      "transport": "direct-http",
+      "summary": "Untrusted origin not granted CORS access",
+      "observations": [],
+      "requestIds": [
+        "3188a356-d701-4c3a-afde-be34dc1f7b58"
+      ]
+    },
+    {
+      "ruleId": "NSC-CONF-006",
+      "status": "PASS",
+      "target": "OPTIONS http://127.0.0.1:4174/api/error",
+      "transport": "direct-http",
+      "summary": "Advertised: GET, OPTIONS",
+      "observations": [],
+      "requestIds": [
+        "7007ea75-dcec-47d7-b9c5-bc70d29567ae"
+      ]
+    },
+    {
+      "ruleId": "NSC-CONF-001",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/api/token",
+      "transport": "direct-http",
+      "summary": "HSTS applies to HTTPS responses only",
+      "observations": [],
+      "requestIds": [
+        "978a5022-2ef5-4ff9-979a-3aabdaddd227"
+      ],
+      "reason": "plain HTTP target"
+    },
+    {
+      "ruleId": "NSC-CONF-002",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/api/token",
+      "transport": "direct-http",
+      "summary": "CSP is evaluated on HTML documents only",
+      "observations": [],
+      "requestIds": [
+        "978a5022-2ef5-4ff9-979a-3aabdaddd227"
+      ],
+      "reason": "not an HTML document"
+    },
+    {
+      "ruleId": "NSC-CONF-003",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/api/token",
+      "transport": "direct-http",
+      "summary": "Framing protection is evaluated on HTML documents only",
+      "observations": [],
+      "requestIds": [
+        "978a5022-2ef5-4ff9-979a-3aabdaddd227"
+      ],
+      "reason": "not an HTML document"
+    },
+    {
+      "ruleId": "NSC-CONF-004",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/api/token",
+      "transport": "direct-http",
+      "summary": "Explicit Content-Type and nosniff",
+      "observations": [],
+      "requestIds": [
+        "978a5022-2ef5-4ff9-979a-3aabdaddd227"
+      ]
+    },
+    {
+      "ruleId": "NSC-CONF-007",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/api/token",
+      "transport": "direct-http",
+      "summary": "Response is neither authenticated nor session-setting",
+      "observations": [],
+      "requestIds": [
+        "978a5022-2ef5-4ff9-979a-3aabdaddd227"
+      ],
+      "reason": "not sensitive"
+    },
+    {
+      "ruleId": "NSC-INFO-001",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/api/token",
+      "transport": "direct-http",
+      "summary": "No version numbers in headers or error page",
+      "observations": [],
+      "requestIds": [
+        "978a5022-2ef5-4ff9-979a-3aabdaddd227"
+      ]
+    },
+    {
+      "ruleId": "NSC-ERR-001",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/api/token",
+      "transport": "direct-http",
+      "summary": "No stack trace or internal error signature",
+      "observations": [],
+      "requestIds": [
+        "978a5022-2ef5-4ff9-979a-3aabdaddd227"
+      ]
+    },
+    {
+      "ruleId": "NSC-INFO-003",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/api/token",
+      "transport": "direct-http",
+      "summary": "No private IP literals",
+      "observations": [],
+      "requestIds": [
+        "978a5022-2ef5-4ff9-979a-3aabdaddd227"
+      ]
+    },
+    {
+      "ruleId": "NSC-INFO-004",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/api/token",
+      "transport": "direct-http",
+      "summary": "No email addresses",
+      "observations": [],
+      "requestIds": [
+        "978a5022-2ef5-4ff9-979a-3aabdaddd227"
+      ]
+    },
+    {
+      "ruleId": "NSC-PRIV-001",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/api/token",
+      "transport": "direct-http",
+      "summary": "No checksum-valid national ID or card numbers",
+      "observations": [],
+      "requestIds": [
+        "978a5022-2ef5-4ff9-979a-3aabdaddd227"
+      ]
+    },
+    {
+      "ruleId": "NSC-PRIV-002",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/api/token",
+      "transport": "direct-http",
+      "summary": "No sensitive parameter names in URL or redirect",
+      "observations": [],
+      "requestIds": [
+        "978a5022-2ef5-4ff9-979a-3aabdaddd227"
+      ]
+    },
+    {
+      "ruleId": "NSC-SESS-001",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/api/token",
+      "transport": "direct-http",
+      "summary": "No Set-Cookie in response",
+      "observations": [],
+      "requestIds": [
+        "978a5022-2ef5-4ff9-979a-3aabdaddd227"
+      ],
+      "reason": "no cookies"
+    },
+    {
+      "ruleId": "NSC-SESS-002",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/api/token",
+      "transport": "direct-http",
+      "summary": "No Set-Cookie in response",
+      "observations": [],
+      "requestIds": [
+        "978a5022-2ef5-4ff9-979a-3aabdaddd227"
+      ],
+      "reason": "no cookies"
+    },
+    {
+      "ruleId": "NSC-SESS-003",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/api/token",
+      "transport": "direct-http",
+      "summary": "No Set-Cookie in response",
+      "observations": [],
+      "requestIds": [
+        "978a5022-2ef5-4ff9-979a-3aabdaddd227"
+      ],
+      "reason": "no cookies"
+    },
+    {
+      "ruleId": "NSC-SESS-004",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/api/token",
+      "transport": "direct-http",
+      "summary": "1 JWT(s) carry alg/exp/iss/aud",
+      "observations": [],
+      "requestIds": [
+        "978a5022-2ef5-4ff9-979a-3aabdaddd227"
+      ]
+    },
+    {
+      "ruleId": "NSC-CRYPT-006",
+      "status": "FAIL",
+      "target": "GET http://127.0.0.1:4174/api/token",
+      "transport": "direct-http",
+      "summary": "Plain HTTP serves content (HTTP 200) without HTTPS redirect",
+      "observations": [
+        "no redirect"
+      ],
+      "requestIds": [
+        "978a5022-2ef5-4ff9-979a-3aabdaddd227"
+      ]
+    },
+    {
+      "ruleId": "NSC-AC-004",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/api/token",
+      "transport": "direct-http",
+      "summary": "Untrusted origin not granted CORS access",
+      "observations": [],
+      "requestIds": [
+        "abf4b1ee-3b35-442c-bcba-5fb077a12849"
+      ]
+    },
+    {
+      "ruleId": "NSC-CONF-006",
+      "status": "PASS",
+      "target": "OPTIONS http://127.0.0.1:4174/api/token",
+      "transport": "direct-http",
+      "summary": "Advertised: GET, OPTIONS",
+      "observations": [],
+      "requestIds": [
+        "931dcb5e-ac13-492c-baf7-1b96fe41a364"
+      ]
+    },
+    {
+      "ruleId": "NSC-CONF-001",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/go-out",
+      "transport": "direct-http",
+      "summary": "HSTS applies to HTTPS responses only",
+      "observations": [],
+      "requestIds": [
+        "9826c957-8565-4bea-a6e8-e059e80f8efc"
+      ],
+      "reason": "plain HTTP target"
+    },
+    {
+      "ruleId": "NSC-CONF-002",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/go-out",
+      "transport": "direct-http",
+      "summary": "CSP is evaluated on HTML documents only",
+      "observations": [],
+      "requestIds": [
+        "9826c957-8565-4bea-a6e8-e059e80f8efc"
+      ],
+      "reason": "not an HTML document"
+    },
+    {
+      "ruleId": "NSC-CONF-003",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/go-out",
+      "transport": "direct-http",
+      "summary": "Framing protection is evaluated on HTML documents only",
+      "observations": [],
+      "requestIds": [
+        "9826c957-8565-4bea-a6e8-e059e80f8efc"
+      ],
+      "reason": "not an HTML document"
+    },
+    {
+      "ruleId": "NSC-CONF-004",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/go-out",
+      "transport": "direct-http",
+      "summary": "No response body",
+      "observations": [],
+      "requestIds": [
+        "9826c957-8565-4bea-a6e8-e059e80f8efc"
+      ],
+      "reason": "empty body"
+    },
+    {
+      "ruleId": "NSC-CONF-007",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/go-out",
+      "transport": "direct-http",
+      "summary": "Response is neither authenticated nor session-setting",
+      "observations": [],
+      "requestIds": [
+        "9826c957-8565-4bea-a6e8-e059e80f8efc"
+      ],
+      "reason": "not sensitive"
+    },
+    {
+      "ruleId": "NSC-INFO-001",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/go-out",
+      "transport": "direct-http",
+      "summary": "No version numbers in headers or error page",
+      "observations": [],
+      "requestIds": [
+        "9826c957-8565-4bea-a6e8-e059e80f8efc"
+      ]
+    },
+    {
+      "ruleId": "NSC-ERR-001",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/go-out",
+      "transport": "direct-http",
+      "summary": "No body",
+      "observations": [],
+      "requestIds": [
+        "9826c957-8565-4bea-a6e8-e059e80f8efc"
+      ]
+    },
+    {
+      "ruleId": "NSC-INFO-003",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/go-out",
+      "transport": "direct-http",
+      "summary": "No private IP literals",
+      "observations": [],
+      "requestIds": [
+        "9826c957-8565-4bea-a6e8-e059e80f8efc"
+      ]
+    },
+    {
+      "ruleId": "NSC-INFO-004",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/go-out",
+      "transport": "direct-http",
+      "summary": "No email addresses",
+      "observations": [],
+      "requestIds": [
+        "9826c957-8565-4bea-a6e8-e059e80f8efc"
+      ]
+    },
+    {
+      "ruleId": "NSC-PRIV-001",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/go-out",
+      "transport": "direct-http",
+      "summary": "No checksum-valid national ID or card numbers",
+      "observations": [],
+      "requestIds": [
+        "9826c957-8565-4bea-a6e8-e059e80f8efc"
+      ]
+    },
+    {
+      "ruleId": "NSC-PRIV-002",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/go-out",
+      "transport": "direct-http",
+      "summary": "No sensitive parameter names in URL or redirect",
+      "observations": [],
+      "requestIds": [
+        "9826c957-8565-4bea-a6e8-e059e80f8efc"
+      ]
+    },
+    {
+      "ruleId": "NSC-SESS-001",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/go-out",
+      "transport": "direct-http",
+      "summary": "No Set-Cookie in response",
+      "observations": [],
+      "requestIds": [
+        "9826c957-8565-4bea-a6e8-e059e80f8efc"
+      ],
+      "reason": "no cookies"
+    },
+    {
+      "ruleId": "NSC-SESS-002",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/go-out",
+      "transport": "direct-http",
+      "summary": "No Set-Cookie in response",
+      "observations": [],
+      "requestIds": [
+        "9826c957-8565-4bea-a6e8-e059e80f8efc"
+      ],
+      "reason": "no cookies"
+    },
+    {
+      "ruleId": "NSC-SESS-003",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/go-out",
+      "transport": "direct-http",
+      "summary": "No Set-Cookie in response",
+      "observations": [],
+      "requestIds": [
+        "9826c957-8565-4bea-a6e8-e059e80f8efc"
+      ],
+      "reason": "no cookies"
+    },
+    {
+      "ruleId": "NSC-SESS-004",
+      "status": "NOT_TESTED",
+      "target": "GET http://127.0.0.1:4174/go-out",
+      "transport": "direct-http",
+      "summary": "No JWT observed in response",
+      "observations": [],
+      "requestIds": [
+        "9826c957-8565-4bea-a6e8-e059e80f8efc"
+      ],
+      "reason": "no token"
+    },
+    {
+      "ruleId": "NSC-CRYPT-006",
+      "status": "FAIL",
+      "target": "GET http://127.0.0.1:4174/go-out",
+      "transport": "direct-http",
+      "summary": "Plain HTTP serves content (HTTP 302) without HTTPS redirect",
+      "observations": [
+        "Location scheme: http:"
+      ],
+      "requestIds": [
+        "9826c957-8565-4bea-a6e8-e059e80f8efc"
+      ]
+    },
+    {
+      "ruleId": "NSC-AC-004",
+      "status": "PASS",
+      "target": "GET http://127.0.0.1:4174/go-out",
+      "transport": "direct-http",
+      "summary": "Untrusted origin not granted CORS access",
+      "observations": [],
+      "requestIds": [
+        "d9e1bcbd-686e-4ebf-b1a4-b73ae213b9ce"
+      ]
+    },
+    {
+      "ruleId": "NSC-CONF-006",
+      "status": "PASS",
+      "target": "OPTIONS http://127.0.0.1:4174/go-out",
+      "transport": "direct-http",
+      "summary": "Advertised: GET, OPTIONS",
+      "observations": [],
+      "requestIds": [
+        "1bb760ea-c4de-4640-a9fe-a7de70294dc9"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "fingerprint": "692d436b6be4d23f9a12f0bd",
+      "ruleId": "NSC-CRYPT-006",
+      "title": "Cleartext HTTP served without redirect to HTTPS",
+      "category": "CRYPT",
+      "severity": "medium",
+      "confidence": "high",
+      "lifecycle": "VALIDATED",
+      "priority": "IMMEDIATE",
+      "target": "GET http://127.0.0.1:4174/",
+      "expected": "http:// requests receive 301/308 to the https:// equivalent | No application content or Set-Cookie on http://",
+      "actual": [
+        "Plain HTTP serves content (HTTP 200) without HTTPS redirect",
+        "no redirect"
+      ],
+      "reproduction": [
+        "navsentry test --config <manifest>  (rule NSC-CRYPT-006, transport direct-http)",
+        "Type http://<host>/ in the browser: it switches to https://"
+      ],
+      "limitations": [],
+      "recommendation": "Redirect all HTTP to HTTPS at the edge; for internal service ports, enable TLS or restrict them to the internal network.",
+      "regressionGuard": "Machine clients that POST to http:// may not follow redirects with a body (use 308 to preserve method) — inventory them first.",
+      "mappings": {
+        "owasp2021": [
+          "A02:2021 Cryptographic Failures"
+        ],
+        "owasp2025": [
+          "A04:2025 Cryptographic Failures"
+        ],
+        "cwe": [
+          "CWE-319"
+        ],
+        "wstg": [
+          "WSTG-CRYP-03"
+        ],
+        "asvs5Chapter": [
+          "V12 Secure Communication"
+        ]
+      },
+      "requestIds": [
+        "f561668e-9402-4619-bde5-8fb1ea94599a"
+      ]
+    },
+    {
+      "fingerprint": "de541519ea628034bf10b279",
+      "ruleId": "NSC-CRYPT-006",
+      "title": "Cleartext HTTP served without redirect to HTTPS",
+      "category": "CRYPT",
+      "severity": "medium",
+      "confidence": "high",
+      "lifecycle": "VALIDATED",
+      "priority": "IMMEDIATE",
+      "target": "GET http://127.0.0.1:4174/api/profile",
+      "expected": "http:// requests receive 301/308 to the https:// equivalent | No application content or Set-Cookie on http://",
+      "actual": [
+        "Plain HTTP serves content (HTTP 200) without HTTPS redirect",
+        "no redirect"
+      ],
+      "reproduction": [
+        "navsentry test --config <manifest>  (rule NSC-CRYPT-006, transport direct-http)",
+        "Type http://<host>/ in the browser: it switches to https://"
+      ],
+      "limitations": [],
+      "recommendation": "Redirect all HTTP to HTTPS at the edge; for internal service ports, enable TLS or restrict them to the internal network.",
+      "regressionGuard": "Machine clients that POST to http:// may not follow redirects with a body (use 308 to preserve method) — inventory them first.",
+      "mappings": {
+        "owasp2021": [
+          "A02:2021 Cryptographic Failures"
+        ],
+        "owasp2025": [
+          "A04:2025 Cryptographic Failures"
+        ],
+        "cwe": [
+          "CWE-319"
+        ],
+        "wstg": [
+          "WSTG-CRYP-03"
+        ],
+        "asvs5Chapter": [
+          "V12 Secure Communication"
+        ]
+      },
+      "requestIds": [
+        "8f13ccb0-7f62-427f-a31f-802866feb1ce"
+      ]
+    },
+    {
+      "fingerprint": "fc727d7983201f01a45728e6",
+      "ruleId": "NSC-CRYPT-006",
+      "title": "Cleartext HTTP served without redirect to HTTPS",
+      "category": "CRYPT",
+      "severity": "medium",
+      "confidence": "high",
+      "lifecycle": "VALIDATED",
+      "priority": "IMMEDIATE",
+      "target": "GET http://127.0.0.1:4174/api/error",
+      "expected": "http:// requests receive 301/308 to the https:// equivalent | No application content or Set-Cookie on http://",
+      "actual": [
+        "Plain HTTP serves content (HTTP 500) without HTTPS redirect",
+        "no redirect"
+      ],
+      "reproduction": [
+        "navsentry test --config <manifest>  (rule NSC-CRYPT-006, transport direct-http)",
+        "Type http://<host>/ in the browser: it switches to https://"
+      ],
+      "limitations": [],
+      "recommendation": "Redirect all HTTP to HTTPS at the edge; for internal service ports, enable TLS or restrict them to the internal network.",
+      "regressionGuard": "Machine clients that POST to http:// may not follow redirects with a body (use 308 to preserve method) — inventory them first.",
+      "mappings": {
+        "owasp2021": [
+          "A02:2021 Cryptographic Failures"
+        ],
+        "owasp2025": [
+          "A04:2025 Cryptographic Failures"
+        ],
+        "cwe": [
+          "CWE-319"
+        ],
+        "wstg": [
+          "WSTG-CRYP-03"
+        ],
+        "asvs5Chapter": [
+          "V12 Secure Communication"
+        ]
+      },
+      "requestIds": [
+        "eb596a72-9eb8-4b99-a781-0d281b5e7582"
+      ]
+    },
+    {
+      "fingerprint": "218a567e36a7e353d513883d",
+      "ruleId": "NSC-CRYPT-006",
+      "title": "Cleartext HTTP served without redirect to HTTPS",
+      "category": "CRYPT",
+      "severity": "medium",
+      "confidence": "high",
+      "lifecycle": "VALIDATED",
+      "priority": "IMMEDIATE",
+      "target": "GET http://127.0.0.1:4174/api/token",
+      "expected": "http:// requests receive 301/308 to the https:// equivalent | No application content or Set-Cookie on http://",
+      "actual": [
+        "Plain HTTP serves content (HTTP 200) without HTTPS redirect",
+        "no redirect"
+      ],
+      "reproduction": [
+        "navsentry test --config <manifest>  (rule NSC-CRYPT-006, transport direct-http)",
+        "Type http://<host>/ in the browser: it switches to https://"
+      ],
+      "limitations": [],
+      "recommendation": "Redirect all HTTP to HTTPS at the edge; for internal service ports, enable TLS or restrict them to the internal network.",
+      "regressionGuard": "Machine clients that POST to http:// may not follow redirects with a body (use 308 to preserve method) — inventory them first.",
+      "mappings": {
+        "owasp2021": [
+          "A02:2021 Cryptographic Failures"
+        ],
+        "owasp2025": [
+          "A04:2025 Cryptographic Failures"
+        ],
+        "cwe": [
+          "CWE-319"
+        ],
+        "wstg": [
+          "WSTG-CRYP-03"
+        ],
+        "asvs5Chapter": [
+          "V12 Secure Communication"
+        ]
+      },
+      "requestIds": [
+        "978a5022-2ef5-4ff9-979a-3aabdaddd227"
+      ]
+    },
+    {
+      "fingerprint": "1ba566e5dfe0fcb2056cd0b3",
+      "ruleId": "NSC-CRYPT-006",
+      "title": "Cleartext HTTP served without redirect to HTTPS",
+      "category": "CRYPT",
+      "severity": "medium",
+      "confidence": "high",
+      "lifecycle": "VALIDATED",
+      "priority": "IMMEDIATE",
+      "target": "GET http://127.0.0.1:4174/go-out",
+      "expected": "http:// requests receive 301/308 to the https:// equivalent | No application content or Set-Cookie on http://",
+      "actual": [
+        "Plain HTTP serves content (HTTP 302) without HTTPS redirect",
+        "Location scheme: http:"
+      ],
+      "reproduction": [
+        "navsentry test --config <manifest>  (rule NSC-CRYPT-006, transport direct-http)",
+        "Type http://<host>/ in the browser: it switches to https://"
+      ],
+      "limitations": [],
+      "recommendation": "Redirect all HTTP to HTTPS at the edge; for internal service ports, enable TLS or restrict them to the internal network.",
+      "regressionGuard": "Machine clients that POST to http:// may not follow redirects with a body (use 308 to preserve method) — inventory them first.",
+      "mappings": {
+        "owasp2021": [
+          "A02:2021 Cryptographic Failures"
+        ],
+        "owasp2025": [
+          "A04:2025 Cryptographic Failures"
+        ],
+        "cwe": [
+          "CWE-319"
+        ],
+        "wstg": [
+          "WSTG-CRYP-03"
+        ],
+        "asvs5Chapter": [
+          "V12 Secure Communication"
+        ]
+      },
+      "requestIds": [
+        "9826c957-8565-4bea-a6e8-e059e80f8efc"
+      ]
+    }
+  ],
+  "coverage": [
+    {
+      "ruleId": "NSC-CONF-001",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "plain HTTP target"
+    },
+    {
+      "ruleId": "NSC-CONF-002",
+      "status": "PASS",
+      "targets": 1
+    },
+    {
+      "ruleId": "NSC-CONF-003",
+      "status": "PASS",
+      "targets": 1
+    },
+    {
+      "ruleId": "NSC-CONF-004",
+      "status": "PASS",
+      "targets": 4
+    },
+    {
+      "ruleId": "NSC-CONF-005",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "evidence collection needs an operator/agent; see the case's agent prompt"
+    },
+    {
+      "ruleId": "NSC-CONF-006",
+      "status": "PASS",
+      "targets": 5
+    },
+    {
+      "ruleId": "NSC-CONF-007",
+      "status": "PASS",
+      "targets": 1
+    },
+    {
+      "ruleId": "NSC-CONF-008",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "requires active payloads; never automated without active-approved authorization"
+    },
+    {
+      "ruleId": "NSC-INFO-001",
+      "status": "PASS",
+      "targets": 5
+    },
+    {
+      "ruleId": "NSC-INFO-003",
+      "status": "PASS",
+      "targets": 5
+    },
+    {
+      "ruleId": "NSC-INFO-004",
+      "status": "PASS",
+      "targets": 5
+    },
+    {
+      "ruleId": "NSC-ERR-001",
+      "status": "PASS",
+      "targets": 5
+    },
+    {
+      "ruleId": "NSC-ERR-002",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "requires active payloads; never automated without active-approved authorization"
+    },
+    {
+      "ruleId": "NSC-PRIV-001",
+      "status": "PASS",
+      "targets": 5
+    },
+    {
+      "ruleId": "NSC-PRIV-002",
+      "status": "PASS",
+      "targets": 5
+    },
+    {
+      "ruleId": "NSC-SESS-001",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "plain HTTP target"
+    },
+    {
+      "ruleId": "NSC-SESS-002",
+      "status": "PASS",
+      "targets": 1
+    },
+    {
+      "ruleId": "NSC-SESS-003",
+      "status": "PASS",
+      "targets": 1
+    },
+    {
+      "ruleId": "NSC-SESS-004",
+      "status": "PASS",
+      "targets": 1
+    },
+    {
+      "ruleId": "NSC-CRYPT-001",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "not exercised by this run's targets"
+    },
+    {
+      "ruleId": "NSC-CRYPT-002",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "evidence collection needs an operator/agent; see the case's agent prompt"
+    },
+    {
+      "ruleId": "NSC-CRYPT-003",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "not exercised by this run's targets"
+    },
+    {
+      "ruleId": "NSC-CRYPT-004",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "evidence collection needs an operator/agent; see the case's agent prompt"
+    },
+    {
+      "ruleId": "NSC-CRYPT-005",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "source-code finding; use a SAST tool / DevSift"
+    },
+    {
+      "ruleId": "NSC-CRYPT-006",
+      "status": "FAIL",
+      "targets": 5
+    },
+    {
+      "ruleId": "NSC-AC-001",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "evidence collection needs an operator/agent; see the case's agent prompt"
+    },
+    {
+      "ruleId": "NSC-AC-002",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "deterministic check planned for M2"
+    },
+    {
+      "ruleId": "NSC-AC-003",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "deterministic check planned for M2"
+    },
+    {
+      "ruleId": "NSC-AC-004",
+      "status": "PASS",
+      "targets": 5
+    },
+    {
+      "ruleId": "NSC-AC-005",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "requires active payloads; never automated without active-approved authorization"
+    },
+    {
+      "ruleId": "NSC-AC-006",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "deterministic check planned for M2"
+    },
+    {
+      "ruleId": "NSC-AUTH-001",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "source-code finding; use a SAST tool / DevSift"
+    },
+    {
+      "ruleId": "NSC-AUTH-002",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "deterministic check planned for M2"
+    },
+    {
+      "ruleId": "NSC-INJ-001",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "requires active payloads; never automated without active-approved authorization"
+    },
+    {
+      "ruleId": "NSC-INJ-002",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "requires active payloads; never automated without active-approved authorization"
+    },
+    {
+      "ruleId": "NSC-INJ-003",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "requires active payloads; never automated without active-approved authorization"
+    },
+    {
+      "ruleId": "NSC-INJ-004",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "deterministic check planned for M2"
+    },
+    {
+      "ruleId": "NSC-INJ-005",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "source-code finding; use a SAST tool / DevSift"
+    },
+    {
+      "ruleId": "NSC-INJ-006",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "requires active payloads; never automated without active-approved authorization"
+    },
+    {
+      "ruleId": "NSC-SUPPLY-001",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "evidence collection needs an operator/agent; see the case's agent prompt"
+    },
+    {
+      "ruleId": "NSC-LOG-001",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "evidence collection needs an operator/agent; see the case's agent prompt"
+    },
+    {
+      "ruleId": "NSC-BIZ-001",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "deterministic check planned for M2"
+    },
+    {
+      "ruleId": "NSC-INFRA-001",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "network/host VA item outside web scope"
+    },
+    {
+      "ruleId": "NSC-INFRA-002",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "network/host VA item outside web scope"
+    },
+    {
+      "ruleId": "NSC-INFRA-003",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "network/host VA item outside web scope"
+    },
+    {
+      "ruleId": "NSC-INFRA-004",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "network/host VA item outside web scope"
+    },
+    {
+      "ruleId": "NSC-INFRA-005",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "network/host VA item outside web scope"
+    },
+    {
+      "ruleId": "NSC-INFRA-006",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "network/host VA item outside web scope"
+    },
+    {
+      "ruleId": "NSC-INFRA-007",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "network/host VA item outside web scope"
+    },
+    {
+      "ruleId": "NSC-INFO-005",
+      "status": "NOT_TESTED",
+      "targets": 0,
+      "reason": "evidence collection needs an operator/agent; see the case's agent prompt"
+    }
+  ],
+  "budget": {
+    "requestsUsed": 15,
+    "requestsMax": 100,
+    "deniedBeforeExecution": 1
+  },
+  "denials": [
+    {
+      "url": "http://evil.example/steal",
+      "method": "GET",
+      "reason": "redirect not followed: origin http://evil.example is not in targets.origins"
+    }
+  ]
+}

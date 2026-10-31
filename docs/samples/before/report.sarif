@@ -1,0 +1,1214 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "NavSentry",
+          "version": "0.1.0",
+          "informationUri": "https://github.com/cognivex006/navsentry",
+          "rules": [
+            {
+              "id": "NSC-PRIV-001",
+              "name": "NationalIDpersonalidentifierdisclosure",
+              "shortDescription": {
+                "text": "National ID / personal identifier disclosure"
+              },
+              "fullDescription": {
+                "text": "API or page responses contain 13-digit values that pass the Thai national ID checksum (or card numbers passing Luhn), exposing PII regulated by PDPA."
+              },
+              "help": {
+                "text": "Remove or mask the field in the response DTO for unentitled callers; enforce field-level authorization server-side."
+              },
+              "properties": {
+                "tags": [
+                  "CWE-359",
+                  "CWE-200",
+                  "A01:2025 Broken Access Control",
+                  "A04:2025 Cryptographic Failures"
+                ],
+                "category": "PRIV",
+                "priority": "IMMEDIATE"
+              }
+            },
+            {
+              "id": "NSC-AC-004",
+              "name": "PermissiveCORSpolicy",
+              "shortDescription": {
+                "text": "Permissive CORS policy"
+              },
+              "fullDescription": {
+                "text": "The server reflects an arbitrary Origin (or 'null') in Access-Control-Allow-Origin, especially together with Access-Control-Allow-Credentials: true."
+              },
+              "help": {
+                "text": "Replace origin reflection with an exact-match allowlist; never combine credentials with '*' or 'null'."
+              },
+              "properties": {
+                "tags": [
+                  "CWE-942",
+                  "CWE-346",
+                  "A01:2025 Broken Access Control",
+                  "A02:2025 Security Misconfiguration"
+                ],
+                "category": "AC",
+                "priority": "CAUTION"
+              }
+            },
+            {
+              "id": "NSC-CONF-002",
+              "name": "ContentSecurityPolicymissingorunsafe",
+              "shortDescription": {
+                "text": "Content Security Policy missing or unsafe"
+              },
+              "fullDescription": {
+                "text": "HTML responses have no enforcing Content-Security-Policy, or the policy allows 'unsafe-inline'/'unsafe-eval' scripts or wildcard script sources, so injected script is not contained."
+              },
+              "help": {
+                "text": "Deploy Content-Security-Policy-Report-Only first, collect violations from real traffic, refactor inline scripts to nonces/hashes, then switch to the enforcing header."
+              },
+              "properties": {
+                "tags": [
+                  "CWE-693",
+                  "CWE-1021",
+                  "A02:2025 Security Misconfiguration",
+                  "A05:2025 Injection"
+                ],
+                "category": "CONF",
+                "priority": "CAUTION"
+              }
+            },
+            {
+              "id": "NSC-CRYPT-006",
+              "name": "CleartextHTTPservedwithoutredirecttoHTTPS",
+              "shortDescription": {
+                "text": "Cleartext HTTP served without redirect to HTTPS"
+              },
+              "fullDescription": {
+                "text": "An in-scope http:// origin serves application content instead of redirecting to HTTPS."
+              },
+              "help": {
+                "text": "Redirect all HTTP to HTTPS at the edge; for internal service ports, enable TLS or restrict them to the internal network."
+              },
+              "properties": {
+                "tags": [
+                  "CWE-319",
+                  "A04:2025 Cryptographic Failures"
+                ],
+                "category": "CRYPT",
+                "priority": "IMMEDIATE"
+              }
+            },
+            {
+              "id": "NSC-ERR-001",
+              "name": "Verboseerrorstacktraceorunhandledexceptionexposed",
+              "shortDescription": {
+                "text": "Verbose error, stack trace or unhandled exception exposed"
+              },
+              "fullDescription": {
+                "text": "Error responses include stack traces, exception class names, SQL/ORM messages or framework error pages, leaking internals and indicating failing-open error handling."
+              },
+              "help": {
+                "text": "Add a global exception handler that logs details server-side and returns a standard error envelope (e.g. RFC 9457 problem+json) without internals; disable framework detailed errors in non-dev environments."
+              },
+              "properties": {
+                "tags": [
+                  "CWE-209",
+                  "CWE-248",
+                  "CWE-550",
+                  "A10:2025 Mishandling of Exceptional Conditions",
+                  "A02:2025 Security Misconfiguration"
+                ],
+                "category": "ERR",
+                "priority": "IMMEDIATE"
+              }
+            },
+            {
+              "id": "NSC-SESS-004",
+              "name": "JWTmissingprotectionclaimsorweakalgorithm",
+              "shortDescription": {
+                "text": "JWT missing protection claims or weak algorithm"
+              },
+              "fullDescription": {
+                "text": "Observed JWTs use alg 'none', omit exp, or lack audience/issuer binding, so tokens live forever or can be replayed to other services."
+              },
+              "help": {
+                "text": "Issue tokens with exp/iat/aud/iss; validate them on every API; reject alg none and unexpected algorithms."
+              },
+              "properties": {
+                "tags": [
+                  "CWE-347",
+                  "CWE-613",
+                  "A07:2025 Authentication Failures",
+                  "A04:2025 Cryptographic Failures"
+                ],
+                "category": "SESS",
+                "priority": "PLANNED"
+              }
+            },
+            {
+              "id": "NSC-CONF-003",
+              "name": "Clickjackingprotectionmissing",
+              "shortDescription": {
+                "text": "Clickjacking protection missing"
+              },
+              "fullDescription": {
+                "text": "HTML responses can be framed by any origin: neither CSP frame-ancestors nor X-Frame-Options is set."
+              },
+              "help": {
+                "text": "Send `Content-Security-Policy: frame-ancestors 'self' <approved-parents>` plus `X-Frame-Options: SAMEORIGIN` for legacy browsers."
+              },
+              "properties": {
+                "tags": [
+                  "CWE-1021",
+                  "A02:2025 Security Misconfiguration"
+                ],
+                "category": "CONF",
+                "priority": "CAUTION"
+              }
+            },
+            {
+              "id": "NSC-CONF-004",
+              "name": "MIMEsniffingnotdisabledinsecureContentType",
+              "shortDescription": {
+                "text": "MIME sniffing not disabled / insecure Content-Type"
+              },
+              "fullDescription": {
+                "text": "Responses with a body lack `X-Content-Type-Options: nosniff`, or omit Content-Type / charset, letting browsers guess the type."
+              },
+              "help": {
+                "text": "Add `X-Content-Type-Options: nosniff` globally and make every handler set an accurate Content-Type (with charset for text)."
+              },
+              "properties": {
+                "tags": [
+                  "CWE-16",
+                  "CWE-430",
+                  "A02:2025 Security Misconfiguration"
+                ],
+                "category": "CONF",
+                "priority": "PLANNED"
+              }
+            },
+            {
+              "id": "NSC-CONF-006",
+              "name": "UnnecessaryHTTPmethodsormethodoverrideenabled",
+              "shortDescription": {
+                "text": "Unnecessary HTTP methods or method override enabled"
+              },
+              "fullDescription": {
+                "text": "The server advertises (Allow / Access-Control-Allow-Methods) methods such as TRACE, TRACK, PUT or DELETE on resources that do not need them, or honours X-HTTP-Method-Override."
+              },
+              "help": {
+                "text": "Restrict methods per route at the web server/framework; disable TRACE; remove method-override middleware unless strictly required."
+              },
+              "properties": {
+                "tags": [
+                  "CWE-650",
+                  "CWE-16",
+                  "A02:2025 Security Misconfiguration"
+                ],
+                "category": "CONF",
+                "priority": "PLANNED"
+              }
+            },
+            {
+              "id": "NSC-CONF-007",
+              "name": "Insecurecachepolicyforsensitiveresponses",
+              "shortDescription": {
+                "text": "Insecure cache policy for sensitive responses"
+              },
+              "fullDescription": {
+                "text": "Authenticated or personal API/document responses are cacheable (no `Cache-Control: no-store`/`private`), so shared caches or the browser can retain them."
+              },
+              "help": {
+                "text": "Add no-store on authenticated/sensitive routes (middleware by route group); keep long caching only for fingerprinted static assets."
+              },
+              "properties": {
+                "tags": [
+                  "CWE-524",
+                  "CWE-525",
+                  "A06:2025 Insecure Design",
+                  "A02:2025 Security Misconfiguration"
+                ],
+                "category": "CONF",
+                "priority": "PLANNED"
+              }
+            },
+            {
+              "id": "NSC-INFO-001",
+              "name": "Serverframeworkversiondisclosure",
+              "shortDescription": {
+                "text": "Server / framework version disclosure"
+              },
+              "fullDescription": {
+                "text": "Headers (Server, X-Powered-By, X-AspNet-Version, X-AspNetMvc-Version) or error pages reveal product versions, helping attackers pick exploits."
+              },
+              "help": {
+                "text": "Remove/blank version headers at the server/proxy (e.g. server_tokens off, removeServerHeader, enableVersionHeader=false) and use custom error pages."
+              },
+              "properties": {
+                "tags": [
+                  "CWE-200",
+                  "CWE-497",
+                  "A02:2025 Security Misconfiguration"
+                ],
+                "category": "INFO",
+                "priority": "PLANNED"
+              }
+            },
+            {
+              "id": "NSC-INFO-003",
+              "name": "InternalIPaddressdisclosure",
+              "shortDescription": {
+                "text": "Internal IP address disclosure"
+              },
+              "fullDescription": {
+                "text": "Response headers or bodies contain RFC 1918 / loopback / link-local addresses, revealing internal topology."
+              },
+              "help": {
+                "text": "Stop echoing upstream addresses (Via, X-Backend-Server, error messages, config endpoints); configure the proxy to strip them."
+              },
+              "properties": {
+                "tags": [
+                  "CWE-200",
+                  "A02:2025 Security Misconfiguration"
+                ],
+                "category": "INFO",
+                "priority": "PLANNED"
+              }
+            },
+            {
+              "id": "NSC-SESS-002",
+              "name": "CookiewithoutHttpOnlyflag",
+              "shortDescription": {
+                "text": "Cookie without HttpOnly flag"
+              },
+              "fullDescription": {
+                "text": "Session-like cookies are readable by JavaScript (no HttpOnly), so any XSS can steal them."
+              },
+              "help": {
+                "text": "Enable HttpOnly for session/auth cookies in the framework configuration."
+              },
+              "properties": {
+                "tags": [
+                  "CWE-1004",
+                  "A02:2025 Security Misconfiguration",
+                  "A07:2025 Authentication Failures"
+                ],
+                "category": "SESS",
+                "priority": "CAUTION"
+              }
+            },
+            {
+              "id": "NSC-SESS-003",
+              "name": "CookieSameSitemissingorcontradictory",
+              "shortDescription": {
+                "text": "Cookie SameSite missing or contradictory"
+              },
+              "fullDescription": {
+                "text": "Cookies omit SameSite, or set SameSite=None without Secure (rejected by modern browsers), weakening CSRF defences."
+              },
+              "help": {
+                "text": "Set SameSite=Lax by default; use None; Secure only for cookies that must travel cross-site (SSO, embedded apps)."
+              },
+              "properties": {
+                "tags": [
+                  "CWE-1275",
+                  "CWE-352",
+                  "A01:2025 Broken Access Control",
+                  "A02:2025 Security Misconfiguration"
+                ],
+                "category": "SESS",
+                "priority": "CAUTION"
+              }
+            },
+            {
+              "id": "NSC-INFO-004",
+              "name": "Emailaddressdisclosure",
+              "shortDescription": {
+                "text": "Email address disclosure"
+              },
+              "fullDescription": {
+                "text": "Responses expose email addresses (often staff/developer addresses in config or API payloads) that enable phishing and enumeration."
+              },
+              "help": {
+                "text": "Remove addresses from config/diagnostic endpoints; return them only to authorized users who need them."
+              },
+              "properties": {
+                "tags": [
+                  "CWE-200",
+                  "CWE-359",
+                  "A01:2025 Broken Access Control"
+                ],
+                "category": "INFO",
+                "priority": "PLANNED"
+              }
+            }
+          ]
+        }
+      },
+      "automationDetails": {
+        "id": "navsentry/demo-before/46eabb5a-2c3f-4099-81d1-d3eccd997b1e"
+      },
+      "invocations": [
+        {
+          "executionSuccessful": true,
+          "startTimeUtc": "2026-10-31T06:06:18.988Z",
+          "endTimeUtc": "2026-10-31T06:06:20.338Z"
+        }
+      ],
+      "results": [
+        {
+          "ruleId": "NSC-PRIV-001",
+          "ruleIndex": 0,
+          "level": "error",
+          "message": {
+            "text": "National ID / personal identifier disclosure: Checksum-valid personal identifiers in response"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/profile"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "f41e08127666743eabc5170c"
+          },
+          "properties": {
+            "lifecycle": "SUSPECTED",
+            "confidence": "medium",
+            "severity": "high"
+          }
+        },
+        {
+          "ruleId": "NSC-AC-004",
+          "ruleIndex": 1,
+          "level": "warning",
+          "message": {
+            "text": "Permissive CORS policy: Untrusted Origin reflected WITH credentials"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "1165ff5cd1b67e24ef43e674"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
+          "ruleId": "NSC-AC-004",
+          "ruleIndex": 1,
+          "level": "warning",
+          "message": {
+            "text": "Permissive CORS policy: Untrusted Origin reflected WITH credentials"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/profile"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "a85dcc5898250cee68ce9f5c"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
+          "ruleId": "NSC-AC-004",
+          "ruleIndex": 1,
+          "level": "warning",
+          "message": {
+            "text": "Permissive CORS policy: Untrusted Origin reflected WITH credentials"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/error"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "3c425a79d30a4412cf0aef98"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
+          "ruleId": "NSC-AC-004",
+          "ruleIndex": 1,
+          "level": "warning",
+          "message": {
+            "text": "Permissive CORS policy: Untrusted Origin reflected WITH credentials"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/token"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "bdbf0331bd0333d584e46a9f"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
+          "ruleId": "NSC-AC-004",
+          "ruleIndex": 1,
+          "level": "warning",
+          "message": {
+            "text": "Permissive CORS policy: Untrusted Origin reflected WITH credentials"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/go-out"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "8cc7d85071e0e64554baa4e1"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
+          "ruleId": "NSC-CONF-002",
+          "ruleIndex": 2,
+          "level": "warning",
+          "message": {
+            "text": "Content Security Policy missing or unsafe: Content-Security-Policy header missing"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "22fb68e2405cb97eec3d9987"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
+          "ruleId": "NSC-CRYPT-006",
+          "ruleIndex": 3,
+          "level": "warning",
+          "message": {
+            "text": "Cleartext HTTP served without redirect to HTTPS: Plain HTTP serves content (HTTP 200) without HTTPS redirect"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "32ef940ba82b43d1703edd81"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
+          "ruleId": "NSC-CRYPT-006",
+          "ruleIndex": 3,
+          "level": "warning",
+          "message": {
+            "text": "Cleartext HTTP served without redirect to HTTPS: Plain HTTP serves content (HTTP 200) without HTTPS redirect"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/profile"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "60cd89eec0834c6173a1ca52"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
+          "ruleId": "NSC-CRYPT-006",
+          "ruleIndex": 3,
+          "level": "warning",
+          "message": {
+            "text": "Cleartext HTTP served without redirect to HTTPS: Plain HTTP serves content (HTTP 500) without HTTPS redirect"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/error"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "ffd914e5cdf3c67a36d0007d"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
+          "ruleId": "NSC-CRYPT-006",
+          "ruleIndex": 3,
+          "level": "warning",
+          "message": {
+            "text": "Cleartext HTTP served without redirect to HTTPS: Plain HTTP serves content (HTTP 200) without HTTPS redirect"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/token"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "54c1aea904006f550b35a853"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
+          "ruleId": "NSC-CRYPT-006",
+          "ruleIndex": 3,
+          "level": "warning",
+          "message": {
+            "text": "Cleartext HTTP served without redirect to HTTPS: Plain HTTP serves content (HTTP 302) without HTTPS redirect"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/go-out"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "05f978ecba4b2322dfa90ab1"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
+          "ruleId": "NSC-ERR-001",
+          "ruleIndex": 4,
+          "level": "warning",
+          "message": {
+            "text": "Verbose error, stack trace or unhandled exception exposed: Internal error details exposed (HTTP 500)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/error"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "678b4c40706a4b10d28bed40"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
+          "ruleId": "NSC-SESS-004",
+          "ruleIndex": 5,
+          "level": "warning",
+          "message": {
+            "text": "JWT missing protection claims or weak algorithm: JWT missing protection claims or weak alg"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/token"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "f5515664499e6e3369c2e269"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
+          "ruleId": "NSC-CONF-003",
+          "ruleIndex": 6,
+          "level": "note",
+          "message": {
+            "text": "Clickjacking protection missing: No frame-ancestors or valid X-Frame-Options"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "e8e83ba35b2ee4153cc31db5"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-CONF-004",
+          "ruleIndex": 7,
+          "level": "note",
+          "message": {
+            "text": "MIME sniffing not disabled / insecure Content-Type: text response without charset; X-Content-Type-Options: nosniff missing"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "524856164cab65da7f0ca455"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-CONF-004",
+          "ruleIndex": 7,
+          "level": "note",
+          "message": {
+            "text": "MIME sniffing not disabled / insecure Content-Type: X-Content-Type-Options: nosniff missing"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/profile"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "aef9e8a5b6b1e659dadc2fa1"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-CONF-004",
+          "ruleIndex": 7,
+          "level": "note",
+          "message": {
+            "text": "MIME sniffing not disabled / insecure Content-Type: X-Content-Type-Options: nosniff missing"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/error"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "a2f6a8f688dc2ea498a0a7a9"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-CONF-004",
+          "ruleIndex": 7,
+          "level": "note",
+          "message": {
+            "text": "MIME sniffing not disabled / insecure Content-Type: X-Content-Type-Options: nosniff missing"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/token"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "81e4f06fbc3ebd6e19ad70a2"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-CONF-006",
+          "ruleIndex": 8,
+          "level": "note",
+          "message": {
+            "text": "Unnecessary HTTP methods or method override enabled: Dangerous methods advertised: TRACE"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "2c67c0722e7817b6d2c8bf9d"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-CONF-006",
+          "ruleIndex": 8,
+          "level": "note",
+          "message": {
+            "text": "Unnecessary HTTP methods or method override enabled: Dangerous methods advertised: TRACE"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/profile"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "2c2f89f8d79380769fbb925a"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-CONF-006",
+          "ruleIndex": 8,
+          "level": "note",
+          "message": {
+            "text": "Unnecessary HTTP methods or method override enabled: Dangerous methods advertised: TRACE"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/error"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "c7c1849474ca4043dcd3c780"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-CONF-006",
+          "ruleIndex": 8,
+          "level": "note",
+          "message": {
+            "text": "Unnecessary HTTP methods or method override enabled: Dangerous methods advertised: TRACE"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/token"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "82249f07a283138dc5d24c22"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-CONF-006",
+          "ruleIndex": 8,
+          "level": "note",
+          "message": {
+            "text": "Unnecessary HTTP methods or method override enabled: Dangerous methods advertised: TRACE"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/go-out"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "5937abdc7d03f39d27e36260"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-CONF-007",
+          "ruleIndex": 9,
+          "level": "note",
+          "message": {
+            "text": "Insecure cache policy for sensitive responses: Sensitive response is cacheable"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "78cfb26ba86a9c964485e562"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-INFO-001",
+          "ruleIndex": 10,
+          "level": "note",
+          "message": {
+            "text": "Server / framework version disclosure: Product version disclosed"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "65014b06eef67557fa1224fa"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-INFO-001",
+          "ruleIndex": 10,
+          "level": "note",
+          "message": {
+            "text": "Server / framework version disclosure: Product version disclosed"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/profile"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "96c85dadbfe772b1946bb878"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-INFO-001",
+          "ruleIndex": 10,
+          "level": "note",
+          "message": {
+            "text": "Server / framework version disclosure: Product version disclosed"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/error"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "81615fe0efd01296eabb4b0e"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-INFO-001",
+          "ruleIndex": 10,
+          "level": "note",
+          "message": {
+            "text": "Server / framework version disclosure: Product version disclosed"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/token"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "567f8480c5da9b5ed13762ea"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-INFO-001",
+          "ruleIndex": 10,
+          "level": "note",
+          "message": {
+            "text": "Server / framework version disclosure: Product version disclosed"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/go-out"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "40d2944d5782beb316fdf3df"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-INFO-003",
+          "ruleIndex": 11,
+          "level": "note",
+          "message": {
+            "text": "Internal IP address disclosure: Private IP address literals disclosed"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/profile"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "3cb08c2e2fd70219f7d3f68a"
+          },
+          "properties": {
+            "lifecycle": "SUSPECTED",
+            "confidence": "medium",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-SESS-002",
+          "ruleIndex": 12,
+          "level": "note",
+          "message": {
+            "text": "Cookie without HttpOnly flag: Session-like cookie(s) readable by JavaScript"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "61ec1e54ebcfb120565cf348"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-SESS-003",
+          "ruleIndex": 13,
+          "level": "note",
+          "message": {
+            "text": "Cookie SameSite missing or contradictory: SameSite missing or contradictory"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "3ef098d4f9d97c697a600f59"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-INFO-004",
+          "ruleIndex": 14,
+          "level": "note",
+          "message": {
+            "text": "Email address disclosure: 1 email address(es) in response"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/profile"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "8d3f0ad3b969625397e56ce9"
+          },
+          "properties": {
+            "lifecycle": "SUSPECTED",
+            "confidence": "medium",
+            "severity": "info"
+          }
+        }
+      ]
+    }
+  ]
+}

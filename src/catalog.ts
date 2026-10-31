@@ -1,0 +1,736 @@
+/**
+ * NavSentry Case Catalog — the single source of truth for case IDs, taxonomy, mappings,
+ * remediation priority and verification criteria. docs/cases/CASE-CATALOG.md and
+ * docs/ISSUE-CVE-MATRIX.md are GENERATED from this file (npm run docs:catalog).
+ *
+ * ID scheme: NSC-<CATEGORY>-<NNN>. IDs are permanent; never renumber or reuse. Retired cases
+ * keep their ID with `retired: true`.
+ *
+ * Source references are anonymized (SRC-A..SRC-F, see SOURCES). No customer names, hosts,
+ * IP addresses or source paths may be added here — the repository is public.
+ */
+import type { Priority, Severity } from "./types.js";
+
+export type Automation =
+  | "auto" // implemented deterministic check in this release (observe mode)
+  | "planned-auto" // deterministic check scheduled (milestone in `milestone`)
+  | "assisted" // NavSentry collects evidence; human/agent confirms
+  | "manual-active" // needs active payloads: never automated without active-approved authorization
+  | "sast-only" // source-code finding; use a SAST tool / DevSift, runtime cannot confirm
+  | "infra"; // network/host VA item; outside NavSentry web scope
+
+export interface SourceRef {
+  src: string;
+  /** Number of instances reported by that source. */
+  count: number;
+  /** Original finding label (tool vocabulary), kept generic. */
+  label: string;
+  severity: string;
+  /** Status recorded by the source report, if any (Fixed / Exception / Waiting / Open). */
+  status?: string;
+}
+
+export interface CaseDef {
+  id: string;
+  category: CategoryCode;
+  titleEn: string;
+  titleTh: string;
+  severity: Severity;
+  priority: Priority;
+  automation: Automation;
+  milestone?: string;
+  owasp2021: string[];
+  owasp2025: string[];
+  cwe: string[];
+  wstg: string[];
+  asvs5Chapter: string[];
+  cve?: string[];
+  sources: SourceRef[];
+  /** What is factually wrong (generic). */
+  fact: string;
+  /** Evidence an agent must capture to confirm or refute. */
+  evidence: string[];
+  /** Testable acceptance criteria for "fixed". */
+  acceptance: string[];
+  /** Steps to re-verify on the real web page / endpoint after the fix. */
+  webRecheck: string[];
+  fix: string;
+  /** What must NOT change for legitimate callers, and how to prove it. */
+  regressionGuard: string;
+  /** Known false-positive patterns / caveats. */
+  caveats?: string[];
+}
+
+export const CATEGORIES = {
+  AC: "Access Control (authorization, CORS, SSRF, CSRF)",
+  AUTH: "Identification & Authentication",
+  SESS: "Session & Token Management",
+  CRYPT: "Cryptography & Transport Security",
+  INJ: "Injection",
+  CONF: "Security Misconfiguration & Hardening Headers",
+  INFO: "Information Disclosure",
+  PRIV: "Privacy & Sensitive Data Exposure",
+  ERR: "Exceptional Conditions & Error Handling",
+  SUPPLY: "Vulnerable Components & Supply Chain",
+  LOG: "Security Logging & Alerting",
+  BIZ: "Business Logic",
+  INFRA: "Network / Host Infrastructure (out of web scope)",
+} as const;
+export type CategoryCode = keyof typeof CATEGORIES;
+
+export const SOURCES: Record<string, string> = {
+  "SRC-A": "DAST report (commercial web scanner, ASP.NET web application, 2022) — 19 alerts",
+  "SRC-B": "SAST developer workbook (commercial SAST, Go backend, revision 1, 2023) — 515 issues",
+  "SRC-C": "SAST developer workbook (same Go backend, revision 3, 2023) — 513 issues",
+  "SRC-D": "SAST developer workbook (same Go backend, revision 4, 2023) — 51 issues",
+  "SRC-E": "Vulnerability assessment + web application assessment & remediation report (Thai, 2024) — 13 VA + 23 web categories",
+  "SRC-F": "OWASP Top 10:2021 explanatory note (Thai) — taxonomy reference only, no findings",
+};
+
+const T21 = {
+  A01: "A01:2021 Broken Access Control",
+  A02: "A02:2021 Cryptographic Failures",
+  A03: "A03:2021 Injection",
+  A04: "A04:2021 Insecure Design",
+  A05: "A05:2021 Security Misconfiguration",
+  A06: "A06:2021 Vulnerable and Outdated Components",
+  A07: "A07:2021 Identification and Authentication Failures",
+  A08: "A08:2021 Software and Data Integrity Failures",
+  A09: "A09:2021 Security Logging and Monitoring Failures",
+  A10: "A10:2021 Server-Side Request Forgery",
+};
+const T25 = {
+  A01: "A01:2025 Broken Access Control",
+  A02: "A02:2025 Security Misconfiguration",
+  A03: "A03:2025 Software Supply Chain Failures",
+  A04: "A04:2025 Cryptographic Failures",
+  A05: "A05:2025 Injection",
+  A06: "A06:2025 Insecure Design",
+  A07: "A07:2025 Authentication Failures",
+  A08: "A08:2025 Software or Data Integrity Failures",
+  A09: "A09:2025 Security Logging and Alerting Failures",
+  A10: "A10:2025 Mishandling of Exceptional Conditions",
+};
+const V5 = {
+  V1: "V1 Encoding and Sanitization",
+  V2: "V2 Validation and Business Logic",
+  V3: "V3 Web Frontend Security",
+  V4: "V4 API and Web Service",
+  V5: "V5 File Handling",
+  V6: "V6 Authentication",
+  V7: "V7 Session Management",
+  V8: "V8 Authorization",
+  V9: "V9 Self-contained Tokens",
+  V11: "V11 Cryptography",
+  V12: "V12 Secure Communication",
+  V13: "V13 Configuration",
+  V14: "V14 Data Protection",
+  V15: "V15 Secure Coding and Architecture",
+  V16: "V16 Security Logging and Error Handling",
+};
+
+const GUARD_HEADERS = "Run `navsentry compare` between the pre-fix and post-fix runs: every legitimate request must keep the same status, content type, non-security header set and JSON shape; only security headers may differ.";
+
+export const CASES: CaseDef[] = [
+  // ───────────────────────── CONF ─────────────────────────
+  {
+    id: "NSC-CONF-001", category: "CONF", titleEn: "HSTS missing or weak", titleTh: "ไม่ได้ตั้ง HSTS หรือตั้งค่าอ่อน",
+    severity: "medium", priority: "CAUTION", automation: "auto",
+    owasp2021: [T21.A05, T21.A02], owasp2025: [T25.A02, T25.A04], cwe: ["CWE-319", "CWE-523"], wstg: ["WSTG-CONF-07"], asvs5Chapter: [V5.V3, V5.V12],
+    sources: [{ src: "SRC-A", count: 1, label: "HTTP Strict Transport Security (HSTS) not implemented", severity: "medium" }, { src: "SRC-E", count: 1, label: "Insecure Transport: HSTS not Set", severity: "medium", status: "Fixed" }],
+    fact: "HTTPS responses do not carry Strict-Transport-Security, or max-age < 15552000 (180 days), so a first visit or downgraded link can be intercepted over HTTP.",
+    evidence: ["Redacted response headers of an HTTPS document response", "Parsed max-age / includeSubDomains values"],
+    acceptance: ["Every HTTPS document/API response in scope returns Strict-Transport-Security", "max-age >= 15552000", "Header is not sent on plain-HTTP responses (it is ignored there)"],
+    webRecheck: ["Open the page in a browser, DevTools > Network > select the document > Response Headers: Strict-Transport-Security present", "Re-run `navsentry test` → NSC-CONF-001 PASS"],
+    fix: "Set HSTS at the TLS-terminating layer (reverse proxy / load balancer / web server). Roll out with a short max-age (e.g. 300) first, then raise to >= 180 days. Add includeSubDomains/preload only after confirming every subdomain serves HTTPS.",
+    regressionGuard: `Adding includeSubDomains can make HTTP-only subdomains unreachable for browsers that cached the policy. Inventory subdomains first. ${GUARD_HEADERS}`,
+  },
+  {
+    id: "NSC-CONF-002", category: "CONF", titleEn: "Content Security Policy missing or unsafe", titleTh: "ไม่มี CSP หรือ CSP ไม่ปลอดภัย",
+    severity: "medium", priority: "CAUTION", automation: "auto",
+    owasp2021: [T21.A05, T21.A03], owasp2025: [T25.A02, T25.A05], cwe: ["CWE-693", "CWE-1021"], wstg: ["WSTG-CONF-12"], asvs5Chapter: [V5.V3],
+    sources: [{ src: "SRC-A", count: 1, label: "Content Security Policy (CSP) not implemented", severity: "low" }],
+    fact: "HTML responses have no enforcing Content-Security-Policy, or the policy allows 'unsafe-inline'/'unsafe-eval' scripts or wildcard script sources, so injected script is not contained.",
+    evidence: ["Redacted Content-Security-Policy / -Report-Only header values on HTML responses", "List of unsafe directives found"],
+    acceptance: ["Every HTML response has an enforcing Content-Security-Policy", "script-src (or default-src) contains no 'unsafe-inline' without nonce/hash, no 'unsafe-eval', no '*'", "object-src 'none' and base-uri restricted"],
+    webRecheck: ["Load each main page with DevTools Console open: no CSP violation errors for legitimate functionality", "Exercise main user flows (login, search, forms, maps) and confirm they still work", "Re-run `navsentry test` → NSC-CONF-002 PASS"],
+    fix: "Deploy Content-Security-Policy-Report-Only first, collect violations from real traffic, refactor inline scripts to nonces/hashes, then switch to the enforcing header.",
+    regressionGuard: `An enforcing CSP that is too strict silently breaks scripts, maps, analytics and third-party widgets. Always ship Report-Only first and test every critical page in a real browser. ${GUARD_HEADERS}`,
+  },
+  {
+    id: "NSC-CONF-003", category: "CONF", titleEn: "Clickjacking protection missing", titleTh: "ไม่มีการป้องกัน Clickjacking (frame-ancestors / X-Frame-Options)",
+    severity: "low", priority: "CAUTION", automation: "auto",
+    owasp2021: [T21.A05], owasp2025: [T25.A02], cwe: ["CWE-1021"], wstg: ["WSTG-CLNT-09"], asvs5Chapter: [V5.V3],
+    sources: [{ src: "SRC-A", count: 1, label: "Clickjacking-related classification (CWE-1021)", severity: "low" }],
+    fact: "HTML responses can be framed by any origin: neither CSP frame-ancestors nor X-Frame-Options is set.",
+    evidence: ["Redacted X-Frame-Options and CSP frame-ancestors values for HTML responses"],
+    acceptance: ["HTML responses send CSP frame-ancestors 'self' (or an explicit allowlist) and/or X-Frame-Options DENY|SAMEORIGIN"],
+    webRecheck: ["From a different local origin, embed the page in an <iframe>: the browser refuses to render it", "Pages that are legitimately embedded (e.g. portal widgets) still render inside their approved parent"],
+    fix: "Send `Content-Security-Policy: frame-ancestors 'self' <approved-parents>` plus `X-Frame-Options: SAMEORIGIN` for legacy browsers.",
+    regressionGuard: `Inventory legitimate embedding (portals, SSO, map widgets) before choosing DENY. ${GUARD_HEADERS}`,
+  },
+  {
+    id: "NSC-CONF-004", category: "CONF", titleEn: "MIME sniffing not disabled / insecure Content-Type", titleTh: "ไม่ได้ปิด MIME sniffing หรือ Content-Type ไม่ถูกต้อง",
+    severity: "low", priority: "PLANNED", automation: "auto",
+    owasp2021: [T21.A05], owasp2025: [T25.A02], cwe: ["CWE-16", "CWE-430"], wstg: ["WSTG-CONF-12"], asvs5Chapter: [V5.V3, V5.V4],
+    sources: [{ src: "SRC-E", count: 1, label: "Web Server Misconfiguration: Insecure Content-Type Setting", severity: "low", status: "Fixed" }],
+    fact: "Responses with a body lack `X-Content-Type-Options: nosniff`, or omit Content-Type / charset, letting browsers guess the type.",
+    evidence: ["Redacted Content-Type and X-Content-Type-Options of each response with a body"],
+    acceptance: ["Every response with a body has an explicit Content-Type", "X-Content-Type-Options: nosniff on every response", "text/html responses declare a charset"],
+    webRecheck: ["DevTools > Network: each document, script and JSON response shows Content-Type and nosniff", "Re-run → NSC-CONF-004 PASS"],
+    fix: "Add `X-Content-Type-Options: nosniff` globally and make every handler set an accurate Content-Type (with charset for text).",
+    regressionGuard: `nosniff blocks scripts/styles served with a wrong type: fix wrong Content-Type on static files first. ${GUARD_HEADERS}`,
+  },
+  {
+    id: "NSC-CONF-005", category: "CONF", titleEn: "Debug mode / development features enabled", titleTh: "เปิดโหมด Debug หรือฟีเจอร์สำหรับนักพัฒนาไว้บน environment จริง",
+    severity: "medium", priority: "IMMEDIATE", automation: "assisted",
+    owasp2021: [T21.A05], owasp2025: [T25.A02], cwe: ["CWE-11", "CWE-489"], wstg: ["WSTG-CONF-02"], asvs5Chapter: [V5.V13],
+    sources: [{ src: "SRC-A", count: 1, label: "ASP.NET debugging enabled", severity: "medium" }],
+    fact: "The application runs with debug compilation/developer features enabled, which exposes diagnostics and can weaken performance and security.",
+    evidence: ["Indicator observed (e.g. developer error page, debug toolbar, framework debug response) — redacted", "Deployment configuration value (owner-provided, not guessed)"],
+    acceptance: ["Production/staging configuration has debug disabled (e.g. compilation debug=false, ASPNETCORE_ENVIRONMENT=Production, DEBUG=false)", "No developer error page or debug endpoint is reachable"],
+    webRecheck: ["Trigger a harmless 404 on a random path: generic error page only", "Owner confirms deployed config value"],
+    fix: "Disable debug in the deployment configuration and build pipeline; ship release builds only.",
+    regressionGuard: "Release builds may change timing/caching; run the functional smoke suite and `navsentry compare` afterwards.",
+    caveats: ["Active verbs such as DEBUG are not sent by NavSentry in observe mode; detection relies on passive indicators and owner config."],
+  },
+  {
+    id: "NSC-CONF-006", category: "CONF", titleEn: "Unnecessary HTTP methods or method override enabled", titleTh: "เปิด HTTP Method ที่ไม่จำเป็น (OPTIONS/TRACE) หรือรองรับ Method Override",
+    severity: "low", priority: "PLANNED", automation: "auto",
+    owasp2021: [T21.A05], owasp2025: [T25.A02], cwe: ["CWE-650", "CWE-16"], wstg: ["WSTG-CONF-06"], asvs5Chapter: [V5.V13, V5.V4],
+    sources: [{ src: "SRC-E", count: 1, label: "http-options-method-enabled (VA)", severity: "severe", status: "Exception" }, { src: "SRC-E", count: 1, label: "Often Misused: HTTP Method Override", severity: "medium", status: "Fixed" }],
+    fact: "The server advertises (Allow / Access-Control-Allow-Methods) methods such as TRACE, TRACK, PUT or DELETE on resources that do not need them, or honours X-HTTP-Method-Override.",
+    evidence: ["Redacted OPTIONS response: status, Allow, Access-Control-Allow-Methods"],
+    acceptance: ["OPTIONS on in-scope resources does not advertise TRACE/TRACK/CONNECT", "Only methods actually used by the resource are advertised", "Method-override headers are ignored (verified manually under safe-validate)"],
+    webRecheck: ["Send OPTIONS to the resource (NavSentry or curl -X OPTIONS -i) and inspect Allow", "Re-run → NSC-CONF-006 PASS"],
+    fix: "Restrict methods per route at the web server/framework; disable TRACE; remove method-override middleware unless strictly required.",
+    regressionGuard: "CORS preflight legitimately needs OPTIONS: do not block OPTIONS globally, only restrict what it advertises. Keep the methods real clients use.",
+    caveats: ["OPTIONS itself being enabled is normal for CORS; SRC-E recorded it as an accepted Exception. NavSentry fails only on dangerous advertised methods."],
+  },
+  {
+    id: "NSC-CONF-007", category: "CONF", titleEn: "Insecure cache policy for sensitive responses", titleTh: "นโยบาย Cache ไม่ปลอดภัยสำหรับข้อมูลอ่อนไหว",
+    severity: "low", priority: "PLANNED", automation: "auto",
+    owasp2021: [T21.A04, T21.A05], owasp2025: [T25.A06, T25.A02], cwe: ["CWE-524", "CWE-525"], wstg: ["WSTG-ATHN-06"], asvs5Chapter: [V5.V14],
+    sources: [{ src: "SRC-E", count: 1, label: "Cache Management: Insecure Policy", severity: "low", status: "Fixed" }],
+    fact: "Authenticated or personal API/document responses are cacheable (no `Cache-Control: no-store`/`private`), so shared caches or the browser can retain them.",
+    evidence: ["Redacted Cache-Control/Pragma of responses that carry Set-Cookie, Authorization-bound data or JSON from authenticated actors"],
+    acceptance: ["Responses served to authenticated actors or setting session cookies send `Cache-Control: no-store` (or `private, no-cache` where justified)", "Static public assets may stay cacheable"],
+    webRecheck: ["DevTools > Network: authenticated API responses show no-store", "Log out, press Back: sensitive pages are not shown from cache"],
+    fix: "Add no-store on authenticated/sensitive routes (middleware by route group); keep long caching only for fingerprinted static assets.",
+    regressionGuard: "Do not apply no-store to static assets (performance regression). Scope the header by route. Verify with `navsentry compare` and page-load timing.",
+  },
+  {
+    id: "NSC-CONF-008", category: "CONF", titleEn: "HTTP request smuggling / desync", titleTh: "HTTP Request Smuggling (front-end/back-end ตีความคำขอไม่ตรงกัน)",
+    severity: "critical", priority: "IMMEDIATE", automation: "manual-active",
+    owasp2021: [T21.A05], owasp2025: [T25.A02], cwe: ["CWE-444"], wstg: ["WSTG-INPV-15"], asvs5Chapter: [V5.V4, V5.V12],
+    sources: [{ src: "SRC-E", count: 1, label: "Insecure Deployment: HTTP Request Smuggling", severity: "critical", status: "Fixed" }],
+    fact: "A front-end proxy and back-end server disagree on request boundaries (Content-Length vs Transfer-Encoding), allowing request queue poisoning.",
+    evidence: ["Proxy/server product and version inventory (owner-provided)", "Result of an authorized, dedicated desync test in a staging environment"],
+    acceptance: ["Proxy normalizes or rejects ambiguous CL/TE requests", "Back-end connections use HTTP/2 or strict HTTP/1.1 parsing", "Authorized desync re-test shows no queue poisoning"],
+    webRecheck: ["Re-run the authorized desync test in staging only", "Confirm normal traffic (login, API) is unaffected"],
+    fix: "Upgrade/normalize the proxy, reject requests carrying both CL and TE, disable back-end connection reuse for untrusted traffic or use HTTP/2 end-to-end.",
+    regressionGuard: "Proxy hardening can reject legitimate chunked uploads; test upload/streaming endpoints and run `navsentry compare`.",
+    caveats: ["Never automated by NavSentry: smuggling probes can poison other users' requests. Requires active-approved authorization and a staging target."],
+  },
+  // ───────────────────────── INFO ─────────────────────────
+  {
+    id: "NSC-INFO-001", category: "INFO", titleEn: "Server / framework version disclosure", titleTh: "เปิดเผยเวอร์ชันของ Server/Framework",
+    severity: "low", priority: "PLANNED", automation: "auto",
+    owasp2021: [T21.A05], owasp2025: [T25.A02], cwe: ["CWE-200", "CWE-497"], wstg: ["WSTG-INFO-02"], asvs5Chapter: [V5.V13],
+    sources: [{ src: "SRC-A", count: 1, label: "Error page web server version disclosure", severity: "low" }],
+    fact: "Headers (Server, X-Powered-By, X-AspNet-Version, X-AspNetMvc-Version) or error pages reveal product versions, helping attackers pick exploits.",
+    evidence: ["Redacted header names/values containing version numbers"],
+    acceptance: ["No response header or default error page exposes a product version number", "X-Powered-By / X-AspNet-Version headers removed"],
+    webRecheck: ["DevTools > Network > Response Headers: no version numbers", "Request a non-existent path: error page shows no version"],
+    fix: "Remove/blank version headers at the server/proxy (e.g. server_tokens off, removeServerHeader, enableVersionHeader=false) and use custom error pages.",
+    regressionGuard: "Header removal does not change bodies; confirm with `navsentry compare` (Server/X-Powered-By are excluded from the contract).",
+    caveats: ["Version hiding is defence in depth, not a fix for an unpatched component (see NSC-SUPPLY-001)."],
+  },
+  {
+    id: "NSC-INFO-003", category: "INFO", titleEn: "Internal IP address disclosure", titleTh: "เปิดเผย IP ภายในองค์กร",
+    severity: "low", priority: "PLANNED", automation: "auto",
+    owasp2021: [T21.A05], owasp2025: [T25.A02], cwe: ["CWE-200"], wstg: ["WSTG-INFO-05"], asvs5Chapter: [V5.V13],
+    sources: [{ src: "SRC-E", count: 1, label: "System Information Leak: Internal IP", severity: "low", status: "Fixed" }],
+    fact: "Response headers or bodies contain RFC 1918 / loopback / link-local addresses, revealing internal topology.",
+    evidence: ["Location (header name or body) and count of private-address matches; values masked in the report"],
+    acceptance: ["No in-scope response contains private IPv4/IPv6 literals in headers or bodies"],
+    webRecheck: ["Search the raw response (DevTools > Network > Response) for 10./172.16-31./192.168. patterns", "Re-run → NSC-INFO-003 PASS"],
+    fix: "Stop echoing upstream addresses (Via, X-Backend-Server, error messages, config endpoints); configure the proxy to strip them.",
+    regressionGuard: "If a client legitimately consumes an address field (e.g. a config endpoint), replace it with a public hostname rather than removing the field; verify JSON shape with `navsentry compare`.",
+    caveats: ["Dotted version/build strings that start with 10. or 192.168. can match; review context before VALIDATED."],
+  },
+  {
+    id: "NSC-INFO-004", category: "INFO", titleEn: "Email address disclosure", titleTh: "เปิดเผยอีเมลในหน้าเว็บหรือ API",
+    severity: "info", priority: "PLANNED", automation: "auto",
+    owasp2021: [T21.A01], owasp2025: [T25.A01], cwe: ["CWE-200", "CWE-359"], wstg: ["WSTG-INFO-05"], asvs5Chapter: [V5.V14],
+    sources: [{ src: "SRC-A", count: 1, label: "Email addresses", severity: "info" }, { src: "SRC-E", count: 1, label: "Privacy Violation: Email Disclosure", severity: "high", status: "Fixed" }],
+    fact: "Responses expose email addresses (often staff/developer addresses in config or API payloads) that enable phishing and enumeration.",
+    evidence: ["Count and location of email matches (values masked)", "Whether the endpoint is anonymous"],
+    acceptance: ["Anonymous responses expose no personal/staff email except intentional public contact addresses listed by the owner"],
+    webRecheck: ["Open the endpoint anonymously and search the response for '@'", "Re-run → NSC-INFO-004 PASS or reviewed DISMISSED for intentional contacts"],
+    fix: "Remove addresses from config/diagnostic endpoints; return them only to authorized users who need them.",
+    regressionGuard: "If a UI shows an email field to its owner, keep it for the authenticated owner; remove it only from anonymous/other-user responses.",
+    caveats: ["Public contact addresses are expected; record them as reviewed exceptions instead of failing forever."],
+  },
+  // ───────────────────────── ERR ─────────────────────────
+  {
+    id: "NSC-ERR-001", category: "ERR", titleEn: "Verbose error, stack trace or unhandled exception exposed", titleTh: "แสดง Error/Stack trace/Exception ภายในให้ผู้ใช้เห็น",
+    severity: "medium", priority: "IMMEDIATE", automation: "auto",
+    owasp2021: [T21.A05, T21.A04], owasp2025: [T25.A10, T25.A02], cwe: ["CWE-209", "CWE-248", "CWE-550"], wstg: ["WSTG-ERRH-01", "WSTG-ERRH-02"], asvs5Chapter: [V5.V16],
+    sources: [
+      { src: "SRC-A", count: 1, label: "Application error messages", severity: "medium" },
+      { src: "SRC-A", count: 1, label: "ASP.NET error message", severity: "medium" },
+      { src: "SRC-E", count: 1, label: "Poor Error Handling: Unhandled Exception", severity: "critical", status: "Fixed" },
+      { src: "SRC-E", count: 1, label: "Web Server Misconfiguration: Server Error Message", severity: "medium", status: "Fixed" },
+    ],
+    fact: "Error responses include stack traces, exception class names, SQL/ORM messages or framework error pages, leaking internals and indicating failing-open error handling.",
+    evidence: ["Matched error signature names (e.g. 'Java stack trace', 'ASP.NET YSOD') and response status — body excerpt redacted"],
+    acceptance: ["No in-scope response contains stack-trace/exception signatures", "Errors return a generic message plus a correlation ID; details go to server logs only", "HTTP status codes stay meaningful (4xx for client errors, 5xx for server faults)"],
+    webRecheck: ["Reproduce the original error condition with a benign request (e.g. missing parameter) and confirm a generic error body", "Confirm the detailed exception is present in server logs with the same correlation ID"],
+    fix: "Add a global exception handler that logs details server-side and returns a standard error envelope (e.g. RFC 9457 problem+json) without internals; disable framework detailed errors in non-dev environments.",
+    regressionGuard: "Keep the SAME status code and the SAME error envelope fields that clients parse (e.g. `success`, `code`, `message`); only remove internal details. Prove it with `navsentry compare` (status + JSON shape must match).",
+  },
+  {
+    id: "NSC-ERR-002", category: "ERR", titleEn: "Denial of service via expensive input parsing", titleTh: "DoS จากการ parse ค่า input (เช่น ตัวเลขทศนิยม) ที่ใช้ทรัพยากรสูง",
+    severity: "medium", priority: "PLANNED", automation: "manual-active",
+    owasp2021: [T21.A04], owasp2025: [T25.A10, T25.A06], cwe: ["CWE-400", "CWE-1284"], wstg: ["WSTG-BUSL-07"], asvs5Chapter: [V5.V2, V5.V15],
+    cve: ["CVE-2010-4476"],
+    sources: [{ src: "SRC-E", count: 1, label: "Denial of Service: Parse Double", severity: "medium", status: "Fixed" }],
+    fact: "Numeric or structured input is parsed without size/format limits on a runtime with a known pathological parse case, allowing CPU exhaustion.",
+    evidence: ["Runtime version inventory (owner-provided)", "Input validation rules for numeric fields"],
+    acceptance: ["Runtime is patched beyond the affected range", "Numeric inputs are length/range validated before parsing", "Request body size limits exist"],
+    webRecheck: ["Submit normal numeric values in the UI and confirm unchanged behavior", "Authorized staging load test only"],
+    fix: "Patch the runtime; validate numeric fields (length, pattern, range) before parsing; set request size and timeout limits.",
+    regressionGuard: "Validation must accept every legitimate numeric format clients send today (decimal places, locale); add unit tests from real request samples.",
+    caveats: ["NavSentry never sends DoS payloads."],
+  },
+  // ───────────────────────── PRIV ─────────────────────────
+  {
+    id: "NSC-PRIV-001", category: "PRIV", titleEn: "National ID / personal identifier disclosure", titleTh: "เปิดเผยเลขบัตรประชาชน/ข้อมูลส่วนบุคคล",
+    severity: "high", priority: "IMMEDIATE", automation: "auto",
+    owasp2021: [T21.A01, T21.A02], owasp2025: [T25.A01, T25.A04], cwe: ["CWE-359", "CWE-200"], wstg: ["WSTG-INFO-05"], asvs5Chapter: [V5.V14, V5.V8],
+    sources: [{ src: "SRC-E", count: 1, label: "Privacy Violation: National ID Disclosure", severity: "critical", status: "Exception" }],
+    fact: "API or page responses contain 13-digit values that pass the Thai national ID checksum (or card numbers passing Luhn), exposing PII regulated by PDPA.",
+    evidence: ["Count of checksum-valid matches per response (values never stored)", "Actor that received them (anonymous vs authenticated)"],
+    acceptance: ["No checksum-valid national ID / card number appears in responses to actors not entitled to it", "Where required for the owner, values are masked (e.g. x-xxxx-xxxxx-12-3)"],
+    webRecheck: ["Open the endpoint as an unentitled actor and confirm the field is absent or masked", "Re-run → NSC-PRIV-001 PASS"],
+    fix: "Remove or mask the field in the response DTO for unentitled callers; enforce field-level authorization server-side.",
+    regressionGuard: "Masking changes values, not keys: keep the field name and type so clients do not break, unless the owner approves removal. Verify JSON shape with `navsentry compare`.",
+    caveats: ["SRC-E accepted this as an Exception because the 13-digit value was an internal function identifier, not a citizen ID. NavSentry applies the mod-11 checksum to cut such false positives, but a checksum-valid match is still SUSPECTED until a human confirms the field semantics."],
+  },
+  {
+    id: "NSC-PRIV-002", category: "PRIV", titleEn: "Sensitive data in URL / GET query", titleTh: "ส่งข้อมูลอ่อนไหวผ่าน URL หรือ Query string (GET)",
+    severity: "medium", priority: "CAUTION", automation: "auto",
+    owasp2021: [T21.A04, T21.A02], owasp2025: [T25.A06, T25.A04], cwe: ["CWE-598"], wstg: ["WSTG-INFO-05"], asvs5Chapter: [V5.V14],
+    sources: [{ src: "SRC-E", count: 1, label: "Privacy Violation: HTTP GET", severity: "medium", status: "Fixed" }],
+    fact: "Credentials, tokens or personal identifiers are sent as URL query parameters, so they end up in logs, history, Referer headers and proxies.",
+    evidence: ["Query parameter NAMES observed in in-scope URLs and redirects (values are always redacted)"],
+    acceptance: ["No password/token/secret/national-ID style parameter is carried in a URL", "Sensitive values move to POST bodies or headers"],
+    webRecheck: ["Perform the flow in a browser and inspect the address bar and DevTools > Network URLs", "Re-run → NSC-PRIV-002 PASS"],
+    fix: "Move sensitive values to the request body or an Authorization header; for one-time links use short-lived opaque tokens and Referrer-Policy: no-referrer.",
+    regressionGuard: "Changing GET to POST breaks bookmarks, deep links and clients. Support both during a migration window, log usage of the old form, then remove it.",
+  },
+  // ───────────────────────── SESS ─────────────────────────
+  {
+    id: "NSC-SESS-001", category: "SESS", titleEn: "Cookie without Secure flag", titleTh: "Cookie ไม่ได้ตั้ง Secure",
+    severity: "medium", priority: "IMMEDIATE", automation: "auto",
+    owasp2021: [T21.A05, T21.A02], owasp2025: [T25.A02, T25.A07], cwe: ["CWE-614"], wstg: ["WSTG-SESS-02"], asvs5Chapter: [V5.V3, V5.V7],
+    sources: [{ src: "SRC-A", count: 1, label: "Cookies without Secure flag set", severity: "low" }],
+    fact: "Cookies set over HTTPS lack the Secure attribute, so the browser may send them over plain HTTP.",
+    evidence: ["Cookie NAME and attribute list from Set-Cookie (value redacted)"],
+    acceptance: ["Every cookie set by an HTTPS origin has Secure", "__Host-/__Secure- prefixed cookies satisfy their prefix rules"],
+    webRecheck: ["DevTools > Application > Cookies: Secure column ticked for every cookie", "Re-run → NSC-SESS-001 PASS"],
+    fix: "Set Secure in the framework cookie options (e.g. requireSSL / CookieSecurePolicy.Always / secure: true) and on the proxy for legacy cookies.",
+    regressionGuard: "Secure cookies are not sent over http:// — make sure no environment that needs the cookie is still on HTTP (local dev may need a separate setting).",
+  },
+  {
+    id: "NSC-SESS-002", category: "SESS", titleEn: "Cookie without HttpOnly flag", titleTh: "Cookie ไม่ได้ตั้ง HttpOnly",
+    severity: "low", priority: "CAUTION", automation: "auto",
+    owasp2021: [T21.A05, T21.A07], owasp2025: [T25.A02, T25.A07], cwe: ["CWE-1004"], wstg: ["WSTG-SESS-02"], asvs5Chapter: [V5.V3, V5.V7],
+    sources: [{ src: "SRC-A", count: 1, label: "Cookies without HttpOnly flag set", severity: "low" }],
+    fact: "Session-like cookies are readable by JavaScript (no HttpOnly), so any XSS can steal them.",
+    evidence: ["Cookie NAME and attributes (value redacted); whether the name looks like a session/auth cookie"],
+    acceptance: ["Session/auth cookies have HttpOnly", "Cookies intentionally read by JS (e.g. double-submit CSRF token) are documented exceptions"],
+    webRecheck: ["DevTools > Application > Cookies: HttpOnly ticked for session cookies", "In Console, document.cookie does not show the session cookie", "Login/logout still work"],
+    fix: "Enable HttpOnly for session/auth cookies in the framework configuration.",
+    regressionGuard: "Front-end code that reads the cookie will break — search the client code for document.cookie usage first and move it to a header/endpoint.",
+  },
+  {
+    id: "NSC-SESS-003", category: "SESS", titleEn: "Cookie SameSite missing or contradictory", titleTh: "Cookie ไม่ได้ตั้ง SameSite หรือค่าขัดแย้งกัน",
+    severity: "low", priority: "CAUTION", automation: "auto",
+    owasp2021: [T21.A01, T21.A05], owasp2025: [T25.A01, T25.A02], cwe: ["CWE-1275", "CWE-352"], wstg: ["WSTG-SESS-02", "WSTG-SESS-05"], asvs5Chapter: [V5.V3, V5.V7],
+    sources: [{ src: "SRC-A", count: 1, label: "Cookies with missing, inconsistent or contradictory properties", severity: "low" }],
+    fact: "Cookies omit SameSite, or set SameSite=None without Secure (rejected by modern browsers), weakening CSRF defences.",
+    evidence: ["Cookie NAME and SameSite/Secure attributes (value redacted)"],
+    acceptance: ["Session cookies set SameSite=Lax or Strict", "Any SameSite=None cookie also has Secure and a documented cross-site need"],
+    webRecheck: ["DevTools > Application > Cookies: SameSite column", "Test SSO/IdP callbacks and cross-site POST flows still keep the session"],
+    fix: "Set SameSite=Lax by default; use None; Secure only for cookies that must travel cross-site (SSO, embedded apps).",
+    regressionGuard: "SameSite=Strict/Lax can break SAML/OIDC form_post callbacks and payment redirects; test every external login/redirect flow.",
+  },
+  {
+    id: "NSC-SESS-004", category: "SESS", titleEn: "JWT missing protection claims or weak algorithm", titleTh: "JWT ขาด Claim ป้องกัน (exp/aud/iss) หรือใช้อัลกอริทึมอ่อน",
+    severity: "medium", priority: "PLANNED", automation: "auto",
+    owasp2021: [T21.A07, T21.A02], owasp2025: [T25.A07, T25.A04], cwe: ["CWE-347", "CWE-613"], wstg: ["WSTG-SESS-10"], asvs5Chapter: [V5.V9],
+    sources: [{ src: "SRC-E", count: 1, label: "JSON Web Token: Missing Protection Claims", severity: "medium", status: "Fixed" }],
+    fact: "Observed JWTs use alg 'none', omit exp, or lack audience/issuer binding, so tokens live forever or can be replayed to other services.",
+    evidence: ["Decoded JWT header alg and the PRESENCE of exp/iat/nbf/aud/iss claims (token and claim values never stored)"],
+    acceptance: ["alg is not 'none'", "exp present and lifetime appropriate (e.g. <= 1h for access tokens)", "aud and iss present and validated server-side"],
+    webRecheck: ["Log in, copy the token from DevTools > Network/Storage into a local decoder (offline), check claims", "Use an expired test token: API returns 401"],
+    fix: "Issue tokens with exp/iat/aud/iss; validate them on every API; reject alg none and unexpected algorithms.",
+    regressionGuard: "Adding aud/exp validation rejects old long-lived tokens: plan a token refresh window and communicate client changes.",
+    caveats: ["NavSentry decodes but never verifies or forges tokens."],
+  },
+  // ───────────────────────── CRYPT ─────────────────────────
+  {
+    id: "NSC-CRYPT-001", category: "CRYPT", titleEn: "Legacy TLS/SSL protocol versions enabled", titleTh: "เปิดใช้ SSL/TLS เวอร์ชันเก่า (SSLv3, TLS 1.0, TLS 1.1)",
+    severity: "medium", priority: "CAUTION", automation: "auto",
+    owasp2021: [T21.A02], owasp2025: [T25.A04], cwe: ["CWE-326", "CWE-327"], wstg: ["WSTG-CRYP-01"], asvs5Chapter: [V5.V12],
+    cve: ["CVE-2014-3566"],
+    sources: [
+      { src: "SRC-A", count: 1, label: "SSL 3.0 deprecated protocol", severity: "high" },
+      { src: "SRC-A", count: 1, label: "The POODLE attack (SSLv3 with CBC cipher suites)", severity: "high" },
+      { src: "SRC-A", count: 1, label: "TLS 1.0 enabled", severity: "medium" },
+      { src: "SRC-A", count: 1, label: "TLS 1.1 enabled", severity: "medium" },
+    ],
+    fact: "The HTTPS endpoint accepts deprecated protocol versions (RFC 8996 deprecates TLS 1.0/1.1).",
+    evidence: ["Handshake result per protocol version from the NavSentry TLS probe", "Probe limitation if the local OpenSSL cannot offer a legacy version (INCONCLUSIVE, not PASS)"],
+    acceptance: ["TLS 1.0 and 1.1 handshakes are refused", "TLS 1.2 and/or 1.3 succeed", "SSLv3 is disabled (verify with a dedicated TLS scanner if the probe is INCONCLUSIVE)"],
+    webRecheck: ["Browser still loads the site (padlock, TLS 1.2/1.3 in DevTools > Security)", "Re-run → NSC-CRYPT-001 PASS"],
+    fix: "Set the minimum protocol to TLS 1.2 on the TLS terminator (web server / load balancer / WAF).",
+    regressionGuard: "Very old clients (legacy Windows, embedded devices, old Java) lose access. Check access logs for TLS version usage before disabling, and notify affected integrators.",
+  },
+  {
+    id: "NSC-CRYPT-002", category: "CRYPT", titleEn: "Weak TLS cipher suites or key exchange", titleTh: "ใช้ Cipher suite หรือ Key exchange ที่อ่อน (3DES/RC4/Static RSA/DHE อ่อน)",
+    severity: "medium", priority: "CAUTION", automation: "assisted",
+    owasp2021: [T21.A02], owasp2025: [T25.A04], cwe: ["CWE-326", "CWE-327", "CWE-310"], wstg: ["WSTG-CRYP-01"], asvs5Chapter: [V5.V12, V5.V11],
+    cve: ["CVE-2016-2183", "CVE-2015-4000"],
+    sources: [
+      { src: "SRC-A", count: 1, label: "TLS/SSL Sweet32 attack", severity: "medium" },
+      { src: "SRC-A", count: 1, label: "TLS/SSL LOGJAM attack", severity: "medium" },
+      { src: "SRC-A", count: 1, label: "TLS/SSL Weak Cipher Suites", severity: "medium" },
+      { src: "SRC-A", count: 1, label: "TLS/SSL (EC)DHE Key Reuse", severity: "info" },
+      { src: "SRC-E", count: 1, label: "ssl-static-key-ciphers (VA)", severity: "severe", status: "Fixed" },
+    ],
+    fact: "The server negotiates 64-bit block ciphers (3DES), export/weak DH groups, static-RSA key exchange or reuses ephemeral keys.",
+    evidence: ["Negotiated cipher reported by the NavSentry TLS probe", "Full cipher enumeration from a dedicated local TLS scanner (operator-run)"],
+    acceptance: ["Only AEAD suites with forward secrecy (ECDHE/DHE >= 2048-bit) are offered for TLS 1.2", "No 3DES, RC4, NULL, EXPORT or static-RSA suites"],
+    webRecheck: ["Browser DevTools > Security shows a modern cipher", "Dedicated scanner re-run shows no weak suites"],
+    fix: "Apply a current Mozilla 'intermediate' TLS configuration on the TLS terminator and disable ephemeral key reuse.",
+    regressionGuard: "Same client-compatibility caution as NSC-CRYPT-001; review TLS logs first.",
+    caveats: ["Full cipher enumeration needs a dedicated scanner; NavSentry's probe sees only the negotiated suite."],
+  },
+  {
+    id: "NSC-CRYPT-003", category: "CRYPT", titleEn: "Insufficient certificate key size or weak signature", titleTh: "ขนาดกุญแจหรือ Signature ของใบรับรองไม่เพียงพอ",
+    severity: "medium", priority: "PLANNED", automation: "auto",
+    owasp2021: [T21.A02], owasp2025: [T25.A04], cwe: ["CWE-326"], wstg: ["WSTG-CRYP-01"], asvs5Chapter: [V5.V12, V5.V11],
+    sources: [{ src: "SRC-E", count: 1, label: "Weak Cryptographic Signature: Insufficient Key Size", severity: "medium", status: "Fixed" }],
+    fact: "The leaf certificate uses an RSA key < 2048 bits (or EC < 256 bits), is expired, or expires within 30 days.",
+    evidence: ["Certificate key type/size, validity dates and issuer CN from the TLS probe (no private data)"],
+    acceptance: ["RSA >= 2048 bits or EC >= 256 bits", "Certificate valid and not expiring within 30 days", "Chain validates against the system trust store"],
+    webRecheck: ["Browser padlock > certificate details show key size and validity", "Re-run → NSC-CRYPT-003 PASS"],
+    fix: "Re-issue the certificate with RSA 2048+/ECDSA P-256 and SHA-256+ signatures; automate renewal.",
+    regressionGuard: "Certificate pinning clients (mobile apps) must receive the new key/pin before rotation.",
+  },
+  {
+    id: "NSC-CRYPT-004", category: "CRYPT", titleEn: "Missing public key pinning (deprecated control)", titleTh: "ไม่มี Public Key Pinning (เป็นกลไกที่เลิกใช้แล้ว)",
+    severity: "info", priority: "PLANNED", automation: "assisted",
+    owasp2021: [T21.A02], owasp2025: [T25.A04], cwe: ["CWE-295"], wstg: ["WSTG-CRYP-01"], asvs5Chapter: [V5.V12],
+    sources: [{ src: "SRC-E", count: 1, label: "Insecure Transport: Missing Public Key Pinning", severity: "low", status: "Fixed" }],
+    fact: "A scanner flags the absence of HTTP Public Key Pinning. HPKP was removed from major browsers; deploying it risks locking users out.",
+    evidence: ["Owner decision record"],
+    acceptance: ["Do NOT deploy the HPKP header; record a reviewed DISMISSED decision", "Rely on HSTS + Certificate Transparency; pin only inside owned mobile clients if required"],
+    webRecheck: ["Confirm no Public-Key-Pins header is sent"],
+    fix: "Dismiss with justification; if a native mobile client needs pinning, implement it in the app with backup pins.",
+    regressionGuard: "Deploying HPKP can make the site unreachable for months after a key change — never add it to 'satisfy' a scanner.",
+  },
+  {
+    id: "NSC-CRYPT-005", category: "CRYPT", titleEn: "Hardcoded encryption key", titleTh: "ฝัง Encryption key ไว้ในซอร์สโค้ด",
+    severity: "high", priority: "IMMEDIATE", automation: "sast-only",
+    owasp2021: [T21.A02], owasp2025: [T25.A04], cwe: ["CWE-321"], wstg: [], asvs5Chapter: [V5.V11, V5.V13],
+    sources: [{ src: "SRC-B", count: 1, label: "Key Management: Hardcoded Encryption Key", severity: "high" }],
+    fact: "A symmetric key literal is compiled into the application, so everyone with the code or binary can decrypt protected data.",
+    evidence: ["SAST finding location (repository-relative path and line) in the owner's private tracker — never in public reports"],
+    acceptance: ["Key loaded from a secret store / environment at runtime", "Old key rotated and data re-encrypted", "Secret scanning of the repository history shows the literal is gone or rotated"],
+    webRecheck: ["Functional test of encrypt/decrypt features after rotation"],
+    fix: "Move the key to a secret manager, rotate it, re-encrypt data, and add secret scanning to the local pre-push gate.",
+    regressionGuard: "Rotation must keep old ciphertext readable (dual-key decrypt window) or migrate data first.",
+  },
+  {
+    id: "NSC-CRYPT-006", category: "CRYPT", titleEn: "Cleartext HTTP served without redirect to HTTPS", titleTh: "เปิดให้ใช้ HTTP แบบไม่เข้ารหัสโดยไม่ Redirect ไป HTTPS",
+    severity: "medium", priority: "IMMEDIATE", automation: "auto",
+    owasp2021: [T21.A02], owasp2025: [T25.A04], cwe: ["CWE-319"], wstg: ["WSTG-CRYP-03"], asvs5Chapter: [V5.V12],
+    sources: [{ src: "SRC-E", count: 1, label: "Endpoints reachable over plain HTTP on service ports (web scan targets)", severity: "medium" }],
+    fact: "An in-scope http:// origin serves application content instead of redirecting to HTTPS.",
+    evidence: ["Status and Location of the http:// response"],
+    acceptance: ["http:// requests receive 301/308 to the https:// equivalent", "No application content or Set-Cookie on http://"],
+    webRecheck: ["Type http://<host>/ in the browser: it switches to https://", "Re-run → NSC-CRYPT-006 PASS"],
+    fix: "Redirect all HTTP to HTTPS at the edge; for internal service ports, enable TLS or restrict them to the internal network.",
+    regressionGuard: "Machine clients that POST to http:// may not follow redirects with a body (use 308 to preserve method) — inventory them first.",
+  },
+  // ───────────────────────── AC ─────────────────────────
+  {
+    id: "NSC-AC-001", category: "AC", titleEn: "Authorization bypass through test/debug endpoint", titleTh: "ข้ามการยืนยันสิทธิ์ผ่าน Endpoint ทดสอบ/ดีบัก (เช่น fake login)",
+    severity: "critical", priority: "IMMEDIATE", automation: "assisted", milestone: "M2",
+    owasp2021: [T21.A01, T21.A07], owasp2025: [T25.A01, T25.A07], cwe: ["CWE-284", "CWE-489", "CWE-288"], wstg: ["WSTG-ATHZ-02", "WSTG-ATHN-04"], asvs5Chapter: [V5.V8, V5.V6, V5.V13],
+    sources: [{ src: "SRC-E", count: 1, label: "Access Control: Authorization Bypass (test login endpoint)", severity: "critical", status: "Fixed" }],
+    fact: "A development-only endpoint (fake/test login, impersonation, debug token issuer) is deployed and issues valid sessions without real authentication.",
+    evidence: ["Endpoint path and the anonymous response status (token values redacted)", "Owner confirmation that the endpoint is development-only"],
+    acceptance: ["Endpoint is absent from staging/production builds (404) or returns 401/403 to every caller", "Build/feature flag prevents it from shipping again (test in the local gate)"],
+    webRecheck: ["Call the endpoint anonymously: 401/403/404", "Normal login still works"],
+    fix: "Remove the endpoint from non-development builds (compile-time flag or environment guard that fails closed), and add a route-inventory test.",
+    regressionGuard: "Automated tests that relied on the fake login must switch to seeded test accounts; production login flow must be unchanged (`navsentry compare`).",
+  },
+  {
+    id: "NSC-AC-002", category: "AC", titleEn: "Missing authentication on API endpoint", titleTh: "API ไม่มีการยืนยันตัวตน (Missing Authentication)",
+    severity: "high", priority: "IMMEDIATE", automation: "planned-auto", milestone: "M2",
+    owasp2021: [T21.A01, T21.A07], owasp2025: [T25.A01, T25.A07], cwe: ["CWE-306"], wstg: ["WSTG-ATHZ-02"], asvs5Chapter: [V5.V8, V5.V4],
+    sources: [{ src: "SRC-E", count: 1, label: "Access Control: Missing Authentication", severity: "high", status: "Fixed" }],
+    fact: "An endpoint that returns non-public data responds 2xx to an anonymous actor.",
+    evidence: ["Anonymous vs authenticated response status and contract for the same endpoint (bodies redacted)"],
+    acceptance: ["Anonymous requests to protected endpoints return 401", "Authenticated legitimate actor still gets the same 2xx contract"],
+    webRecheck: ["Open the endpoint in a private browser window: 401/redirect to login", "Logged-in user still sees data"],
+    fix: "Apply authentication middleware with deny-by-default to the whole API group; whitelist truly public routes explicitly.",
+    regressionGuard: "Public endpoints used before login (health, login config, static config) must be explicitly allow-listed; compare anonymous and authenticated runs before/after.",
+  },
+  {
+    id: "NSC-AC-003", category: "AC", titleEn: "IDOR / BOLA (cross-user object access)", titleTh: "เข้าถึงข้อมูลของผู้ใช้อื่นได้ด้วยการเปลี่ยน ID (IDOR/BOLA)",
+    severity: "high", priority: "IMMEDIATE", automation: "planned-auto", milestone: "M2",
+    owasp2021: [T21.A01], owasp2025: [T25.A01], cwe: ["CWE-639", "CWE-284"], wstg: ["WSTG-ATHZ-04"], asvs5Chapter: [V5.V8],
+    sources: [],
+    fact: "An actor can read or modify an object owned by another actor by changing an identifier, because ownership is not checked server-side.",
+    evidence: ["Two disposable fixture objects owned by two separate test actors; cross-request status and contract (bodies redacted)"],
+    acceptance: ["Actor B receives 403/404 for actor A's fixture object", "Actor A still receives 200 for its own object (positive control)"],
+    webRecheck: ["As actor B in a separate browser profile, paste actor A's object URL: access denied"],
+    fix: "Enforce ownership/tenant checks in the service layer for every object lookup; prefer scoped queries (WHERE owner_id = current_user).",
+    regressionGuard: "Shared/delegated objects (team, admin, delegated approver) must keep access — encode those rules explicitly and test them as positive controls.",
+    caveats: ["UI hiding alone NEVER proves authorization."],
+  },
+  {
+    id: "NSC-AC-004", category: "AC", titleEn: "Permissive CORS policy", titleTh: "ตั้งค่า CORS กว้างเกินไป",
+    severity: "medium", priority: "CAUTION", automation: "auto",
+    owasp2021: [T21.A01, T21.A05], owasp2025: [T25.A01, T25.A02], cwe: ["CWE-942", "CWE-346"], wstg: ["WSTG-CLNT-07"], asvs5Chapter: [V5.V3, V5.V4],
+    sources: [],
+    fact: "The server reflects an arbitrary Origin (or 'null') in Access-Control-Allow-Origin, especially together with Access-Control-Allow-Credentials: true.",
+    evidence: ["Request Origin used (a reserved test origin), returned ACAO/ACAC headers"],
+    acceptance: ["Untrusted test origins are not reflected", "Credentials are never allowed with wildcard or reflected origins", "Allowed origins are an explicit allowlist"],
+    webRecheck: ["From the legitimate front-end origin the app still works (no CORS errors in Console)", "Re-run → NSC-AC-004 PASS"],
+    fix: "Replace origin reflection with an exact-match allowlist; never combine credentials with '*' or 'null'.",
+    regressionGuard: "List every legitimate front-end origin (prod, staging, mobile webviews) before tightening; missing one causes CORS errors only in browsers.",
+  },
+  {
+    id: "NSC-AC-005", category: "AC", titleEn: "Server-side request forgery (SSRF)", titleTh: "SSRF — หลอกให้เซิร์ฟเวอร์ยิงคำขอไปยังปลายทางภายใน",
+    severity: "high", priority: "IMMEDIATE", automation: "manual-active",
+    owasp2021: [T21.A10], owasp2025: [T25.A01], cwe: ["CWE-918"], wstg: ["WSTG-INPV-19"], asvs5Chapter: [V5.V1, V5.V15],
+    sources: [],
+    fact: "A server-side fetch uses a user-controlled URL/host without allowlisting, reaching internal services or cloud metadata.",
+    evidence: ["Authorized out-of-band test with an owner-controlled callback host in staging"],
+    acceptance: ["Server-side fetches use an allowlist of destinations", "Private, loopback and metadata addresses are blocked after DNS resolution and on redirects"],
+    webRecheck: ["Feature that fetches URLs still works for approved destinations"],
+    fix: "Allowlist destinations, resolve-then-validate addresses (incl. redirects), block metadata endpoints, use egress firewall rules.",
+    regressionGuard: "Legitimate integrations (webhooks, map tiles, partner APIs) must be on the allowlist before enforcement.",
+  },
+  {
+    id: "NSC-AC-006", category: "AC", titleEn: "Missing CSRF protection on state-changing requests", titleTh: "ไม่มีการป้องกัน CSRF สำหรับคำขอที่เปลี่ยนสถานะ",
+    severity: "medium", priority: "PLANNED", automation: "planned-auto", milestone: "M2",
+    owasp2021: [T21.A01], owasp2025: [T25.A01], cwe: ["CWE-352"], wstg: ["WSTG-SESS-05"], asvs5Chapter: [V5.V3],
+    sources: [],
+    fact: "Cookie-authenticated state-changing requests are accepted without an anti-CSRF token, origin check or SameSite protection.",
+    evidence: ["Safe fixture mutation attempted cross-site under safe-validate authorization; response status"],
+    acceptance: ["Cross-site fixture mutation is rejected", "Same-site legitimate mutation succeeds"],
+    webRecheck: ["Submit forms normally: still works"],
+    fix: "Use framework anti-forgery tokens and/or verify Origin/Sec-Fetch-Site; set SameSite=Lax.",
+    regressionGuard: "API clients using bearer tokens (not cookies) should be exempted correctly; test mobile and integration clients.",
+  },
+  // ───────────────────────── AUTH ─────────────────────────
+  {
+    id: "NSC-AUTH-001", category: "AUTH", titleEn: "Hardcoded API credentials", titleTh: "ฝัง API credential ไว้ในซอร์สโค้ด",
+    severity: "high", priority: "IMMEDIATE", automation: "sast-only",
+    owasp2021: [T21.A07], owasp2025: [T25.A07, T25.A04], cwe: ["CWE-798"], wstg: [], asvs5Chapter: [V5.V13, V5.V11],
+    sources: [{ src: "SRC-B", count: 1, label: "Credential Management: Hardcoded API Credentials", severity: "high" }],
+    fact: "An API credential literal is present in the source code (found in a form/file helper), visible to everyone with repository or binary access.",
+    evidence: ["SAST location in the private tracker only", "Credential owner confirms rotation"],
+    acceptance: ["Credential revoked/rotated at the provider", "Value loaded from environment/secret store", "Secret scan over history is clean or rotation documented"],
+    webRecheck: ["Integration that used the credential still works with the new secret"],
+    fix: "Rotate first, then move to a secret store; add local secret scanning (pre-commit/pre-push).",
+    regressionGuard: "Coordinate rotation with every environment so none keeps the old value; test the integration end-to-end.",
+  },
+  {
+    id: "NSC-AUTH-002", category: "AUTH", titleEn: "Session not invalidated after logout / stale session", titleTh: "Session ไม่ถูกยกเลิกหลัง Logout",
+    severity: "medium", priority: "PLANNED", automation: "planned-auto", milestone: "M2",
+    owasp2021: [T21.A07], owasp2025: [T25.A07], cwe: ["CWE-613"], wstg: ["WSTG-SESS-06"], asvs5Chapter: [V5.V7],
+    sources: [],
+    fact: "A session cookie or token captured before logout still authorizes requests after logout.",
+    evidence: ["Test actor: status of a protected request with the pre-logout credential, after logout"],
+    acceptance: ["Pre-logout credential receives 401 after logout", "Fresh login works"],
+    webRecheck: ["Logout in browser, replay the old cookie with a REST client: 401"],
+    fix: "Invalidate server-side session/refresh token on logout; keep access token lifetimes short.",
+    regressionGuard: "Multi-tab and multi-device behavior must be decided explicitly (log out one vs all).",
+  },
+  // ───────────────────────── INJ ─────────────────────────
+  {
+    id: "NSC-INJ-001", category: "INJ", titleEn: "SQL injection", titleTh: "SQL Injection",
+    severity: "critical", priority: "IMMEDIATE", automation: "manual-active",
+    owasp2021: [T21.A03], owasp2025: [T25.A05], cwe: ["CWE-89"], wstg: ["WSTG-INPV-05"], asvs5Chapter: [V5.V1],
+    sources: [{ src: "SRC-E", count: 1, label: "SQL Injection", severity: "critical", status: "Fixed" }],
+    fact: "User input reaches a SQL statement by string concatenation; metacharacters change query behavior.",
+    evidence: ["Code location of the query (private tracker)", "Authorized staging test result"],
+    acceptance: ["All queries on the path use parameters/bind variables", "Input with quotes is handled as data (same functional result as escaped input)", "Errors do not reveal SQL (see NSC-ERR-001)"],
+    webRecheck: ["Use the feature with legitimate values containing apostrophes (e.g. a name like O'Neil): works and returns correct data"],
+    fix: "Use parameterized queries / stored procedures with parameters; never concatenate identifiers from input (map them through an allowlist).",
+    regressionGuard: "Parameterization must preserve search semantics (LIKE wildcards, case, collation); add regression tests using real query samples.",
+    caveats: ["NavSentry never sends SQL payloads in observe or safe-validate mode."],
+  },
+  {
+    id: "NSC-INJ-002", category: "INJ", titleEn: "Server-side script / template / code injection", titleTh: "Server-Side Script/Template Injection",
+    severity: "critical", priority: "IMMEDIATE", automation: "manual-active",
+    owasp2021: [T21.A03], owasp2025: [T25.A05], cwe: ["CWE-94", "CWE-1336"], wstg: ["WSTG-INPV-11", "WSTG-INPV-18"], asvs5Chapter: [V5.V1],
+    sources: [{ src: "SRC-E", count: 1, label: "Server-Side Script Injection (report export)", severity: "critical", status: "Fixed" }],
+    fact: "Input is evaluated as code or template on the server (e.g. report/export engines, expression evaluators).",
+    evidence: ["Code location (private)", "Authorized staging test"],
+    acceptance: ["Input is passed only as data to templates/report engines; expression evaluation disabled or sandboxed", "Exports render user text literally"],
+    webRecheck: ["Export a report containing text like ${1+1} or {{7*7}}: output shows the literal text"],
+    fix: "Disable expression evaluation on user data, use logic-less templates, sandbox report engines.",
+    regressionGuard: "Report layouts that legitimately use expressions in TEMPLATES (not data) must keep working; diff exported files before/after.",
+  },
+  {
+    id: "NSC-INJ-003", category: "INJ", titleEn: "LDAP injection", titleTh: "LDAP Injection",
+    severity: "high", priority: "IMMEDIATE", automation: "manual-active",
+    owasp2021: [T21.A03], owasp2025: [T25.A05], cwe: ["CWE-90"], wstg: ["WSTG-INPV-06"], asvs5Chapter: [V5.V1],
+    sources: [{ src: "SRC-E", count: 1, label: "LDAP Injection", severity: "medium", status: "Fixed" }],
+    fact: "User input is placed into an LDAP filter/DN without escaping.",
+    evidence: ["Code location (private)", "Authorized staging test"],
+    acceptance: ["Filter values escaped per RFC 4515 and DN values per RFC 4514", "Wildcards in input are treated literally"],
+    webRecheck: ["Login/search with names containing *, ( ) still behave as literal characters"],
+    fix: "Use the directory library's filter-escaping API or parameterized filter builders.",
+    regressionGuard: "Users whose names contain special characters must still authenticate; test with such fixture accounts.",
+  },
+  {
+    id: "NSC-INJ-004", category: "INJ", titleEn: "Reflected / DOM cross-site scripting", titleTh: "Cross-Site Scripting (Reflected/DOM)",
+    severity: "high", priority: "IMMEDIATE", automation: "planned-auto", milestone: "M2",
+    owasp2021: [T21.A03], owasp2025: [T25.A05], cwe: ["CWE-79"], wstg: ["WSTG-INPV-01", "WSTG-CLNT-01"], asvs5Chapter: [V5.V1, V5.V3],
+    sources: [{ src: "SRC-E", count: 1, label: "Cross-Site Scripting: Reflected", severity: "medium", status: "Fixed" }],
+    fact: "Input is reflected into HTML/JS without context-aware encoding.",
+    evidence: ["Benign, non-executing marker reflection context observed in a real browser (planned M2)"],
+    acceptance: ["Marker is HTML-encoded in every reflection context", "CSP blocks inline script execution (NSC-CONF-002)"],
+    webRecheck: ["Search for a term like <b>test</b>: the page shows the literal text, not bold"],
+    fix: "Use framework auto-escaping, context-aware encoders, and avoid innerHTML/dangerouslySetInnerHTML with user data.",
+    regressionGuard: "Fields that legitimately contain rich text must go through a vetted HTML sanitizer, not be double-encoded.",
+  },
+  {
+    id: "NSC-INJ-005", category: "INJ", titleEn: "HTTP header manipulation / CRLF injection / unvalidated header forwarding", titleTh: "นำข้อมูลที่ไม่ผ่านการตรวจสอบไปใส่ใน HTTP Header (Header Manipulation/CRLF)",
+    severity: "medium", priority: "CAUTION", automation: "sast-only", milestone: "M2 (runtime reflection check)",
+    owasp2021: [T21.A03], owasp2025: [T25.A05], cwe: ["CWE-113", "CWE-644"], wstg: ["WSTG-INPV-15"], asvs5Chapter: [V5.V1, V5.V4],
+    sources: [
+      { src: "SRC-B", count: 513, label: "Header Manipulation (request headers copied into outgoing headers in proxy helpers)", severity: "high" },
+      { src: "SRC-C", count: 513, label: "Header Manipulation", severity: "high" },
+      { src: "SRC-D", count: 51, label: "Header Manipulation", severity: "high" },
+    ],
+    fact: "Untrusted request headers are copied wholesale into outgoing/response headers (typical in API gateway/proxy helpers), enabling header spoofing (X-Forwarded-For, Host, X-User-*) and, on runtimes that do not reject CR/LF, response splitting.",
+    evidence: ["SAST source→sink trace (private)", "List of forwarded header names; runtime check that CR/LF is rejected"],
+    acceptance: ["Forwarding uses an explicit allowlist of header names", "Hop-by-hop and identity headers (Host, X-Forwarded-*, X-User-*, Authorization unless intended) are set by the gateway, not copied", "Header values containing CR/LF/NUL are rejected"],
+    webRecheck: ["Normal requests through the gateway still carry required headers to back-ends (check back-end logs)", "Request with a spoofed X-Forwarded-For does not change the client IP seen by the back-end"],
+    fix: "Replace 'copy all headers' loops with an allowlist; regenerate forwarding headers at the gateway; validate values.",
+    regressionGuard: "This is the highest-risk fix for legitimate traffic: an allowlist that misses a header (correlation IDs, Accept-Language, custom tenant headers) silently breaks back-ends. Build the allowlist from production access logs and compare back-end responses before/after.",
+    caveats: ["Go's net/http client rejects CR/LF in header values at send time, so response splitting is usually not exploitable there; the spoofing risk remains. Large counts (513) are one root cause in a shared helper — fix once, not 513 times."],
+  },
+  {
+    id: "NSC-INJ-006", category: "INJ", titleEn: "Local file inclusion / path traversal", titleTh: "Local File Inclusion / Path Traversal",
+    severity: "high", priority: "IMMEDIATE", automation: "manual-active",
+    owasp2021: [T21.A01, T21.A03], owasp2025: [T25.A01, T25.A05], cwe: ["CWE-22", "CWE-98"], wstg: ["WSTG-ATHZ-01"], asvs5Chapter: [V5.V5, V5.V1],
+    sources: [{ src: "SRC-E", count: 1, label: "Dangerous File Inclusion: Local", severity: "high", status: "Fixed" }],
+    fact: "A file path or template name derived from input lets callers read files outside the intended directory.",
+    evidence: ["Code location (private)", "Authorized staging test"],
+    acceptance: ["File access uses IDs mapped server-side or canonicalized paths verified to stay inside a base directory"],
+    webRecheck: ["Download/preview features still serve legitimate files"],
+    fix: "Map identifiers to files server-side; canonicalize and verify the base directory; drop user-controlled includes.",
+    regressionGuard: "Legitimate nested folders and Unicode filenames must keep working; test with real file samples.",
+  },
+  // ───────────────────────── SUPPLY ─────────────────────────
+  {
+    id: "NSC-SUPPLY-001", category: "SUPPLY", titleEn: "Unpatched server component with known vulnerabilities", titleTh: "Component ฝั่ง Server ไม่ได้อัปเดตแพตช์ (มี CVE)",
+    severity: "critical", priority: "IMMEDIATE", automation: "assisted",
+    owasp2021: [T21.A06], owasp2025: [T25.A03], cwe: ["CWE-1104", "CWE-1395"], wstg: ["WSTG-CONF-01"], asvs5Chapter: [V5.V15],
+    cve: ["CVE-2021-31166"],
+    sources: [{ src: "SRC-E", count: 1, label: "Insecure Deployment: Unpatched Application (web server connector / HTTP stack)", severity: "critical", status: "Exception" }],
+    fact: "A web server, connector or HTTP stack runs a version with published vulnerabilities (including remote code execution in an OS HTTP stack).",
+    evidence: ["Owner-provided inventory/SBOM with exact versions", "Advisory IDs with affected/fixed ranges and check date", "Fingerprint observations are hints only — never proof"],
+    acceptance: ["Component upgraded to a fixed version, or a documented risk acceptance with compensating controls and review date", "Advisory recheck date recorded"],
+    webRecheck: ["Application smoke test after patching", "Re-run NavSentry passive checks; confirm no regression with `navsentry compare`"],
+    fix: "Patch via the vendor channel; if the component is not actually in the request path (e.g. containerized app not using the flagged server), document it with evidence.",
+    regressionGuard: "Server upgrades can change default headers, TLS and error pages; run the full NavSentry suite and `navsentry compare` after upgrading.",
+    caveats: ["SRC-E recorded an Exception because the flagged server product was not part of the containerized deployment. HTTP fingerprints frequently misidentify products; require inventory evidence."],
+  },
+  // ───────────────────────── LOG / BIZ ─────────────────────────
+  {
+    id: "NSC-LOG-001", category: "LOG", titleEn: "Security logging and alerting gaps", titleTh: "บันทึก Log และการแจ้งเตือนด้านความปลอดภัยไม่เพียงพอ",
+    severity: "medium", priority: "PLANNED", automation: "assisted",
+    owasp2021: [T21.A09], owasp2025: [T25.A09], cwe: ["CWE-778", "CWE-117"], wstg: [], asvs5Chapter: [V5.V16],
+    sources: [],
+    fact: "Authentication failures, authorization denials and input-validation errors are not logged centrally or do not raise alerts. Not observable from outside.",
+    evidence: ["Owner confirms that NavSentry's own denied requests during a run appear in the target's logs with the correlation header"],
+    acceptance: ["Run correlation ID visible in target logs for 401/403/4xx events", "Alert fires for repeated authorization failures"],
+    webRecheck: ["After a NavSentry run, search the log platform for the run ID"],
+    fix: "Log security events with correlation IDs to a central store with retention and alert rules; never log secrets.",
+    regressionGuard: "Logging must not capture tokens/PII; review log redaction before enabling verbose security logs.",
+  },
+  {
+    id: "NSC-BIZ-001", category: "BIZ", titleEn: "Business logic flaw", titleTh: "ช่องโหว่เชิงตรรกะทางธุรกิจ",
+    severity: "medium", priority: "PLANNED", automation: "planned-auto", milestone: "M2",
+    owasp2021: [T21.A04], owasp2025: [T25.A06], cwe: ["CWE-840"], wstg: ["WSTG-BUSL-01"], asvs5Chapter: [V5.V2],
+    sources: [],
+    fact: "Workflow steps can be skipped, repeated or reordered, or limits bypassed, using only legitimate requests.",
+    evidence: ["Fixture-based scenario with bounded state, cleanup and rollback"],
+    acceptance: ["Each scenario's negative control is rejected and positive control succeeds"],
+    webRecheck: ["Walk the workflow in a browser as a normal user"],
+    fix: "Enforce state machines and limits server-side.",
+    regressionGuard: "Encode legitimate edge flows (corrections, re-submission by approver) as positive controls.",
+  },
+  // ───────────────────────── INFRA (out of web scope) ─────────────────────────
+  ...infra("NSC-INFRA-001", "ICMP timestamp response enabled", "ตอบกลับ ICMP Timestamp", ["CWE-200"], [], "generic-icmp-timestamp", "Fixed", ["CVE-1999-0524"]),
+  ...infra("NSC-INFRA-002", "ICMP redirects accepted", "รับ ICMP Redirect", ["CWE-16"], [], "linux-icmp-redirect", "Fixed"),
+  ...infra("NSC-INFRA-003", "Unsafe default umask / home directory permissions", "umask / สิทธิ์ home directory ไม่ปลอดภัย", ["CWE-276", "CWE-732"], [], "unix-umask-unsafe + unix-user-home-dir-mode", "Fixed"),
+  ...infra("NSC-INFRA-004", "Weak SSH MAC algorithms", "SSH ใช้ MAC algorithm อ่อน", ["CWE-327"], [], "ssh-weak-message-authentication-code-algorithms", "Fixed"),
+  ...infra("NSC-INFRA-005", "FTP credentials transmitted in cleartext", "FTP ส่งรหัสผ่านแบบไม่เข้ารหัส", ["CWE-319"], [], "ftp-plaintext-auth", "Fixed"),
+  ...infra("NSC-INFRA-006", "Database ports reachable from untrusted networks", "พอร์ตฐานข้อมูลเปิดให้เข้าถึงจากเครือข่ายที่ไม่ควร", ["CWE-284", "CWE-668"], [], "database-open-access", "Exception"),
+  ...infra("NSC-INFRA-007", "OS package vulnerabilities / untrusted package repository", "แพ็กเกจ OS มีช่องโหว่ / ใช้ repository ไม่เหมาะสม", ["CWE-1104"], [], "OS advisories (traceroute, curl, container runtime) + public package repository", "Fixed/Waiting", ["CVE-2023-46316", "CVE-2024-7264"]),
+  // ───────────────────────── informational ─────────────────────────
+  {
+    id: "NSC-INFO-005", category: "INFO", titleEn: "WAF / reverse proxy detected (informational)", titleTh: "ตรวจพบ WAF/Reverse proxy (ข้อมูลประกอบ)",
+    severity: "info", priority: "PLANNED", automation: "assisted",
+    owasp2021: [], owasp2025: [], cwe: [], wstg: ["WSTG-INFO-10"], asvs5Chapter: [],
+    sources: [{ src: "SRC-A", count: 1, label: "Web Application Firewall detected", severity: "info" }],
+    fact: "A WAF/proxy sits in front of the application. Not a vulnerability; it affects test interpretation (blocked requests are not application PASS).",
+    evidence: ["Observed WAF block pages/status codes during a run"],
+    acceptance: ["Report distinguishes WAF-blocked (INCONCLUSIVE) from application-enforced results"],
+    webRecheck: ["n/a"],
+    fix: "None required. Do not rely on a WAF as the only control for injection/access-control cases.",
+    regressionGuard: "n/a",
+  },
+];
+
+function infra(id: string, en: string, th: string, cwe: string[], wstg: string[], label: string, status: string, cve?: string[]): CaseDef[] {
+  return [{
+    id, category: "INFRA", titleEn: en, titleTh: th, severity: "low", priority: "PLANNED", automation: "infra",
+    owasp2021: [T21.A05], owasp2025: [T25.A02], cwe, wstg, asvs5Chapter: [], ...(cve ? { cve } : {}),
+    sources: [{ src: "SRC-E", count: 1, label: `${label} (VA)`, severity: "severe", status }],
+    fact: "Host/network-level finding from a vulnerability assessment. Outside NavSentry's web-application scope; tracked here so occurrence counts stay complete.",
+    evidence: ["Network VA tool output (operator-run, private)"],
+    acceptance: ["Dedicated VA rescan shows the item resolved, or a documented exception with compensating control"],
+    webRecheck: ["Run the web smoke test after host hardening to ensure the application still works"],
+    fix: "Apply the host/network hardening baseline (CIS benchmark or equivalent) via configuration management.",
+    regressionGuard: "Host hardening (ports, SSH, umask) can break deployment automation and monitoring; apply in staging first.",
+  }];
+}
+
+/** IDs that were never released or were merged. They must not be reused. */
+export const RESERVED_IDS: Record<string, string> = {
+  "NSC-INFO-002": "merged into NSC-ERR-001 (verbose errors) before the first release",
+};
+
+export const CASE_BY_ID: ReadonlyMap<string, CaseDef> = new Map(CASES.map((c) => [c.id, c]));
+
+export function getCase(id: string): CaseDef {
+  const c = CASE_BY_ID.get(id);
+  if (!c) throw new Error(`unknown case id ${id}`);
+  return c;
+}

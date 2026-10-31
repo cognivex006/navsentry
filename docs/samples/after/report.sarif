@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "NavSentry",
+          "version": "0.1.0",
+          "informationUri": "https://github.com/cognivex006/navsentry",
+          "rules": [
+            {
+              "id": "NSC-CRYPT-006",
+              "name": "CleartextHTTPservedwithoutredirecttoHTTPS",
+              "shortDescription": {
+                "text": "Cleartext HTTP served without redirect to HTTPS"
+              },
+              "fullDescription": {
+                "text": "An in-scope http:// origin serves application content instead of redirecting to HTTPS."
+              },
+              "help": {
+                "text": "Redirect all HTTP to HTTPS at the edge; for internal service ports, enable TLS or restrict them to the internal network."
+              },
+              "properties": {
+                "tags": [
+                  "CWE-319",
+                  "A04:2025 Cryptographic Failures"
+                ],
+                "category": "CRYPT",
+                "priority": "IMMEDIATE"
+              }
+            }
+          ]
+        }
+      },
+      "automationDetails": {
+        "id": "navsentry/demo-after/18c3ac9b-f65d-454a-9457-82b4f6cb42a8"
+      },
+      "invocations": [
+        {
+          "executionSuccessful": true,
+          "startTimeUtc": "2026-10-31T06:06:20.338Z",
+          "endTimeUtc": "2026-10-31T06:06:21.459Z"
+        }
+      ],
+      "results": [
+        {
+          "ruleId": "NSC-CRYPT-006",
+          "ruleIndex": 0,
+          "level": "warning",
+          "message": {
+            "text": "Cleartext HTTP served without redirect to HTTPS: Plain HTTP serves content (HTTP 200) without HTTPS redirect"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4174/"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "692d436b6be4d23f9a12f0bd"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
+          "ruleId": "NSC-CRYPT-006",
+          "ruleIndex": 0,
+          "level": "warning",
+          "message": {
+            "text": "Cleartext HTTP served without redirect to HTTPS: Plain HTTP serves content (HTTP 200) without HTTPS redirect"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4174/api/profile"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "de541519ea628034bf10b279"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
+          "ruleId": "NSC-CRYPT-006",
+          "ruleIndex": 0,
+          "level": "warning",
+          "message": {
+            "text": "Cleartext HTTP served without redirect to HTTPS: Plain HTTP serves content (HTTP 500) without HTTPS redirect"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4174/api/error"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "fc727d7983201f01a45728e6"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
+          "ruleId": "NSC-CRYPT-006",
+          "ruleIndex": 0,
+          "level": "warning",
+          "message": {
+            "text": "Cleartext HTTP served without redirect to HTTPS: Plain HTTP serves content (HTTP 200) without HTTPS redirect"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4174/api/token"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "218a567e36a7e353d513883d"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
+          "ruleId": "NSC-CRYPT-006",
+          "ruleIndex": 0,
+          "level": "warning",
+          "message": {
+            "text": "Cleartext HTTP served without redirect to HTTPS: Plain HTTP serves content (HTTP 302) without HTTPS redirect"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4174/go-out"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "1ba566e5dfe0fcb2056cd0b3"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        }
+      ]
+    }
+  ]
+}

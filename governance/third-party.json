@@ -1,0 +1,127 @@
+{
+  "schema_version": "1",
+  "policy": "docs/THIRD-PARTY-GOVERNANCE.md",
+  "reviewed_by": "maintainer (agent-assisted)",
+  "components": [
+    {
+      "ecosystem": "npm",
+      "name": "typescript",
+      "version": "6.0.3",
+      "scope": "dev (compiler only, not shipped)",
+      "license": "Apache-2.0",
+      "source": "https://registry.npmjs.org/typescript (publisher: Microsoft, repo github.com/microsoft/TypeScript)",
+      "why": "Type checking and compilation. 6.0.3 chosen over 7.0.2 (native binaries, newer) to keep a pure-JS toolchain with longer field history.",
+      "terms": ["https://github.com/microsoft/TypeScript/blob/main/LICENSE.txt"],
+      "advisories_checked": "npm audit 2026-10-31: 0 vulnerabilities",
+      "reviewed": "2026-10-31",
+      "review_due": "2027-04-30",
+      "decision": "APPROVED"
+    },
+    {
+      "ecosystem": "npm",
+      "name": "@types/node",
+      "version": "22.20.5",
+      "scope": "dev (type declarations only)",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/@types/node (DefinitelyTyped)",
+      "why": "Node.js type declarations matching the minimum supported runtime (Node 22).",
+      "terms": ["https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/LICENSE"],
+      "advisories_checked": "npm audit 2026-10-31: 0 vulnerabilities",
+      "reviewed": "2026-10-31",
+      "review_due": "2027-04-30",
+      "decision": "APPROVED"
+    },
+    {
+      "ecosystem": "npm",
+      "name": "undici-types",
+      "version": "6.21.0",
+      "scope": "dev (transitive of @types/node, declarations only)",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/undici-types (Node.js undici project)",
+      "why": "Transitive type declarations.",
+      "terms": ["https://github.com/nodejs/undici/blob/main/LICENSE"],
+      "advisories_checked": "npm audit 2026-10-31: 0 vulnerabilities",
+      "reviewed": "2026-10-31",
+      "review_due": "2027-04-30",
+      "decision": "APPROVED"
+    }
+  ],
+  "services_and_tools": [
+    {
+      "name": "GitHub (repository hosting)",
+      "usage": "Git hosting of this public repository only. No GitHub Actions, no Dependabot, no GitHub Apps, no automated bulk API activity.",
+      "terms": [
+        "https://docs.github.com/en/site-policy/github-terms/github-terms-of-service",
+        "https://docs.github.com/en/site-policy/acceptable-use-policies/github-acceptable-use-policies",
+        "https://docs.github.com/en/site-policy/acceptable-use-policies/github-active-malware-or-exploits"
+      ],
+      "findings": "Dual-use security research tooling is permitted. Prohibited: using GitHub to deliver attacks or gain unauthorized access, automated excessive bulk activity, inauthentic automated accounts, posting third-party personal information. Customer data from assessment reports must never be committed.",
+      "reviewed": "2026-10-31",
+      "review_due": "2027-04-30",
+      "decision": "APPROVED_WITH_CONDITIONS"
+    },
+    {
+      "name": "GitHub Actions / Dependabot / scheduled workflows",
+      "usage": "NOT USED (owner decision).",
+      "terms": [],
+      "findings": "Owner prohibits GitHub-hosted automation after a previous account suspension. All gates run locally via `npm run gate`.",
+      "reviewed": "2026-10-31",
+      "review_due": "never (owner decision; change only by new explicit owner decision)",
+      "decision": "PROHIBITED"
+    },
+    {
+      "name": "npm public registry (install only)",
+      "usage": "Installing pinned dev dependencies; `npm audit` advisory lookup during the local gate. No publishing.",
+      "terms": ["https://docs.npmjs.com/policies/terms", "https://docs.npmjs.com/policies/open-source-terms"],
+      "findings": "No account needed to install. Must not strain infrastructure with unreasonable request volume; must not crawl the website. Normal install/audit volume is far below limits.",
+      "reviewed": "2026-10-31",
+      "review_due": "2027-04-30",
+      "decision": "APPROVED"
+    },
+    {
+      "name": "Node.js runtime",
+      "usage": "Runtime >= 22.12 (tested locally on 26.13.0).",
+      "terms": ["https://github.com/nodejs/node/blob/main/LICENSE"],
+      "findings": "MIT-style license with bundled third-party notices (OpenSSL Apache-2.0, etc.). Not redistributed by NavSentry.",
+      "reviewed": "2026-10-31",
+      "review_due": "2027-04-30",
+      "decision": "APPROVED"
+    },
+    {
+      "name": "Playwright (optional, NOT installed)",
+      "usage": "Future M1b browser transport; NavSentry never installs it automatically.",
+      "terms": ["https://github.com/microsoft/playwright/blob/main/LICENSE", "https://playwright.dev/docs/browsers"],
+      "findings": "Apache-2.0. `playwright install` downloads open-source Chromium builds by default; branded Chrome/Edge channels are governed by Google/Microsoft terms and must not be used without separate review. Browser binary licenses (Chromium/Firefox/WebKit) not yet reviewed in detail.",
+      "reviewed": "2026-10-31",
+      "review_due": "before M1b dependency is added",
+      "decision": "PENDING_REVIEW"
+    },
+    {
+      "name": "curl / PowerShell (optional OS executables)",
+      "usage": "Detected from fixed system paths only; execution adapters scheduled for M3.",
+      "terms": ["https://curl.se/docs/copyright.html", "https://github.com/PowerShell/PowerShell/blob/master/LICENSE.txt"],
+      "findings": "curl license (MIT-like); PowerShell 7 MIT; Windows PowerShell 5.1 is part of Windows (OS license). Not redistributed.",
+      "reviewed": "2026-10-31",
+      "review_due": "before M3",
+      "decision": "APPROVED_FOR_DETECTION_ONLY"
+    },
+    {
+      "name": "OWASP Top 10 / WSTG / ASVS (reference content)",
+      "usage": "Category IDs and names only, for mapping. No OWASP text copied.",
+      "terms": ["https://owasp.org/www-policy/operational/licensing", "https://top10.owasp.org/2025", "https://asvs.owasp.org/"],
+      "findings": "OWASP projects are generally CC BY-SA 4.0. Using identifiers/names with links is attribution-compatible. Top 10:2025 and ASVS 5.0.0 (30 May 2025) verified as current on 2026-10-31.",
+      "reviewed": "2026-10-31",
+      "review_due": "2027-04-30",
+      "decision": "APPROVED"
+    },
+    {
+      "name": "SaaS advisory APIs (OSV, NVD, GitHub Advisory API), Postman cloud, visual computer-use providers, OWASP ZAP",
+      "usage": "NOT USED in v0.1.",
+      "terms": ["https://google.github.io/osv.dev/faq/", "https://nvd.nist.gov/developers/terms-of-use", "https://www.postman.com/legal/terms/", "https://www.anthropic.com/legal/aup", "https://www.zaproxy.org/"],
+      "findings": "Each requires its own terms review (rate limits, API keys, data sharing of target information, acceptable use) before any integration. Target data must never be sent to a SaaS without the target owner's approval.",
+      "reviewed": "2026-10-31",
+      "review_due": "before any integration",
+      "decision": "NOT_ADOPTED"
+    }
+  ]
+}
