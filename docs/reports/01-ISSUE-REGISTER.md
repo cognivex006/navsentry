@@ -38,7 +38,7 @@ ID categories: `GOV` governance/third-party · `DATA` data exposure · `SAFE` op
 | PRM-SRC-001 | Source findings mix DAST, SAST and infra; counts inflate one root cause | 🟠 CAUTION | A03/A05:2025 | FIXED (automation classes, root-cause note) |
 | PRM-SRC-002 | Scanner false positives/exceptions not modelled | 🟠 CAUTION | A10:2025 | FIXED (SUSPECTED lifecycle, checksum, caveats) |
 | PRM-SRC-003 | Scanner recommends a deprecated, harmful control (HPKP) | 🟠 CAUTION | A04:2025 | FIXED (dismiss guidance in NSC-CRYPT-004) |
-| PRM-PROC-001 | Prompt forbids direct main writes; owner asked to push | 🟡 PLANNED | — | DECIDED (initial commit to empty `main` per owner; branches afterwards) |
+| PRM-PROC-001 | Prompt forbids direct main writes; owner asked to push | 🟡 PLANNED | — | DONE on branch `feat/navsentry-v0.1.0`; creating `main` is an owner decision |
 | PRM-PROC-002 | DevSift reference docs only partially reviewed | 🟡 PLANNED | — | PARTIAL (see list) |
 
 ---
@@ -135,7 +135,7 @@ ID categories: `GOV` governance/third-party · `DATA` data exposure · `SAFE` op
 
 ### PRM-PROC-001 — Pushing to `main`
 - **FACT:** The prompt says not to merge to main without explicit authorization; the owner explicitly asked to push to the empty repository.
-- **DECISION:** The initial commit goes to `main` (owner's explicit instruction, empty repository). All later work uses scoped branches and reviewed merges (AGENTS.md).
+- **OUTCOME:** A local guard hook blocked pushing to `main`, so the work was pushed to `feat/navsentry-v0.1.0` (consistent with the prompt). Because the repository was empty, GitHub made that branch the default. Owner action: review, then create/rename `main` from it (GitHub → Settings → Branches → rename default branch) and protect `main`. The bootstrap commit message mentions `main`; that wording is superseded by this entry.
 
 ### PRM-PROC-002 — DevSift reference coverage
 - **Read (read-only, via `gh api`):** `AGENTS.md`, `SECURITY.md`, `docs/THIRD-PARTY-TERMS.md`, `docs/development/EVIDENCE.md` (partial), `REPORT-MODEL.md` (partial), `SECURITY-GATE.md` (partial), `REPORT-TEMPLATE.md` (partial), repository listings of `devsift` and `devsift-specs`.

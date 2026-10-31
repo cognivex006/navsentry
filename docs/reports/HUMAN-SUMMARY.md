@@ -16,7 +16,8 @@
 |---|---|---|---|
 | 1 | ถอดสิทธิ์ `workflow` ออกจาก token ของ GitHub CLI | ไม่ได้ใช้ และลดความเสี่ยงเรื่องบัญชี | `gh auth refresh -h github.com --remove-scopes workflow` |
 | 2 | เปิด Private vulnerability reporting | ให้คนแจ้งช่องโหว่แบบไม่เปิดเผยต่อสาธารณะได้ (SECURITY.md อ้างถึง) | GitHub → Settings → Security → Private vulnerability reporting |
-| 3 | เก็บไฟล์ `.navsentry/forbidden-terms.txt` ไว้ในเครื่อง | รายชื่อคำต้องห้าม (ชื่อลูกค้า/IP) ที่ใช้ตรวจก่อน push ไฟล์นี้ **ไม่ขึ้น GitHub** | มีอยู่แล้วในเครื่องนี้ ถ้าย้ายเครื่องให้ copy ไปด้วย |
+| 3 | ตรวจงานแล้วตั้ง branch `main` | งานถูก push ไว้ที่ branch `feat/navsentry-v0.1.0` (ระบบป้องกันในเครื่องไม่อนุญาตให้ push ตรงเข้า main) และ GitHub ตั้ง branch นี้เป็น default อัตโนมัติเพราะ repo ว่าง | GitHub → Settings → Branches → เปลี่ยนชื่อ default branch เป็น `main` แล้วตั้ง branch protection |
+| 4 | เก็บไฟล์ `.navsentry/forbidden-terms.txt` ไว้ในเครื่อง | รายชื่อคำต้องห้าม (ชื่อลูกค้า/IP) ที่ใช้ตรวจก่อน push ไฟล์นี้ **ไม่ขึ้น GitHub** | มีอยู่แล้วในเครื่องนี้ ถ้าย้ายเครื่องให้ copy ไปด้วย |
 
 ## ปัญหาที่พบใน Master Prompt และการตัดสินใจ
 
@@ -68,6 +69,6 @@
 
 ## ขั้นต่อไปที่แนะนำ
 
-1. ทำ 3 เรื่องในตาราง "สิ่งที่คุณต้องทำเอง"
+1. ทำ 4 เรื่องในตาราง "สิ่งที่คุณต้องทำเอง"
 2. รัน test บน Linux และ Node 22/24
 3. ศึกษาไลเซนส์ browser ของ Playwright ให้จบ แล้วเริ่ม M1b (ตรวจผ่าน Browser)
