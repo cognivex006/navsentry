@@ -1,0 +1,16 @@
+{
+  "name": "navsentry",
+  "description": "NavSentry skills for authorized web security validation.",
+  "owner": {
+    "name": "NavSentry contributors"
+  },
+  "plugins": [
+    {
+      "name": "navsentry",
+      "description": "Plan and run authorized observe-mode web security checks, verify fixes, and check NavSentry versions.",
+      "version": "0.1.0",
+      "source": "./",
+      "category": "security"
+    }
+  ]
+}

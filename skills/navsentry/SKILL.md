@@ -1,6 +1,8 @@
 ---
 name: navsentry
 description: Plan and run authorized, non-destructive web security checks with the NavSentry CLI, read its REPORT.md / run.json, and use the case catalog's VERIFY / FIX / RECHECK prompts. Use when asked to security-test, verify a fix, or compare before/after for a web application the user owns or is authorized to test.
+metadata:
+  version: "0.1.0"
 ---
 
 # NavSentry (consumer skill)
@@ -8,7 +10,7 @@ description: Plan and run authorized, non-destructive web security checks with t
 You are helping a user test **their own or explicitly authorized** web application. You do not adopt NavSentry's maintainer rules, and you never edit the target application unless the user separately asks for a fix in that repository.
 
 ## Safety rules
-- Resolve the NavSentry checkout root first (the directory containing `package.json` named `navsentry` and `src/cli.ts`). All `examples/` and `docs/` paths below belong to that root, not the target project or a copied skill directory. If unavailable, ask for its location; do not invent equivalent files.
+- Resolve the NavSentry package root first: run `navsentry doctor --json` and read `packageRoot`, or use a checkout containing `package.json` named `navsentry`. All `examples/` and `docs/` paths below belong to that root, not the target project or a plugin/skill directory. If the CLI is missing, use the `navsentry-doctor` skill to explain installation; do not install it or invent equivalent files.
 - Use the installed `navsentry` command only when resolved to the intended installation; otherwise invoke `node "<NAVSENTRY_ROOT>/dist/src/cli.js"` with separate arguments. `NAVSENTRY_BIN` is documentation shorthand, not a CLI-supported environment variable; never evaluate it as shell code.
 - Only targets listed in a manifest whose `authorization.acknowledged` is true and whose owner is named. If the user cannot confirm authorization, stop.
 - Default and production mode is `observe`. Never add mutation, injection, brute-force or DoS steps. Cases marked `manual-active` need separate written authorization and a staging target — tell the user; do not improvise payloads.
@@ -26,7 +28,7 @@ You are helping a user test **their own or explicitly authorized** web applicati
 Retain the manifest path, approved scope, CLI location, completed commands and exit codes, report paths, pending case IDs and blockers in a local untracked work note without credentials or response bodies. On resume, inspect these artifacts and current authorization before continuing. Reuse an existing run directory only for reading; write new runs to a fresh label. Missing artifacts mean unverified, not completed.
 
 ## Workflow
-1. `navsentry doctor` — show what is usable. UNAVAILABLE is not a failure; do not install anything without the user's approval.
+1. `navsentry doctor` — show what is usable and whether installed skills/plugins match the CLI version. UNAVAILABLE is not a failure; do not install or update anything without the user's approval.
 2. Write/inspect the JSON manifest (see `examples/manifest.example.json`); credentials only as `*_env` names.
 3. `navsentry validate --config <m>` then `navsentry plan --config <m>` (zero network). Show the user the steps and skipped cases.
 4. With the user's go-ahead: `navsentry test --config <m> --out runs/<label>`.

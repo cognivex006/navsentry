@@ -1,0 +1,25 @@
+{
+  "name": "navsentry",
+  "version": "0.1.0",
+  "description": "Authorized, non-destructive web security validation with evidence-based reports, fix verification and version doctor.",
+  "author": {
+    "name": "NavSentry contributors"
+  },
+  "license": "Apache-2.0",
+  "repository": "https://github.com/cognivex006/navsentry",
+  "keywords": ["security", "web", "dast", "owasp", "agent-skill"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "NavSentry",
+    "shortDescription": "Authorized web security checks with evidence.",
+    "longDescription": "Plan and run observe-mode security checks against web applications you are authorized to test, read REPORT.md, verify fixes with before/after compare, and check installed NavSentry versions.",
+    "developerName": "NavSentry contributors",
+    "category": "Security",
+    "capabilities": ["Read", "Write"],
+    "defaultPrompt": [
+      "Plan a NavSentry observe run for my staging manifest.",
+      "Compare my before and after NavSentry runs.",
+      "Check my NavSentry installation and versions."
+    ]
+  }
+}

@@ -49,7 +49,13 @@ governance/         third-party decisions
 ## Branches, reviews, releases
 - `main` is protected by convention: work on `feat/*`, `fix/*`, `docs/*`; Conventional Commits.
 - Before pushing: `npm run gate` must PASS. Optional local hook: `git config core.hooksPath scripts/hooks` (create your own `pre-push` that runs the gate; nothing is installed automatically).
-- Releases: owner authorization, `CHANGELOG.md` section, tag `vX.Y.Z`. No package publication is configured.
+- Releases need owner authorization. No npm publication is configured; the CLI ships as a GitHub Release tarball.
+
+## Releasing
+1. Set the same version in `package.json`, `src/types.ts` (`TOOL_VERSION`), `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.codex-plugin/plugin.json`, `.antigravity-plugin/plugin.json`, `gemini-extension.json`, the `ref` in `.agents/plugins/marketplace.json` (`vX.Y.Z`) and `metadata.version` in each `SKILL.md`. `node dist/src/cli.js doctor` must show every package file `CURRENT`; `test/doctor.test.ts` enforces it.
+2. Date the `CHANGELOG.md` section. Run `claude plugin validate --strict .` and `npm run gate`.
+3. Merge to `main` after review, then tag the merge commit `vX.Y.Z` and push the tag.
+4. `npm run release:pack` writes `.navsentry/release/navsentry-X.Y.Z.tgz`. Create the GitHub Release from the tag with that file attached and the CHANGELOG section as notes.
 
 ## Dependency updates
 No Dependabot/Renovate (hosted automation is prohibited). Manual procedure:

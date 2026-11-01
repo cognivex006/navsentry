@@ -1,0 +1,6 @@
+{
+  "name": "navsentry",
+  "version": "0.1.0",
+  "description": "Authorized, non-destructive web security validation with evidence-based reports, fix verification and version doctor.",
+  "contextFileName": "skills/navsentry/SKILL.md"
+}

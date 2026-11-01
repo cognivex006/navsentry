@@ -1,6 +1,8 @@
 ---
 name: navsentry
 description: Use NavSentry to plan authorized web security checks, read reports, verify fixes, or assess browser/Computer Use coverage. Not for general repository maintenance.
+metadata:
+  version: "0.1.0"
 ---
 
 # NavSentry repository entrypoint

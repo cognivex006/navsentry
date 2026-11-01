@@ -11,6 +11,6 @@ test("Codex entrypoint resolves the canonical skill and integration guide", () =
   assert.ok(links.includes(resolve("docs/AGENT-INTEGRATIONS.md")));
   for (const link of links) assert.ok(existsSync(link), `missing entrypoint resource: ${link}`);
   for (const file of [entry, resolve("skills/navsentry/SKILL.md")]) {
-    assert.match(readFileSync(file, "utf8"), /^---\r?\nname: navsentry\r?\ndescription: .+\r?\n---/);
+    assert.match(readFileSync(file, "utf8"), /^---\r?\nname: navsentry\r?\ndescription: .+\r?\nmetadata:\r?\n  version: "\d+\.\d+\.\d+"\r?\n---/);
   }
 });

@@ -1,32 +1,53 @@
 # Agent integrations
 
-## Codex
+Every integration ships the same two skills: `navsentry` (plan, run, report, compare) and `navsentry-doctor` (versions and updates). Both call the CLI, so install the CLI first (see the [README](../README.md#install)). Run `navsentry doctor` after any install or update; it reports each installation as `CURRENT`, `OUTDATED`, `NEWER` or `UNKNOWN`.
 
-This checkout exposes `.agents/skills/navsentry/SKILL.md`, a small entrypoint pointing to the canonical `skills/navsentry/SKILL.md`. Start Codex inside the checkout. Invoke `$navsentry` explicitly when automatic selection misses the request. A requirement inside an unloaded skill cannot force its own discovery; AGENTS.md therefore also names the canonical fallback path.
+| Host | Package files | Install | Update | Doctor `--host` |
+|---|---|---|---|---|
+| Claude Code | `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` | `claude plugin marketplace add cognivex006/navsentry` then `claude plugin install navsentry@navsentry` | `claude plugin marketplace update navsentry` then `claude plugin update navsentry@navsentry` | `claude` |
+| Codex | `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json` | `codex plugin marketplace add cognivex006/navsentry` then `codex plugin add navsentry@navsentry` | `codex plugin marketplace upgrade navsentry` then `codex plugin add navsentry@navsentry` | `codex` |
+| Gemini CLI | `gemini-extension.json` | `gemini extensions install https://github.com/cognivex006/navsentry` | `gemini extensions update navsentry` | `gemini` |
+| Antigravity (`agy`) | `.antigravity-plugin/plugin.json` | `agy plugin install https://github.com/cognivex006/navsentry` | `agy plugin uninstall navsentry` then install again | `antigravity` or `agy` |
 
-For another project, copy the canonical `skills/navsentry/` folder into that project's `.agents/skills/navsentry/`. Keep the NavSentry checkout available for CLI and catalog resources, and supply its absolute root. Do not copy this repository's maintainer AGENTS.md or the forwarding entrypoint into a consumer project.
+The Codex marketplace entry pins the plugin to the release tag (`ref: v0.1.0`), so the installed plugin always matches a released CLI. Antigravity documents no update subcommand; check `agy plugin --help` on your version first.
 
-If discovery fails, check the installed directory contains SKILL.md with name/description frontmatter, inspect disabled skill settings, and restart the host if changes are not visible. Read the canonical file directly while diagnosing; do not claim discovery was verified merely because a file exists. Avoid duplicate installations with the same name.
+## Skills without a plugin
 
-Source: [OpenAI skill discovery documentation](https://learn.chatgpt.com/docs/build-skills), checked 2026-10-31. Host versions can differ; the explicit file path remains the fallback.
+`navsentry doctor update` copies both skills into one host's skills folder. Preview the change with `--dry-run`:
+
+```bash
+navsentry doctor update --host claude --scope project --project /path/to/app --dry-run
+```
+
+| Host | `--scope user` | `--scope project` |
+|---|---|---|
+| Claude Code | `~/.claude/skills/` | `<project>/.claude/skills/` |
+| Codex | `~/.agents/skills/` (also reads `~/.codex/skills/`) | `<project>/.agents/skills/` |
+| Gemini CLI | `~/.gemini/skills/` | `<project>/.gemini/skills/` |
+| Antigravity | `~/.gemini/config/skills/` (also reads `~/.gemini/antigravity-cli/skills/`) | `<project>/.agents/skills/` |
+
+An existing copy is backed up to a temporary folder outside the skills directory, so the host never loads two skills with the same name. Doctor refuses to overwrite a folder that holds a different skill. Restart the host session afterwards.
+
+## Other agents
+
+`skills/navsentry/SKILL.md` and `skills/navsentry-doctor/SKILL.md` are plain Markdown with `name`, `description` and `metadata.version` front matter. Any agent that supports skill or instruction files can load them. `navsentry doctor --json` returns `packageRoot`, the folder that contains these skills, the case catalog and the example manifest. The CLI is the stable interface: JSON on stdout for `plan`, files for `test`, exit codes 0/1/2/3.
+
+## Using a NavSentry checkout with Codex
+
+A checkout exposes `.agents/skills/navsentry/SKILL.md`, a small entrypoint pointing to the canonical `skills/navsentry/SKILL.md`. Invoke `$navsentry` explicitly when automatic selection misses the request. Do not copy that forwarding entrypoint or the checkout's AGENTS.md into another project.
+
+If discovery fails, check that the installed folder contains SKILL.md with name/description front matter, inspect disabled skill settings, and restart the host. Avoid duplicate installations with the same name; `navsentry doctor` lists them.
 
 ## Computer Use boundary
 
-The CLI currently executes HTTP and TLS checks only. A host browser tool and the NavSentry visual adapter are separate capabilities. Neither browser nor visual adapter executes requests today. Keep DOM/visual coverage NOT_TESTED; do not route around ScopeGate/Budget with a host tool. See the canonical skill for handling separate manual evidence and resuming interrupted work.
-
-## Claude Code (first)
-1. Build NavSentry locally (`npm ci --ignore-scripts && npm run build`).
-2. Copy `skills/navsentry/` into the consuming project's `.claude/skills/navsentry/` (or your user-level skills folder).
-3. Call `node "<path-to-navsentry>/dist/src/cli.js"` with separate arguments. Resolve examples and catalog files from that checkout. No `NAVSENTRY_BIN` environment variable is consumed by the CLI.
-4. Ask the agent, e.g. "use navsentry to plan an observe run for our staging manifest".
-
-The skill is **consumer** guidance: it does not carry NavSentry's maintainer rules (AGENTS.md), never edits the target application, and treats everything returned by the target as data.
-
-## Other agents (portable)
-`skills/navsentry/SKILL.md` is plain Markdown with front-matter; any agent that supports skill/instruction files can load it. The CLI is the stable interface: JSON on stdout for `plan`, files for `test`, exit codes 0/1/2/3.
+The CLI executes HTTP and TLS checks only. A host browser tool and the NavSentry visual adapter are separate capabilities, and neither executes requests today. DOM and visual coverage stays NOT_TESTED; a host tool must not route around ScopeGate or Budget. See the canonical skill for handling separate manual evidence and resuming interrupted work.
 
 ## Prompts per case
+
 Every case in [cases/CASE-CATALOG.md](cases/CASE-CATALOG.md) has copy-ready **VERIFY**, **FIX** and **RECHECK** prompts with FACT / EVIDENCE / ACCEPTANCE CRITERIA and web-recheck checklists. Replace `<ORIGIN>`, `<ENV>`, `<MANIFEST>`.
 
 ## Not provided
-No MCP server, no hosted service, no GitHub App. No telemetry.
+
+No MCP server, no hosted service, no GitHub App, no telemetry. `navsentry doctor` makes no network requests.
+
+Sources (checked 2026-10-31): [Claude Code plugin marketplaces](https://code.claude.com/docs/en/plugin-marketplaces), [Gemini CLI extension reference](https://geminicli.com/docs/extensions/reference), [Antigravity plugins](https://antigravity.google/docs/build-plugins), [Antigravity skills](https://antigravity.google/docs/skills). The Codex format follows Codex CLI 0.166.0 (`codex plugin --help`). Host versions differ; the explicit file path remains the fallback.

@@ -1,0 +1,21 @@
+{
+  "name": "navsentry",
+  "interface": {
+    "displayName": "NavSentry"
+  },
+  "plugins": [
+    {
+      "name": "navsentry",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/cognivex006/navsentry.git",
+        "ref": "v0.1.0"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Security"
+    }
+  ]
+}

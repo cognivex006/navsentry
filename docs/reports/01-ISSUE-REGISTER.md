@@ -58,7 +58,7 @@ ID categories: `GOV` governance/third-party · `DATA` data exposure · `SAFE` op
 
 ### PRM-GOV-002 — Automated dependency-update PRs
 - **FACT:** "dependency update PRs with tests" implies Dependabot/Renovate (GitHub App/SaaS automation).
-- **DECISION:** Updates are manual: `npm outdated` → choose versions ≥14 days old → review license/terms/advisories → update `governance/third-party.json` → `npm run gate`. Documented in [DEVELOPMENT.md](../../DEVELOPMENT.md#dependency-updates).
+- **DECISION:** Updates are manual: `npm outdated` → choose versions ≥14 days old → review license/terms/advisories → update `governance/third-party.json` → `npm run gate`. Documented in [DEVELOPMENT.md](../DEVELOPMENT.md#dependency-updates).
 - **VERIFY:** [ ] no `.github/dependabot.yml` · [ ] DEVELOPMENT.md has the manual procedure.
 
 ### PRM-GOV-003 — SaaS / third-party terms not studied
