@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="navsentry-flows" tests="11">
+  <testsuite name="orders-access" tests="7" failures="0" errors="0" skipped="0">
+    <testcase classname="orders-access" name="orders-access/S1"/>
+    <testcase classname="orders-access" name="orders-access/S2"/>
+    <testcase classname="orders-access" name="orders-access/S3"/>
+    <testcase classname="orders-access" name="orders-access/S4"/>
+    <testcase classname="orders-access" name="orders-access/S5"/>
+    <testcase classname="orders-access" name="orders-access/S6"/>
+    <testcase classname="orders-access" name="orders-access/S7"/>
+  </testsuite>
+  <testsuite name="profile-journey" tests="4" failures="0" errors="0" skipped="2">
+    <testcase classname="profile-journey" name="profile-journey/S1"/>
+    <testcase classname="profile-journey" name="profile-journey/S2">
+      <skipped message="click requires the playwright-browser transport (M1b), which is not usable in this release"/>
+    </testcase>
+    <testcase classname="profile-journey" name="profile-journey/S3">
+      <skipped message="see requires the playwright-browser transport (M1b), which is not usable in this release"/>
+    </testcase>
+    <testcase classname="profile-journey" name="profile-journey/S4"/>
+  </testsuite>
+</testsuites>

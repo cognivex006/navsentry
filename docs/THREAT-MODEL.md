@@ -14,4 +14,13 @@ Assets: target availability and data; credentials for test actors; evidence/repo
 | TM-08 | Owner account suspension (platform policy) | No GitHub Actions/Apps/bulk API automation; public repo content reviewed against GitHub AUP | Owner should remove `workflow` token scope |
 | TM-09 | Publishing customer data from source reports | SRC labels; GATE-08 with untracked owner terms; catalog anonymization test | Depends on the owner keeping the terms file current |
 | TM-10 | False assurance ("zero findings = safe") | Coverage matrix with NOT_TESTED reasons; INCOMPLETE security result; wording in every report | Human review still required |
+| TM-12 | A flow file widens scope (origin, path, method, headers) | No host keys; static ScopeGate lint; runtime ScopeGate per request and redirect hop; unknown keys rejected; no custom headers | — |
+| TM-13 | Target-controlled values steer requests (extracted IDs) | Strict value charset, `.`/`..` rejected, whole-segment substitution with encoding, ScopeGate after substitution, no header templating, no cross-flow state | — |
+| TM-14 | Prompt injection through analyzer inputs (run.json, story text, target repos) | Deterministic analyzer; narrative never executed or reported; generated flows are drafts; skill: data, not instructions | Host agent discipline |
+| TM-15 | Secrets or PII committed in consumer flow files | Env references only; `fill` values only via vars; every literal scanned with the Redactor detectors; secret-like keys rejected | Unknown formats may pass the detectors |
+| TM-16 | False assurance: "E2E passed" while UI steps did not run | Router-based executability; INCOMPLETE, never PASS; "HTTP-level only" label; manual replay kept separate | — |
+| TM-17 | Load caused by many flows | Shared budget and rate limit; no loops or retries; step/flow limits; estimate in `plan` | — |
+| TM-18 | Baking vulnerable or erroneous behaviour into expectations | Analyzer skips ≥500, security headers, cookies and values; "public?" decisions left to the owner; security checks independent of expectations | Owner may approve a wrong expectation |
+| TM-19 | GET with side effects (logout, delete links) | Lint warning; analyzer skips such paths; skill requires owner confirmation | GET side effects are invisible to NavSentry |
+| TM-20 | Self-approval by an agent | Hash-pinned approval; skill rule; drafts capped at SUSPECTED; drafts refused for production | Approval is a process control, not identity |
 | TM-11 | Over-trusting scanner output in sources | SUSPECTED lifecycle, checksum validation, caveats, HPKP dismissal | Owner-specific exceptions must be recorded per project |

@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | **Draft for owner review — not approved for implementation** |
+| Status | **Implemented** on `feat/flows-0.1.2` (owner instruction 2026-11-01: implement per spec; every §18 decision taken as recommended) |
 | Target version | 0.1.2 |
 | Baseline | v0.1.0 (`main` @ `88a78a2`). Slot 0.1.1 is left for any patch released before this work; nothing here depends on it. |
 | Drafted | 2026-11-01 |
@@ -219,7 +219,7 @@ The capability router (`transports/registry.ts#route`) decides executability wit
 - **Runtime value rule:** the value must be a string or finite number. Its string form must match `^[A-Za-z0-9._~-]{1,128}$` and must not be `.` or `..`. Otherwise the step is `ERROR` "variable value rejected by safety rule" (the value is not echoed), and the steps that depend on it are `NOT_TESTED`.
 - **Substitution** fills only whole path segments and whole query values. Values are percent-encoded. Method, origin and headers are never templated.
 - **Scope:** the built URL goes through `DirectHttpAdapter.send`, which runs `ScopeGate.checkRequest`, then connect-time `checkResolvedAddress`. A denial is recorded in `run.json#denials`, and the step is `NOT_TESTED` with "denied by scope: <reason>".
-- **Persistence:** values are never written anywhere. A flow request's `ObservedRequest.url` is the redacted URL **in template form** (`/api/orders/{{orderA}}`), via a new optional `HttpRequestSpec.displayUrl`. This keeps fingerprints and `compare` keys stable across runs.
+- **Persistence:** values are never written into URLs, `flows.json`, `TEST-REPORT.md` or JUnit. Env-sourced values are also masked in body excerpts. A flow request's `ObservedRequest.url` is the redacted URL **in template form** (`/api/orders/{{orderA}}`), via a new optional `HttpRequestSpec.displayUrl`. This keeps fingerprints and `compare` keys stable across runs.
 - **No hidden state:** extraction happens only when the step's status is `PASS`. Variables never cross flows.
 
 ### 5.9 Limits

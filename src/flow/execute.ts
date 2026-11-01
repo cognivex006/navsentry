@@ -1,0 +1,259 @@
+/**
+ * Flow replay (spec §8). This module performs no I/O of its own: every request goes
+ * through the runner's `send` (ScopeGate → Budget → connect-time DNS check), and every
+ * exchange is handed back to the runner's security checks.
+ */
+import { BudgetExceeded } from "../budget.js";
+import { getCase } from "../catalog.js";
+import type { Manifest } from "../config.js";
+import type { ScopeGate } from "../scope.js";
+import type { Exchange } from "../transports/types.js";
+import type { AssertionResult, CheckResult, CheckStatus, FlowResult, FlowStatus, StepResult } from "../types.js";
+import { evaluate, resolvePointer, worst } from "./assert.js";
+import { classify, flowHash, requestTemplate, stepHash, stepTransport } from "./classify.js";
+import { fillPath, flowOrigin, placeholders } from "./lint.js";
+import { UI_ACTIONS, type FlowDoc, type FlowStep } from "./parse.js";
+
+export const MAX_FLOW_REDIRECTS = 5;
+const SAFE_VALUE = /^[A-Za-z0-9._~-]{1,128}$/;
+const ACCEPT = { json: "application/json", text: "text/plain, */*;q=0.1", any: "*/*", html: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8" } as const;
+
+export interface FlowSendRequest {
+  method: "GET" | "HEAD" | "OPTIONS";
+  url: string;
+  displayUrl: string;
+  actor: string;
+  headers: Record<string, string>;
+  flow: { id: string; step: string; deniedProbe?: true };
+}
+
+export interface FlowContext {
+  manifest: Manifest;
+  gate: ScopeGate;
+  /** Actor name → request headers; actors missing here are not usable in this run. */
+  actors: Map<string, Record<string, string>>;
+  actorSkipReasons: Map<string, string>;
+  env: NodeJS.ProcessEnv;
+  /** Returns undefined when ScopeGate denied the request (the denial is recorded by the runner). */
+  send(req: FlowSendRequest): Promise<Exchange | undefined>;
+  securityChecks(ex: Exchange, actor: string, url: string): CheckResult[];
+  onDenied(url: string, method: string, reason: string): void;
+  displayUrl(url: string): string;
+}
+
+export interface FlowsOutcome {
+  flows: FlowResult[];
+  checks: CheckResult[];
+  incomplete: string[];
+}
+
+interface StepRun {
+  step: FlowStep;
+  result: StepResult;
+  exchange?: Exchange;
+  pendingDenied: boolean;
+}
+
+export const securityCaseFor = (s: FlowStep): string => (s.actor === "anonymous" ? "NSC-AC-002" : s.object_owner ? "NSC-AC-003" : "NSC-AC-007");
+
+function display(s: FlowStep): string | undefined {
+  if (!s.request) return undefined;
+  const q = Object.entries(s.request.query ?? {}).map(([k, v]) => `${k}=${v}`).join("&");
+  return `${s.request.method} ${s.request.path}${q ? `?${q}` : ""}`;
+}
+
+function uiReason(s: FlowStep): string {
+  const base = `${s.action} requires the playwright-browser transport (M1b), which is not usable in this release`;
+  return s.action === "fill" || s.action === "submit" ? `${base}; may change state — requires safe-validate (M2)` : base;
+}
+
+/** Human checklist line for a step a person can replay manually. */
+export function manualLine(s: FlowStep): string {
+  const t = s.target;
+  const what = !t ? "" : "role" in t ? `${t.role} “${t.name}”` : "label" in t ? `field “${t.label}”` : "text" in t ? `text “${t.text}”` : `element [data-testid=${t.test_id}]`;
+  const verb = { click: "click", select: "select an option in", fill: "fill", submit: "submit", see: "check that you can see", wait_for: "wait until you can see", http: "request", navigate: "open" }[s.action];
+  const value = s.value ? ` with the value of variable ${s.value.var} (not shown)` : "";
+  return `${s.id} — as ${s.actor}: ${verb} ${what}${value}`;
+}
+
+function flowStatus(steps: StepResult[]): FlowStatus {
+  const st = steps.map((s) => s.status);
+  if (st.includes("FAIL")) return "FAIL";
+  if (st.includes("ERROR")) return "ERROR";
+  if (st.every((s) => s === "NOT_TESTED")) return "NOT_TESTED";
+  if (st.some((s) => s === "NOT_TESTED" || s === "INCONCLUSIVE")) return "INCOMPLETE";
+  return "PASS";
+}
+
+async function runDoc(doc: FlowDoc, ctx: FlowContext, budget: { exhausted?: string }, checks: CheckResult[]): Promise<FlowResult> {
+  const origin = flowOrigin(doc, ctx.manifest)!;
+  const cls = classify(doc);
+  const approved = doc.header.review.status === "approved" && doc.header.review.content_sha256 === flowHash(doc);
+  const vars = new Map<string, string>();
+  const varMissing = new Map<string, string>();
+  for (const [n, v] of Object.entries(doc.header.vars)) {
+    if ("value" in v) vars.set(n, v.value);
+    else if (ctx.env[v.env]) vars.set(n, ctx.env[v.env] as string);
+    else varMissing.set(n, `env ${v.env} is not set`);
+  }
+  const runs: StepRun[] = [];
+  const byId = new Map<string, StepRun>();
+
+  for (const s of doc.steps) {
+    const res: StepResult = { id: s.id, key: `${doc.header.id}/${s.id}`, title: s.title, action: s.action, actor: s.actor, contentSha256: stepHash(s), status: "NOT_TESTED", assertions: [], requestIds: [] };
+    const req = display(s);
+    if (req) res.request = req;
+    if (s.expect?.access === "denied") res.securityCase = securityCaseFor(s);
+    const run: StepRun = { step: s, result: res, pendingDenied: false };
+    runs.push(run);
+    byId.set(s.id, run);
+    const skip = (reason: string) => { res.reason = reason; };
+
+    if (UI_ACTIONS.has(s.action)) { skip(uiReason(s)); continue; }
+    if (budget.exhausted) { skip("budget exhausted"); continue; }
+    const actorHeaders = ctx.actors.get(s.actor);
+    if (!actorHeaders) { skip(`actor ${s.actor} not tested: ${ctx.actorSkipReasons.get(s.actor) ?? "not usable"}`); continue; }
+    const dep = (s.depends_on ?? []).find((d) => byId.get(d)?.result.status !== "PASS");
+    if (dep) { skip(`dependency ${dep} did not pass`); continue; }
+    const missing = placeholders(s).find((v) => !vars.has(v));
+    if (missing) {
+      const producer = runs.find((r) => r.step.extract && missing in r.step.extract);
+      skip(varMissing.get(missing) ?? (producer ? `dependency ${producer.step.id} did not pass` : `variable ${missing} has no value`));
+      continue;
+    }
+    const unsafe = placeholders(s).find((v) => !SAFE_VALUE.test(vars.get(v)!) || vars.get(v) === "." || vars.get(v) === "..");
+    if (unsafe) { res.status = "ERROR"; res.reason = `variable ${unsafe} value rejected by safety rule`; continue; }
+
+    const r = s.request!;
+    const u = new URL(fillPath(r.path, (n) => vars.get(n)!), origin);
+    const du = new URL(r.path, origin);
+    for (const [k, v] of Object.entries(r.query ?? {})) {
+      const ph = v.match(/^\{\{(\w+)\}\}$/);
+      u.searchParams.set(k, ph ? vars.get(ph[1] as string)! : v);
+      du.searchParams.set(k, v);
+    }
+    const accept = s.action === "navigate" ? ACCEPT.html : ACCEPT[(r.accept as keyof typeof ACCEPT) ?? "any"] ?? ACCEPT.any;
+    let ex: Exchange | undefined;
+    try {
+      let url = u.toString();
+      let shown = du.toString();
+      for (let hop = 0; ; hop++) {
+        ex = await ctx.send({ method: r.method, url, displayUrl: shown, actor: s.actor, headers: { ...actorHeaders, accept, "x-navsentry-flow": `${doc.header.id}/${s.id}` }, flow: { id: doc.header.id, step: s.id, ...(s.expect?.access === "denied" ? { deniedProbe: true as const } : {}) } });
+        if (!ex) break;
+        res.requestIds.push(ex.record.id);
+        if (ex.record.error) break;
+        checks.push(...ctx.securityChecks(ex, s.actor, url));
+        const next = ex.raw?.redirectLocation;
+        if (!s.follow_redirects || !next || !(ex.raw!.status >= 300 && ex.raw!.status < 400)) break;
+        if (hop >= MAX_FLOW_REDIRECTS) { res.status = "ERROR"; res.reason = `redirect chain exceeded ${MAX_FLOW_REDIRECTS} hops`; ex = undefined; break; }
+        const d = ctx.gate.checkRequest(next, r.method);
+        if (!d.allowed) { ctx.onDenied(ctx.displayUrl(next), r.method, `redirect not followed: ${d.reason}`); res.reason = `redirect not followed: ${d.reason}`; ex = undefined; break; }
+        url = next;
+        shown = next;
+      }
+    } catch (e) {
+      if (e instanceof BudgetExceeded) { budget.exhausted = e.message; skip("budget exhausted"); continue; }
+      throw e;
+    }
+    if (res.status === "ERROR" || res.reason?.startsWith("redirect not followed")) continue;
+    if (!ex) { skip("denied by scope (see run.json denials)"); continue; }
+    if (ex.record.error) { res.status = "ERROR"; res.reason = ex.record.error; continue; }
+    run.exchange = ex;
+    res.assertions = evaluate(s.expect ?? {}, ex, origin);
+    run.pendingDenied = s.expect?.access === "denied";
+    res.status = run.pendingDenied ? "PASS" : worst(res.assertions.map((a) => a.status));
+    if (!run.pendingDenied && res.status === "PASS") {
+      for (const [name, x] of Object.entries(s.extract ?? {})) {
+        let v: unknown;
+        if (x.from === "json") {
+          try {
+            v = resolvePointer(JSON.parse(ex.raw!.body.toString("utf8")), x.pointer).value;
+          } catch {
+            v = undefined;
+          }
+        } else v = ex.raw!.headers[x.name]?.[0];
+        if (typeof v === "string" || (typeof v === "number" && Number.isFinite(v))) vars.set(name, String(v));
+      }
+    }
+  }
+
+  // Post-pass: denied expectations need an executed, passing positive control.
+  for (const run of runs.filter((x) => x.pendingDenied)) {
+    const s = run.step;
+    const ex = run.exchange!;
+    const status = ex.raw!.status;
+    const deny = s.expect!.deny_status ?? [401, 403];
+    const tpl = requestTemplate(s);
+    const control = runs.find((o) => o !== run && o.step.actor !== s.actor && o.step.expect?.access === "allowed" && requestTemplate(o.step) === tpl && o.result.status === "PASS" && o.exchange);
+    let a: AssertionResult;
+    let observation = "";
+    const loginRedirect = doc.header.login_path && status >= 300 && status < 400 && ex.raw!.redirectLocation && new URL(ex.raw!.redirectLocation).origin === origin && new URL(ex.raw!.redirectLocation).pathname === doc.header.login_path;
+    if (deny.includes(status)) a = { kind: "access", status: "PASS", expected: `denied (${deny.join("|")})`, observed: `status ${status}` };
+    else if (loginRedirect) a = { kind: "access", status: "PASS", expected: "denied", observed: `redirect to ${doc.header.login_path}` };
+    else if (status >= 200 && status < 300) {
+      if (!control) a = { kind: "access", status: "INCONCLUSIVE", expected: "denied", observed: `status ${status}; no executed positive control` };
+      else {
+        const c1 = control.exchange!.record.contract, c2 = ex.record.contract;
+        const same = !!c1 && !!c2 && c1.contentType === c2.contentType && (c1.jsonShapeHash ?? "") === (c2.jsonShapeHash ?? "");
+        if (same) {
+          observation = `actor ${s.actor} received ${status} ${c2!.contentType || "no media type"} with the same response contract as positive control ${control.step.id} (${control.step.actor})`;
+          a = { kind: "access", status: "FAIL", expected: "denied", observed: `status ${status}, same contract as positive control ${control.step.id}` };
+        } else a = { kind: "access", status: "INCONCLUSIVE", expected: "denied", observed: `status ${status} with a different contract than the positive control (soft-denial page?)` };
+      }
+    } else a = { kind: "access", status: "INCONCLUSIVE", expected: "denied", observed: `status ${status}` };
+    const others = evaluate({ ...s.expect!, access: undefined }, ex, origin);
+    run.result.assertions = [...others, a];
+    run.result.status = worst(run.result.assertions.map((x) => x.status));
+    const ruleId = run.result.securityCase!;
+    checks.push({
+      ruleId,
+      status: a.status,
+      target: `${ex.record.method} ${ex.record.url}`,
+      transport: ex.record.transport,
+      summary: a.status === "FAIL" ? `${getCase(ruleId).titleEn}: access was granted` : a.status === "PASS" ? "access denied as expected" : "access expectation inconclusive",
+      observations: observation ? [observation, `flow ${doc.header.id} step ${s.id}`] : [a.observed, `flow ${doc.header.id} step ${s.id}`],
+      requestIds: [...run.result.requestIds, ...(control ? control.result.requestIds : [])],
+      ...(a.status === "INCONCLUSIVE" ? { reason: a.observed } : {}),
+      ...(approved ? {} : { basis: "draft-flow" as const }),
+    });
+  }
+
+  const steps = runs.map((x) => x.result);
+  for (const st of steps) if (st.status === "NOT_TESTED" && !st.reason) st.reason = "not executed";
+  const status = flowStatus(steps);
+  const reasons = [...new Set(steps.filter((x) => x.status !== "PASS").map((x) => `${x.id} ${x.status}${x.reason ? `: ${x.reason}` : ""}`))];
+  return {
+    id: doc.header.id,
+    title: doc.header.title,
+    story: doc.header.story,
+    file: doc.file,
+    declaredLevel: doc.header.level,
+    level: cls.level,
+    levelReasons: cls.levelReasons,
+    executability: cls.executability,
+    review: { status: doc.header.review.status, ...(doc.header.review.approved_by ? { approvedBy: doc.header.review.approved_by } : {}), ...(doc.header.review.approved_at ? { approvedAt: doc.header.review.approved_at } : {}), hashValid: approved },
+    contentSha256: flowHash(doc),
+    status,
+    reasons,
+    steps,
+    findings: [],
+    manualReplay: doc.steps.filter((s) => stepTransport(s) !== "direct-http").map(manualLine),
+  };
+}
+
+/** Executes flows sequentially by id. Security CheckResults are returned for coverage/findings. */
+export async function runFlows(docs: FlowDoc[], ctx: FlowContext): Promise<FlowsOutcome> {
+  const checks: CheckResult[] = [];
+  const budget: { exhausted?: string } = {};
+  const flows: FlowResult[] = [];
+  for (const d of docs) flows.push(await runDoc(d, ctx, budget, checks));
+  return { flows, checks, incomplete: budget.exhausted ? [budget.exhausted] : [] };
+}
+
+export function functionalResult(flows: FlowResult[]): "PASS" | "FAIL" | "INCOMPLETE" {
+  if (flows.some((f) => f.status === "FAIL")) return "FAIL";
+  if (!flows.length || flows.some((f) => f.status !== "PASS")) return "INCOMPLETE";
+  return "PASS";
+}
+
+export type { CheckStatus };

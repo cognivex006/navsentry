@@ -12,6 +12,19 @@ export type DemoMode = "vulnerable" | "secure";
 /** Synthetic, checksum-valid Thai national ID used only in tests (not a real person). */
 export const SYNTHETIC_NATIONAL_ID = "1101700207366";
 
+/** Synthetic bearer values for fixture actors (test-only, not secrets). */
+export const FIXTURE_TOKENS = { reader_a: "Bearer fixture-reader-a-token", reader_b: "Bearer fixture-reader-b-token", admin: "Bearer fixture-admin-token" } as const;
+const TOKEN_ACTOR: Record<string, string> = { [FIXTURE_TOKENS.reader_a]: "reader-a", [FIXTURE_TOKENS.reader_b]: "reader-b", [FIXTURE_TOKENS.admin]: "admin" };
+const ORDERS: Record<string, { owner: string; total: number }> = { "o-a-1": { owner: "reader-a", total: 120 }, "o-b-1": { owner: "reader-b", total: 80 } };
+
+function actorOf(h: string | undefined): string | undefined {
+  return h ? TOKEN_ACTOR[h] : undefined;
+}
+
+function json(res: http.ServerResponse, status: number, body: object): void {
+  res.writeHead(status, { "content-type": "application/json", "cache-control": "no-store" }).end(JSON.stringify(body));
+}
+
 function b64url(o: object): string {
   return Buffer.from(JSON.stringify(o)).toString("base64url");
 }
@@ -65,8 +78,49 @@ export function startDemo(mode: DemoMode, port = 0): Promise<{ origin: string; h
       case "/go-in":
         res.writeHead(302, { location: "/" }).end();
         return;
-      default:
+      case "/api/me": {
+        // Missing authentication (NSC-AC-002) in the vulnerable variant.
+        const who = actorOf(req.headers.authorization);
+        if (!who && !vuln) return json(res, 401, { error: "unauthorized" });
+        return json(res, 200, { id: who ?? "reader-a", role: who === "admin" ? "admin" : "reader" });
+      }
+      case "/api/orders": {
+        const who = actorOf(req.headers.authorization);
+        if (!who) return json(res, 401, { error: "unauthorized" });
+        return json(res, 200, { items: Object.entries(ORDERS).filter(([, o]) => o.owner === who).map(([id, o]) => ({ id, total: o.total })) });
+      }
+      case "/api/admin/stats": {
+        // Missing function-level authorization (NSC-AC-007) in the vulnerable variant.
+        const who = actorOf(req.headers.authorization);
+        if (!who) return json(res, 401, { error: "unauthorized" });
+        if (who !== "admin" && !vuln) return json(res, 403, { error: "forbidden" });
+        return json(res, 200, { users: 3, orders: 2 });
+      }
+      case "/api/hostile-ids":
+        // NavSentry safety fixture (not a target defect): values a flow must refuse to put in a URL.
+        return json(res, 200, { traversal: "../admin", encoded: "%2e%2e", long: "x".repeat(300), absolute: "http://evil.example/x", ok: "o-a-1" });
+      case "/app/profile": {
+        const who = actorOf(req.headers.authorization);
+        if (!who && !vuln) { res.writeHead(302, { location: "/login" }).end(); return; }
+        if (!vuln) res.setHeader("cache-control", "no-store");
+        res.writeHead(200, { "content-type": "text/html; charset=utf-8" }).end("<!doctype html><title>Profile</title><h1>Profile</h1><a href=\"/app/orders\">Orders</a>");
+        return;
+      }
+      case "/login":
+        res.writeHead(200, { "content-type": "text/html; charset=utf-8" }).end("<!doctype html><title>Login</title><h1>Sign in</h1>");
+        return;
+      default: {
+        const m = url.pathname.match(/^\/api\/orders\/([a-z0-9-]+)$/);
+        if (m) {
+          // IDOR / BOLA (NSC-AC-003) in the vulnerable variant: no ownership check.
+          const who = actorOf(req.headers.authorization);
+          const o = ORDERS[m[1] as string];
+          if (!who) return json(res, 401, { error: "unauthorized" });
+          if (!o || (o.owner !== who && !vuln)) return json(res, 404, { error: "not found" });
+          return json(res, 200, { id: m[1], total: o.total, status: "paid" });
+        }
         res.writeHead(404, { "content-type": "text/plain; charset=utf-8" }).end("not found");
+      }
     }
   });
   return new Promise((resolve) => {

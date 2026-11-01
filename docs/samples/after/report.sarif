@@ -6,7 +6,7 @@
       "tool": {
         "driver": {
           "name": "NavSentry",
-          "version": "0.1.0",
+          "version": "0.1.2",
           "informationUri": "https://github.com/cognivex006/navsentry",
           "rules": [
             {
@@ -29,18 +29,41 @@
                 "category": "CRYPT",
                 "priority": "IMMEDIATE"
               }
+            },
+            {
+              "id": "NSC-CONF-007",
+              "name": "Insecurecachepolicyforsensitiveresponses",
+              "shortDescription": {
+                "text": "Insecure cache policy for sensitive responses"
+              },
+              "fullDescription": {
+                "text": "Authenticated or personal API/document responses are cacheable (no `Cache-Control: no-store`/`private`), so shared caches or the browser can retain them."
+              },
+              "help": {
+                "text": "Add no-store on authenticated/sensitive routes (middleware by route group); keep long caching only for fingerprinted static assets."
+              },
+              "properties": {
+                "tags": [
+                  "CWE-524",
+                  "CWE-525",
+                  "A06:2025 Insecure Design",
+                  "A02:2025 Security Misconfiguration"
+                ],
+                "category": "CONF",
+                "priority": "PLANNED"
+              }
             }
           ]
         }
       },
       "automationDetails": {
-        "id": "navsentry/demo-after/18c3ac9b-f65d-454a-9457-82b4f6cb42a8"
+        "id": "navsentry/demo-after/841daba1-525d-487c-9413-a747e421e45b"
       },
       "invocations": [
         {
           "executionSuccessful": true,
-          "startTimeUtc": "2026-10-31T06:06:20.338Z",
-          "endTimeUtc": "2026-10-31T06:06:21.459Z"
+          "startTimeUtc": "2026-11-01T15:00:02.728Z",
+          "endTimeUtc": "2026-11-01T15:00:05.158Z"
         }
       ],
       "results": [
@@ -167,6 +190,156 @@
             "lifecycle": "VALIDATED",
             "confidence": "high",
             "severity": "medium"
+          }
+        },
+        {
+          "ruleId": "NSC-CRYPT-006",
+          "ruleIndex": 0,
+          "level": "warning",
+          "message": {
+            "text": "Cleartext HTTP served without redirect to HTTPS: Plain HTTP serves content (HTTP 200) without HTTPS redirect"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4174/api/orders"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "3585c95db6c6d12721e0affe"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
+          "ruleId": "NSC-CRYPT-006",
+          "ruleIndex": 0,
+          "level": "warning",
+          "message": {
+            "text": "Cleartext HTTP served without redirect to HTTPS: Plain HTTP serves content (HTTP 200) without HTTPS redirect"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4174/api/orders/{{orderA}}"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "74c1939329689193ff67afab"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
+          "ruleId": "NSC-CRYPT-006",
+          "ruleIndex": 0,
+          "level": "warning",
+          "message": {
+            "text": "Cleartext HTTP served without redirect to HTTPS: Plain HTTP serves content (HTTP 200) without HTTPS redirect"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4174/api/me"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "fc8f24db6bc1fbad7593d749"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
+          "ruleId": "NSC-CRYPT-006",
+          "ruleIndex": 0,
+          "level": "warning",
+          "message": {
+            "text": "Cleartext HTTP served without redirect to HTTPS: Plain HTTP serves content (HTTP 200) without HTTPS redirect"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4174/api/admin/stats"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "91750bce609f47a4105f2edb"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
+          "ruleId": "NSC-CRYPT-006",
+          "ruleIndex": 0,
+          "level": "warning",
+          "message": {
+            "text": "Cleartext HTTP served without redirect to HTTPS: Plain HTTP serves content (HTTP 200) without HTTPS redirect"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4174/app/profile"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "ef51e0debbf6974b84b21ba4"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
+          "ruleId": "NSC-CONF-007",
+          "ruleIndex": 1,
+          "level": "note",
+          "message": {
+            "text": "Insecure cache policy for sensitive responses: Sensitive response is cacheable"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4174/api/error"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "c7f7bfc1c9a7ba376305d571"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
           }
         }
       ]

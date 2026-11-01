@@ -47,6 +47,23 @@ Re-run: `npm run gate` → `.navsentry/gate/GATE-REPORT.md` (the final pre-push 
 | QA-AT-14 | No real third-party target scanned during development | QA-PASS | only `127.0.0.1` fixtures; `https://staging.example.test` used in plan (dry-run) only |
 | QA-AT-15 | Fixes do not change legitimate responses (owner requirement) | QA-PASS | compare `IMPROVED_NO_DRIFT`; drift-detection negative test |
 
+### v0.1.2 story flows (spec §17, `test/flow.test.ts`, 2026-11-01, Windows 11 / Node 26.13.0)
+
+| ID | Statement | Status | Evidence |
+|---|---|---|---|
+| QA-AT-16 | Flow parser strictness; messages without values | QA-PASS | parser test (unknown keys, block typos, quoted fences, size, NUL, BOM/CRLF, POST rejected, duplicate ids) |
+| QA-AT-17 | lint/plan zero network; scope, secrets, level, positive-control rules | QA-PASS | lint/plan test asserts 0 fixture hits |
+| QA-AT-18 | Deterministic classification with reasons | QA-PASS | classification test |
+| QA-AT-19 | Hostile extracted values never leave scope; budget exhaustion | QA-PASS | hostile test (only 1 hit, runtime denial recorded); budget test → PARTIAL |
+| QA-AT-20 | Every flow exchange is security-checked | QA-PASS | NSC-INFO-001 on flow-only URL; NSC-AC-003 in SARIF |
+| QA-AT-21 | Access expectations FAIL/PASS/VALIDATED vs SUSPECTED | QA-PASS | vulnerable vs secure fixture, draft vs approved |
+| QA-AT-22 | UI steps NOT_TESTED; E2E never PASS; exit 2 | QA-PASS | secure fixture profile flow INCOMPLETE; CLI exit 2 |
+| QA-AT-23 | Analyzer zero network, deterministic, no errors/values, no overwrite | QA-PASS | analyzer test |
+| QA-AT-24 | compare functional regressions; denied probes not drift | QA-PASS | compare test; demo `IMPROVED_NO_DRIFT` with flows |
+| QA-AT-25 | Tokens and variable values absent from artifacts | QA-PASS | artifact scan in vulnerable flow test |
+| QA-AT-26 | Approval pinned to content; drafts refused for production | QA-PASS | approval test; CLI production test |
+| QA-AT-07 | Cross-role leak VALIDATED only with evidence and positive control | **QA-PARTIAL** | read access via approved flows (AC-003/007); login-based actors and write access remain M2 |
+
 ## C. Improvement criteria for every non-PASS item
 
 ### QA-AT-04 — Headless browser transport (QA-FAIL)

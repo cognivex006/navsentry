@@ -71,7 +71,7 @@ export class DirectHttpAdapter implements ExecutionAdapter {
   async send(spec: HttpRequestSpec): Promise<Exchange> {
     const decision = this.gate.checkRequest(spec.url, spec.method);
     if (!decision.allowed) {
-      this.onDenied(this.redactor.url(spec.url), spec.method, decision.reason);
+      this.onDenied(spec.displayUrl ? templateUrl(this.redactor.url(spec.displayUrl)) : this.redactor.url(spec.url), spec.method, decision.reason);
       throw new ScopeDenied(decision.reason);
     }
     await this.budget.acquire();
@@ -85,9 +85,10 @@ export class DirectHttpAdapter implements ExecutionAdapter {
       transport: this.capabilities.id,
       actor: spec.actor,
       method: spec.method,
-      url: this.redactor.url(spec.url),
+      url: spec.displayUrl ? templateUrl(this.redactor.url(spec.displayUrl)) : this.redactor.url(spec.url),
       requestHeaders: redactedReqHeaders,
       startedAt: new Date(started).toISOString(),
+      ...(spec.flow ? { flow: spec.flow } : {}),
     };
     const mod = u.protocol === "https:" ? https : http;
     try {
@@ -138,12 +139,17 @@ export class DirectHttpAdapter implements ExecutionAdapter {
         raw: { ...raw, ...(loc ? { redirectLocation: new URL(loc, u).toString() } : {}) },
       };
     } catch (e) {
-      if (e instanceof ScopeDenied) this.onDenied(this.redactor.url(spec.url), spec.method, e.message);
+      if (e instanceof ScopeDenied) this.onDenied(base.url, spec.method, e.message);
       return {
         record: { ...base, durationMs: Date.now() - started, error: e instanceof ScopeDenied ? `scope denied at connect: ${e.message}` : safeError(e), redaction: { applied: false, count: 0, kinds: [], safe: true } },
       };
     }
   }
+}
+
+/** Restores {{name}} placeholders that URL serialization percent-encoded. */
+export function templateUrl(u: string): string {
+  return u.replace(/%7B%7B([A-Za-z0-9_]+)%7D%7D/gi, "{{$1}}");
 }
 
 function lower(h: Record<string, string>): Record<string, string> {

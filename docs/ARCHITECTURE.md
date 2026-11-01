@@ -11,6 +11,7 @@
 7. **Checks** (`checks/`) — deterministic functions over in-memory raw responses that emit redacted, value-free observations.
 8. **Redaction** (`redact.ts`) — applied to URLs, headers and body excerpts before anything is stored; binary/undecodable bodies are withheld (`safe:false` → run lists the gap).
 9. **Model & reports** — `RunResult` (schema v1) → JSON, Markdown (en/th), SARIF 2.1.0; `compare` for before/after.
+10. **Flows** (`src/flow/`, ADR-0006) — `parse` (top-level `navsentry-*` JSON blocks in `*.flow.md`), `lint` (static ScopeGate check, redaction scan, positive controls, approval hash), `classify` (E2E/Integration), `execute` (steps through the runner's `send`; every exchange also runs the security checks; access post-pass emits NSC-AC-002/003/007 results), `analyze` (offline drafts from `run.json`). Output: `flows.json` (`FlowRunResult` schema 1), `TEST-REPORT.md`, optional JUnit. `src/flow/` has no network imports.
 
 ## Transport capability model
 
@@ -30,7 +31,8 @@ Selection principle: lowest risk that can verify the claim. A CLI or browserless
 - `CheckStatus` PASS/FAIL/INCONCLUSIVE/NOT_TESTED/ERROR; coverage per case = worst observed status; no rows → NOT_TESTED with a reason.
 - `Finding` fingerprint = `sha256(caseId + method + URL without query)`; lifecycle VALIDATED for direct deterministic evidence, SUSPECTED for pattern evidence.
 - `ResponseContract` = status, media type, non-volatile non-security header names, JSON key/type skeleton hash, body-size bucket.
-- `executionStatus` (CLI) is separate from `securityResult` (FINDINGS / NO_FINDINGS_IN_TESTED_SCOPE / INCOMPLETE).
+- `executionStatus` (CLI) is separate from `securityResult` (FINDINGS / NO_FINDINGS_IN_TESTED_SCOPE / INCOMPLETE). Flows add a third, separate `functionalResult` (PASS / FAIL / INCOMPLETE).
+- Flow requests carry `ObservedRequest.flow` and record template URLs (`/api/orders/{{orderA}}`), so fingerprints and `compare` keys are stable across runs. Findings that rest on draft flows carry `CheckResult.basis = "draft-flow"` and stay SUSPECTED.
 
 ## DevSift interoperability (planned M4)
 Separate product. A versioned adapter will read NavSentry `run.json` + SARIF and DevSift reports and correlate by CWE/case ID and route, keeping runtime evidence and source evidence provenance separate. No DevSift internals are imported.

@@ -12,7 +12,8 @@ AI-assisted security testing for web applications, with automated vulnerability 
 - **Request budget**: limits on request volume, rate and run duration.
 - **20 observe-mode checks**: security headers, cookies, CORS, HTTP methods, caching, information disclosure, PII exposure, JWT handling, HTTPS redirect, plus a TLS handshake probe for protocol versions and certificates.
 - **Evidence-based reports**: JSON, Markdown (English and Thai) and SARIF 2.1.0. Secrets and personal data are redacted before anything is written.
-- **Fix verification**: `compare` shows which issues were fixed, which still fail, and any change a legitimate user would notice (contract drift).
+- **Story flows (test cases)**: one Markdown file per user story, replayed through the same safety pipeline. Each flow is classified as Integration or E2E automatically. `flow analyze` drafts flows from an earlier run. Owner-declared access expectations check missing authentication, IDOR and missing function-level authorization. See [docs/FLOWS.md](docs/FLOWS.md).
+- **Fix verification**: `compare` shows which issues were fixed, which still fail, any change a legitimate user would notice (contract drift), and any story step that stopped working (functional regression).
 - **Case catalog**: 50 cases mapped to OWASP Top 10 2021 and 2025, CWE, WSTG and ASVS 5.0, each with VERIFY, FIX and RECHECK prompts for AI agents.
 - **Agent plugins** for Claude Code, Codex, Gemini CLI and Antigravity, plus a portable skill for other agents.
 - **Version doctor**: checks the CLI, plugins and skill copies on every host and shows how to update anything out of date.
@@ -24,7 +25,7 @@ Requires Node.js 22.12 or newer.
 Install the CLI from the release tarball:
 
 ```bash
-npm install -g https://github.com/cognivex006/navsentry/releases/download/v0.1.0/navsentry-0.1.0.tgz
+npm install -g https://github.com/cognivex006/navsentry/releases/download/v0.1.2/navsentry-0.1.2.tgz
 ```
 
 ```bash
@@ -114,6 +115,28 @@ navsentry doctor update --host codex --scope project --project /path/to/your/app
    ```bash
    navsentry report --input runs/after/run.json --format markdown --lang th
    ```
+
+### Story flows
+
+Draft flows from a run, review them, then replay them with the security checks. None of these commands except `test` sends network traffic.
+
+```bash
+navsentry flow analyze --config my-manifest.json --from-run runs/before/run.json --out navsentry/flows
+```
+
+```bash
+navsentry flow lint --config my-manifest.json --flows navsentry/flows
+```
+
+```bash
+navsentry flow approve --flows navsentry/flows/orders-access.flow.md --by "<owner name>"
+```
+
+```bash
+navsentry test --config my-manifest.json --flows navsentry/flows --out runs/before
+```
+
+Open `REPORT.md` (security) and `TEST-REPORT.md` (functional). In this release, UI steps (`click`, `fill`, …) are not executed. An E2E flow that contains them is reported `INCOMPLETE`, with a manual replay checklist.
 
 Browse the case catalog:
 

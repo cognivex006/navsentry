@@ -9,7 +9,7 @@ Every integration ships the same two skills: `navsentry` (plan, run, report, com
 | Gemini CLI | `gemini-extension.json` | `gemini extensions install https://github.com/cognivex006/navsentry` | `gemini extensions update navsentry` | `gemini` |
 | Antigravity (`agy`) | `.antigravity-plugin/plugin.json` | `agy plugin install https://github.com/cognivex006/navsentry` | `agy plugin uninstall navsentry` then install again | `antigravity` or `agy` |
 
-The Codex marketplace entry pins the plugin to the release tag (`ref: v0.1.0`), so the installed plugin always matches a released CLI. Antigravity documents no update subcommand; check `agy plugin --help` on your version first.
+The Codex marketplace entry pins the plugin to the release tag (`ref: v0.1.2`), so the installed plugin always matches a released CLI. Antigravity documents no update subcommand; check `agy plugin --help` on your version first.
 
 ## Skills without a plugin
 

@@ -30,6 +30,10 @@ export interface HttpRequestSpec {
   url: string;
   headers?: Record<string, string>;
   actor: string;
+  /** URL to record instead of `url` (flow template form, e.g. /api/orders/{{orderA}}). */
+  displayUrl?: string;
+  /** Flow step that issued the request. */
+  flow?: { id: string; step: string; deniedProbe?: true };
 }
 
 /** In-memory raw response. Never persisted; only the redacted ObservedRequest is. */

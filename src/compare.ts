@@ -4,7 +4,7 @@
  *  2. Did legitimate callers keep the same response contract? (status, content type,
  *     non-security header set, JSON shape) — the "do not break real users" guarantee.
  */
-import type { CheckStatus, ResponseContract, RunResult } from "./types.js";
+import type { CheckStatus, FlowRunResult, ResponseContract, RunResult } from "./types.js";
 
 export interface ContractDrift {
   key: string;
@@ -20,7 +20,32 @@ export interface CompareResult {
   stillFailing: string[];
   contractDrift: ContractDrift[];
   missingInAfter: string[];
-  verdict: "IMPROVED_NO_DRIFT" | "IMPROVED_WITH_DRIFT" | "NO_CHANGE" | "REGRESSED" | "DRIFT_ONLY";
+  /** Present when both runs carry flows.json. */
+  flows?: FunctionalCompare;
+  verdict: "IMPROVED_NO_DRIFT" | "IMPROVED_WITH_DRIFT" | "NO_CHANGE" | "REGRESSED" | "DRIFT_ONLY" | "FUNCTIONAL_REGRESSION";
+}
+
+export interface FunctionalCompare {
+  regressions: string[];
+  fixed: string[];
+  notComparable: string[];
+  flowSetChanged: boolean;
+}
+
+/** Story-level transitions keyed by <flowId>/<stepId>; only steps with identical content are compared. */
+export function compareFlows(before: FlowRunResult, after: FlowRunResult): FunctionalCompare {
+  const idx = (r: FlowRunResult) => new Map(r.flows.flatMap((f) => f.steps).map((s) => [s.key, s]));
+  const b = idx(before), a = idx(after);
+  const regressions: string[] = [], fixed: string[] = [], notComparable: string[] = [];
+  for (const [k, sb] of b) {
+    const sa = a.get(k);
+    if (!sa) { notComparable.push(`${k} (missing in after-run)`); continue; }
+    if (sa.contentSha256 !== sb.contentSha256) { notComparable.push(`${k} (step changed)`); continue; }
+    if (sb.status === "PASS" && (sa.status === "FAIL" || sa.status === "ERROR")) regressions.push(`${k}: PASS → ${sa.status}`);
+    else if (sb.status === "FAIL" && sa.status === "PASS") fixed.push(k);
+    else if (sb.status !== sa.status && [sb.status, sa.status].some((x) => x === "NOT_TESTED" || x === "INCONCLUSIVE")) notComparable.push(`${k} (${sb.status} → ${sa.status})`);
+  }
+  return { regressions, fixed, notComparable, flowSetChanged: before.flowSet.sha256 !== after.flowSet.sha256 };
 }
 
 const reqKey = (method: string, url: string, actor: string, transport: string) => `${method} ${url} [${actor}/${transport}]`;
@@ -29,14 +54,15 @@ function contracts(r: RunResult): Map<string, ResponseContract> {
   const m = new Map<string, ResponseContract>();
   for (const q of r.requests) {
     // Probe requests carry an Origin header; only plain legitimate requests define the contract.
-    if (!q.contract || q.requestHeaders["origin"]) continue;
+    // Access-denied probes from flows are expected to change when the fix lands.
+    if (!q.contract || q.requestHeaders["origin"] || q.flow?.deniedProbe) continue;
     const k = reqKey(q.method, q.url, q.actor, q.transport);
     if (!m.has(k)) m.set(k, q.contract);
   }
   return m;
 }
 
-export function compareRuns(before: RunResult, after: RunResult): CompareResult {
+export function compareRuns(before: RunResult, after: RunResult, flows?: { before: FlowRunResult; after: FlowRunResult }): CompareResult {
   const b = new Map(before.coverage.map((c) => [c.ruleId, c.status]));
   const a = new Map(after.coverage.map((c) => [c.ruleId, c.status]));
   const fixed: string[] = [], regressed: string[] = [], unchanged: string[] = [], stillFailing: string[] = [];
@@ -60,8 +86,9 @@ export function compareRuns(before: RunResult, after: RunResult): CompareResult 
     const hb = c.headerNames.join(","), ha = d.headerNames.join(",");
     if (hb !== ha) drift.push({ key: k, field: "headerNames", before: hb, after: ha });
   }
-  const verdict: CompareResult["verdict"] = regressed.length ? "REGRESSED" : fixed.length ? (drift.length ? "IMPROVED_WITH_DRIFT" : "IMPROVED_NO_DRIFT") : drift.length ? "DRIFT_ONLY" : "NO_CHANGE";
-  return { fixed, regressed, unchanged, stillFailing, contractDrift: drift, missingInAfter: missing, verdict };
+  const fc = flows ? compareFlows(flows.before, flows.after) : undefined;
+  const verdict: CompareResult["verdict"] = regressed.length ? "REGRESSED" : fc?.regressions.length ? "FUNCTIONAL_REGRESSION" : fixed.length ? (drift.length ? "IMPROVED_WITH_DRIFT" : "IMPROVED_NO_DRIFT") : drift.length ? "DRIFT_ONLY" : "NO_CHANGE";
+  return { fixed, regressed, unchanged, stillFailing, contractDrift: drift, missingInAfter: missing, ...(fc ? { flows: fc } : {}), verdict };
 }
 
 export function renderCompareMarkdown(c: CompareResult): string {
@@ -73,5 +100,9 @@ export function renderCompareMarkdown(c: CompareResult): string {
     "## Still failing / not proven fixed", list(c.stillFailing), "",
     "## Legitimate-response contract drift", c.contractDrift.length ? ["| Request | Field | Before | After |", "|---|---|---|---|", ...c.contractDrift.map((d) => `| ${d.key} | ${d.field} | ${d.before} | ${d.after} |`)].join("\n") : "- none (status, content type, non-security headers and JSON shape unchanged)", "",
     "## Requests missing in the after-run", list(c.missingInAfter), "",
+    ...(c.flows
+      ? ["## User stories (flows)", ...(c.flows.flowSetChanged ? ["> Flows changed between runs; only unchanged steps are compared.", ""] : []),
+        "### Functional regressions (PASS → FAIL/ERROR)", list(c.flows.regressions), "", "### Fixed (FAIL → PASS)", list(c.flows.fixed), "", "### Not comparable", list(c.flows.notComparable), ""]
+      : []),
   ].join("\n");
 }

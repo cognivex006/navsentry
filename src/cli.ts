@@ -4,14 +4,23 @@
  *   0 = completed, no findings in tested scope   1 = completed with findings
  *   2 = incomplete run (gaps/errors)              3 = usage / configuration error
  */
-import { mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { CASES, CATEGORIES } from "./catalog.js";
 import { compareRuns, renderCompareMarkdown } from "./compare.js";
 import { ConfigError, loadManifest } from "./config.js";
 import { DoctorError, HOSTS, applySkillUpdate, doctorReport, normalizeHost, planSkillUpdate, pluginCommands, type Host } from "./doctor.js";
 import { renderJson, renderMarkdown, renderSarif, securityResult, validateRunResult } from "./report/render.js";
-import { executeRun, planRun } from "./runner.js";
+import { executeTest, planRun } from "./runner.js";
+import { analyzeRun } from "./flow/analyze.js";
+import { approveText, initTemplate } from "./flow/author.js";
+import { classify } from "./flow/classify.js";
+import { manualLine } from "./flow/execute.js";
+import { lintFlows } from "./flow/lint.js";
+import { FLOW_ID, FlowError, loadFlowFiles, type FlowDoc } from "./flow/parse.js";
+import { renderFlowSection, renderJunit, renderTestMarkdown, validateFlowRunResult } from "./report/flow-render.js";
+import type { Manifest } from "./config.js";
+import type { FlowRunResult } from "./types.js";
 import { allAdapters } from "./transports/registry.js";
 import { TOOL_VERSION } from "./types.js";
 
@@ -23,12 +32,20 @@ Usage:
   navsentry doctor update --host <host> --scope user|project [--project <dir>] [--dry-run]
   navsentry integrations
   navsentry validate --config <manifest.json>
-  navsentry plan --config <manifest.json>            (zero network)
+  navsentry plan --config <manifest.json> [--flows <path>] [--flows-only] [--include-drafts]   (zero network)
   navsentry discover --config <manifest.json> --dry-run
   navsentry test --config <manifest.json> [--out <dir>] [--profile safe]
-  navsentry report --input <run.json> --format markdown|json|sarif [--lang en|th]
-  navsentry compare --before <run.json> --after <run.json>
+                 [--flows <path>] [--flows-only] [--include-drafts] [--only <id,...>] [--level integration|e2e] [--junit]
+  navsentry report --input <run.json|flows.json> --format markdown|json|sarif|junit [--lang en|th]
+  navsentry compare --before <dir|run.json> --after <dir|run.json>   (reads flows.json beside run.json)
   navsentry catalog [--category <CODE>]
+
+Story flows (Markdown test cases; zero network):
+  navsentry flow init --id <id> --title <title> [--story <text>] [--level auto|integration|e2e] --out <dir>
+  navsentry flow analyze --config <manifest.json> --from-run <run.json> --out <dir> [--lang en|th]
+  navsentry flow lint --config <manifest.json> --flows <path>
+  navsentry flow approve --flows <file> --by <name> [--reference <ref>]   (owner action)
+  navsentry flow show --flows <file>
 
 Exit: 0 no findings · 1 findings · 2 incomplete · 3 usage/config error`;
 
@@ -73,11 +90,14 @@ export async function main(argv: string[]): Promise<number> {
         print(`OK manifest: project=${m.project} environment=${m.environment} mode=${m.safety.mode} origins=${m.targets.origins.join(",")}`);
         return 0;
       }
+      case "flow":
+        return await flowCommand(rest);
       case "plan":
       case "discover": {
         if (cmd === "discover" && !rest.includes("--dry-run")) throw new UsageError("live discovery (crawling) is scheduled for milestone M1b; use --dry-run or `plan`");
         const m = loadManifest(need(rest, "--config"));
-        const plan = planRun(m, process.env);
+        const sel = arg(rest, "--flows") ? selectFlows(m, rest) : undefined;
+        const plan = planRun(m, process.env, sel ? { flows: sel.docs, flowsOnly: rest.includes("--flows-only"), warnings: sel.warnings } : {});
         print(JSON.stringify(plan, null, 2));
         return 0;
       }
@@ -85,21 +105,41 @@ export async function main(argv: string[]): Promise<number> {
         const profile = arg(rest, "--profile");
         if (profile && profile !== "safe") throw new UsageError("only --profile safe is supported");
         const m = loadManifest(need(rest, "--config"));
-        const r = await executeRun(m);
+        if (rest.includes("--flows-only") && !arg(rest, "--flows")) throw new UsageError("--flows-only needs --flows");
+        const sel = arg(rest, "--flows") ? selectFlows(m, rest) : undefined;
+        for (const w of sel?.warnings ?? []) process.stderr.write(`warning: ${w}\n`);
+        const { run: r, flowRun } = await executeTest(m, sel ? { flows: sel.docs, flowsOnly: rest.includes("--flows-only") } : {});
         const out = resolve(arg(rest, "--out") ?? join(".navsentry", "runs", r.runId));
         mkdirSync(out, { recursive: true });
         writeFileSync(join(out, "run.json"), renderJson(r));
-        if (m.report.formats.includes("markdown")) writeFileSync(join(out, "REPORT.md"), renderMarkdown(r, m.report.language));
+        const lang = m.report.language;
+        if (m.report.formats.includes("markdown")) writeFileSync(join(out, "REPORT.md"), renderMarkdown(r, lang) + (flowRun ? "\n" + renderFlowSection(flowRun, r, lang) : ""));
         if (m.report.formats.includes("sarif")) writeFileSync(join(out, "report.sarif"), JSON.stringify(renderSarif(r), null, 2));
+        if (flowRun) {
+          writeFileSync(join(out, "flows.json"), JSON.stringify(flowRun, null, 2) + "\n");
+          writeFileSync(join(out, "TEST-REPORT.md"), renderTestMarkdown(flowRun, r, lang));
+          if (rest.includes("--junit")) writeFileSync(join(out, "junit.xml"), renderJunit(flowRun));
+        }
         const sec = securityResult(r);
-        print(`execution=${r.executionStatus} security=${sec} findings=${r.findings.length} requests=${r.budget.requestsUsed}`);
+        print(`execution=${r.executionStatus} security=${sec} findings=${r.findings.length} requests=${r.budget.requestsUsed}${flowRun ? ` functional=${flowRun.functionalResult} flows=${flowRun.flows.length}` : ""}`);
         print(`REPORT: ${join(out, "REPORT.md")}`);
-        return r.findings.length ? 1 : sec === "INCOMPLETE" || r.executionStatus !== "COMPLETE" ? 2 : 0;
+        if (flowRun) print(`TEST-REPORT: ${join(out, "TEST-REPORT.md")}`);
+        const func = flowRun?.functionalResult;
+        return r.findings.length || func === "FAIL" ? 1 : sec === "INCOMPLETE" || r.executionStatus !== "COMPLETE" || func === "INCOMPLETE" ? 2 : 0;
       }
       case "report": {
-        const r = validateRunResult(JSON.parse(readFileSync(need(rest, "--input"), "utf8")));
+        const input = JSON.parse(readFileSync(need(rest, "--input"), "utf8")) as { kind?: string };
         const fmt = arg(rest, "--format") ?? "markdown";
         const lang = (arg(rest, "--lang") ?? "en") as "en" | "th";
+        if (input?.kind === "navsentry-flow-result") {
+          const fr = validateFlowRunResult(input);
+          if (fmt === "markdown") print(renderTestMarkdown(fr, undefined, lang));
+          else if (fmt === "json") print(JSON.stringify(fr, null, 2));
+          else if (fmt === "junit") print(renderJunit(fr));
+          else throw new UsageError("flow results render as markdown|json|junit");
+          return 0;
+        }
+        const r = validateRunResult(input);
         if (fmt === "markdown") print(renderMarkdown(r, lang));
         else if (fmt === "json") print(renderJson(r));
         else if (fmt === "sarif") print(JSON.stringify(renderSarif(r), null, 2));
@@ -107,11 +147,15 @@ export async function main(argv: string[]): Promise<number> {
         return 0;
       }
       case "compare": {
-        const b = validateRunResult(JSON.parse(readFileSync(need(rest, "--before"), "utf8")));
-        const a = validateRunResult(JSON.parse(readFileSync(need(rest, "--after"), "utf8")));
-        const c = compareRuns(b, a);
+        const runPath = (p: string) => (statSync(p).isDirectory() ? join(p, "run.json") : p);
+        const bp = runPath(need(rest, "--before")), ap = runPath(need(rest, "--after"));
+        const b = validateRunResult(JSON.parse(readFileSync(bp, "utf8")));
+        const a = validateRunResult(JSON.parse(readFileSync(ap, "utf8")));
+        const fb = join(dirname(bp), "flows.json"), fa = join(dirname(ap), "flows.json");
+        const flows = existsSync(fb) && existsSync(fa) ? { before: validateFlowRunResult(JSON.parse(readFileSync(fb, "utf8"))), after: validateFlowRunResult(JSON.parse(readFileSync(fa, "utf8"))) } : undefined;
+        const c = compareRuns(b, a, flows);
         print(renderCompareMarkdown(c));
-        return c.verdict === "REGRESSED" || c.verdict === "IMPROVED_WITH_DRIFT" || c.verdict === "DRIFT_ONLY" ? 1 : 0;
+        return c.verdict === "REGRESSED" || c.verdict === "IMPROVED_WITH_DRIFT" || c.verdict === "DRIFT_ONLY" || c.verdict === "FUNCTIONAL_REGRESSION" ? 1 : 0;
       }
       case "catalog": {
         const cat = arg(rest, "--category");
@@ -123,7 +167,7 @@ export async function main(argv: string[]): Promise<number> {
         throw new UsageError(`unknown command ${cmd}`);
     }
   } catch (e) {
-    if (e instanceof ConfigError || e instanceof UsageError || e instanceof DoctorError) {
+    if (e instanceof ConfigError || e instanceof UsageError || e instanceof DoctorError || e instanceof FlowError) {
       process.stderr.write(`${e.message}\n`);
       return 3;
     }
@@ -133,6 +177,111 @@ export async function main(argv: string[]): Promise<number> {
     }
     process.stderr.write(`error: ${(e as Error).message}\n`);
     return 3;
+  }
+}
+
+/** Loads, lints and selects flows. Any lint error stops the command before network activity. */
+function loadLinted(m: Manifest, path: string): { docs: FlowDoc[]; warnings: string[] } {
+  const { docs, problems } = loadFlowFiles(resolve(path));
+  if (problems.length) throw new FlowError(problems);
+  const { errors, warnings } = lintFlows(docs, m);
+  if (errors.length) throw new FlowError(errors);
+  return { docs, warnings };
+}
+
+function selectFlows(m: Manifest, argv: string[]): { docs: FlowDoc[]; warnings: string[] } {
+  const { docs, warnings } = loadLinted(m, need(argv, "--flows"));
+  const drafts = argv.includes("--include-drafts");
+  if (drafts && m.environment === "production") throw new UsageError("--include-drafts is refused for production targets; approve the flows first");
+  const only = arg(argv, "--only")?.split(",").map((x) => x.trim()).filter(Boolean);
+  const level = arg(argv, "--level");
+  if (level && level !== "integration" && level !== "e2e") throw new UsageError("--level must be integration or e2e");
+  const picked = docs.filter((d) => (drafts || d.header.review.status === "approved") && (!only || only.includes(d.header.id)) && (!level || classify(d).level === level));
+  const skippedDrafts = docs.filter((d) => d.header.review.status !== "approved" && !drafts).length;
+  if (skippedDrafts) warnings.push(`${skippedDrafts} draft flow(s) skipped; approve them or pass --include-drafts (non-production only)`);
+  if (!picked.length) throw new UsageError("no flows selected (drafts need --include-drafts; check --only / --level)");
+  return { docs: picked, warnings };
+}
+
+async function flowCommand(argv: string[]): Promise<number> {
+  const [sub, ...rest] = argv;
+  switch (sub) {
+    case "init": {
+      const id = need(rest, "--id");
+      if (!FLOW_ID.test(id)) throw new UsageError("--id must match ^[a-z0-9][a-z0-9-]{1,62}$");
+      const title = need(rest, "--title");
+      const level = arg(rest, "--level") ?? "auto";
+      if (!["auto", "integration", "e2e"].includes(level)) throw new UsageError("--level must be auto, integration or e2e");
+      const dir = resolve(need(rest, "--out"));
+      const file = join(dir, `${id}.flow.md`);
+      if (existsSync(file)) throw new UsageError(`${id}.flow.md already exists; not modified`);
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(file, initTemplate(id, title.slice(0, 120), (arg(rest, "--story") ?? title).slice(0, 1000), level as "auto"));
+      print(`written ${file} (draft)`);
+      return 0;
+    }
+    case "lint": {
+      const m = loadManifest(need(rest, "--config"));
+      const { docs, warnings } = loadLinted(m, need(rest, "--flows"));
+      for (const w of warnings) print(`warning: ${w}`);
+      for (const d of docs) {
+        const c = classify(d);
+        print(`OK ${d.header.id.padEnd(32)} ${c.level.padEnd(11)} ${c.executability.padEnd(7)} ${d.header.review.status.padEnd(8)} ${d.steps.length} steps  (${c.levelReasons.join("; ")})`);
+      }
+      return 0;
+    }
+    case "analyze": {
+      const m = loadManifest(need(rest, "--config"));
+      const run = validateRunResult(JSON.parse(readFileSync(need(rest, "--from-run"), "utf8")));
+      if (run.scope.origins.some((o) => !m.targets.origins.includes(o))) throw new UsageError("run is for a different target (its origins are not all in the manifest)");
+      const dir = resolve(need(rest, "--out"));
+      mkdirSync(dir, { recursive: true });
+      const existing = existsSync(dir) ? loadFlowFiles(dir).docs.map((d) => d.header.id) : [];
+      const lang = (arg(rest, "--lang") ?? m.report.language) as "en" | "th";
+      const outp = analyzeRun(run, m, new Set(existing), lang);
+      let written = 0;
+      for (const [name, content] of outp.files) {
+        const f = join(dir, name);
+        if (name !== "ANALYSIS.md" && existsSync(f)) { outp.skippedExisting.push(name); continue; }
+        writeFileSync(f, content);
+        if (name !== "ANALYSIS.md") written++;
+      }
+      print(`draft flows written: ${written}; existing, not modified: ${outp.skippedExisting.length ? outp.skippedExisting.join(", ") : "none"}`);
+      print(`ANALYSIS: ${join(dir, "ANALYSIS.md")}`);
+      return 0;
+    }
+    case "approve": {
+      const path = resolve(need(rest, "--flows"));
+      const by = need(rest, "--by").trim();
+      if (!by || by.length > 100) throw new UsageError("--by needs the approver's name (1-100 characters)");
+      const { docs, problems } = loadFlowFiles(path);
+      if (problems.length) throw new FlowError(problems);
+      if (docs.length !== 1 || statSync(path).isDirectory()) throw new UsageError("--flows must name exactly one .flow.md file");
+      const doc = docs[0]!;
+      const ref = arg(rest, "--reference");
+      writeFileSync(path, approveText(doc, by, new Date().toISOString().slice(0, 10), ref));
+      print(`approved ${doc.header.id} by ${by}; editing the flow invalidates this approval`);
+      return 0;
+    }
+    case "show": {
+      const { docs, problems } = loadFlowFiles(resolve(need(rest, "--flows")));
+      if (problems.length) throw new FlowError(problems);
+      for (const d of docs) {
+        const c = classify(d);
+        print(`# ${d.header.id} — ${d.header.title}`, );
+        print(`Level: ${c.level} (${c.levelReasons.join("; ")}) · executability ${c.executability} · ${d.header.review.status}`);
+        print(`Story: ${d.header.story}\n`);
+        d.steps.forEach((s, i) => {
+          const e = s.expect;
+          const exp = e ? [e.access && `access ${e.access}`, e.status && `status ${Array.isArray(e.status) ? e.status.join("|") : e.status}`, e.content_type, e.redirect_to && `redirect to ${e.redirect_to}`, e.json && `${e.json.length} JSON checks`, e.text_present && `${e.text_present.length} text markers`].filter(Boolean).join(", ") : "";
+          print(`${i + 1}. ${s.request ? `${s.id} — as ${s.actor}: ${s.action === "navigate" ? "open" : "request"} ${s.request.method} ${s.request.path}` : manualLine(s)}${exp ? ` → expect ${exp}` : ""}`);
+        });
+        print("");
+      }
+      return 0;
+    }
+    default:
+      throw new UsageError("flow needs a subcommand: init | analyze | lint | approve | show");
   }
 }
 

@@ -2,7 +2,7 @@
 
 export const REPORT_SCHEMA_VERSION = "1";
 export const TOOL_NAME = "navsentry";
-export const TOOL_VERSION = "0.1.0";
+export const TOOL_VERSION = "0.1.2";
 
 /** Result of a single check execution. Only PASS/FAIL are conclusive. */
 export type CheckStatus = "PASS" | "FAIL" | "INCONCLUSIVE" | "NOT_TESTED" | "ERROR";
@@ -41,6 +41,8 @@ export interface ObservedRequest {
   contract?: ResponseContract;
   error?: string;
   redaction: RedactionOutcome;
+  /** Present when the request was made by a flow step. */
+  flow?: { id: string; step: string; deniedProbe?: true };
 }
 
 export interface ResponseContract {
@@ -71,6 +73,8 @@ export interface CheckResult {
   observations: string[];
   requestIds: string[];
   reason?: string;
+  /** "draft-flow": evidence rests on an unapproved flow expectation; findings stay SUSPECTED. */
+  basis?: "draft-flow";
 }
 
 export interface Finding {
@@ -136,4 +140,78 @@ export interface RunResult {
   coverage: CoverageRow[];
   budget: { requestsUsed: number; requestsMax: number; deniedBeforeExecution: number };
   denials: { url: string; method: string; reason: string }[];
+  flowSet?: { flows: number; steps: number; sha256: string; resultFile: "flows.json" };
+}
+
+// ───────────────────────── Flows (0.1.2) ─────────────────────────
+// Additive fields on the v1 run model:
+//   ObservedRequest.flow, CheckResult.basis, RunResult.flowSet (all optional).
+
+export const FLOW_FORMAT_VERSION = "1";
+export const FLOW_RESULT_SCHEMA_VERSION = "1";
+
+export type TestLevel = "integration" | "e2e";
+export type FlowAction = "http" | "navigate" | "click" | "fill" | "select" | "submit" | "see" | "wait_for";
+export type FlowStatus = "PASS" | "FAIL" | "INCOMPLETE" | "ERROR" | "NOT_TESTED";
+export type FunctionalResult = "PASS" | "FAIL" | "INCOMPLETE";
+
+export interface AssertionResult {
+  kind: "status" | "content_type" | "header_present" | "header_absent" | "json" | "shape" | "text_present" | "text_absent" | "redirect_to" | "access";
+  status: CheckStatus;
+  /** From the linted flow file. */
+  expected: string;
+  /** Value-free: code, media type, JSON type, present/absent/matched/differs. */
+  observed: string;
+}
+
+export interface StepResult {
+  id: string;
+  /** "<flowId>/<stepId>" */
+  key: string;
+  title: string;
+  action: FlowAction;
+  actor: string;
+  /** Template form, e.g. "GET /api/orders/{{orderA}}". */
+  request?: string;
+  contentSha256: string;
+  status: CheckStatus;
+  reason?: string;
+  assertions: AssertionResult[];
+  requestIds: string[];
+  securityCase?: string;
+}
+
+export interface FlowResult {
+  id: string;
+  title: string;
+  story: string;
+  /** Relative to the --flows root; never absolute. */
+  file: string;
+  declaredLevel: "auto" | TestLevel;
+  level: TestLevel;
+  levelReasons: string[];
+  executability: "full" | "partial" | "none";
+  review: { status: "draft" | "approved"; approvedBy?: string; approvedAt?: string; hashValid: boolean };
+  contentSha256: string;
+  status: FlowStatus;
+  reasons: string[];
+  steps: StepResult[];
+  findings: string[];
+  manualReplay: string[];
+}
+
+export interface FlowRunResult {
+  kind: "navsentry-flow-result";
+  schemaVersion: typeof FLOW_RESULT_SCHEMA_VERSION;
+  runId: string;
+  tool: RunResult["tool"];
+  startedAt: string;
+  finishedAt: string;
+  project: string;
+  environment: string;
+  mode: SafetyMode;
+  flowSet: { flows: number; steps: number; sha256: string };
+  functionalResult: FunctionalResult;
+  summary: Record<TestLevel, Record<FlowStatus, number>>;
+  flows: FlowResult[];
 }

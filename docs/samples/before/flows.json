@@ -1,0 +1,399 @@
+{
+  "kind": "navsentry-flow-result",
+  "schemaVersion": "1",
+  "runId": "07cab76a-5f94-418d-b373-720b3ca0c67f",
+  "tool": {
+    "name": "navsentry",
+    "version": "0.1.2",
+    "node": "26.13.0",
+    "platform": "win32-x64"
+  },
+  "startedAt": "2026-11-01T15:00:00.125Z",
+  "finishedAt": "2026-11-01T15:00:02.727Z",
+  "project": "demo-before",
+  "environment": "local",
+  "mode": "observe",
+  "flowSet": {
+    "flows": 2,
+    "steps": 11,
+    "sha256": "6f94a62dbe77497ff6db1267607d2ee8691e8e03e7db078bd664ba0ee10ac5b6"
+  },
+  "functionalResult": "FAIL",
+  "summary": {
+    "integration": {
+      "PASS": 0,
+      "FAIL": 1,
+      "INCOMPLETE": 0,
+      "ERROR": 0,
+      "NOT_TESTED": 0
+    },
+    "e2e": {
+      "PASS": 0,
+      "FAIL": 1,
+      "INCOMPLETE": 0,
+      "ERROR": 0,
+      "NOT_TESTED": 0
+    }
+  },
+  "flows": [
+    {
+      "id": "orders-access",
+      "title": "Orders access control",
+      "story": "A reader opens their own order; another reader and an anonymous visitor cannot; only admins see stats.",
+      "file": "orders-access.flow.md",
+      "declaredLevel": "integration",
+      "level": "integration",
+      "levelReasons": [
+        "all steps are API requests"
+      ],
+      "executability": "full",
+      "review": {
+        "status": "draft",
+        "hashValid": false
+      },
+      "contentSha256": "b8e437f5890459244cea60a0baffae6d34d7a0b723714b54c89d4e0b41aa9441",
+      "status": "FAIL",
+      "reasons": [
+        "S3 FAIL",
+        "S5 FAIL",
+        "S7 FAIL"
+      ],
+      "steps": [
+        {
+          "id": "S1",
+          "key": "orders-access/S1",
+          "title": "S1 — Reader A lists orders",
+          "action": "http",
+          "actor": "reader_a",
+          "contentSha256": "9be1b10286b495c8d78b77b6ca1aab86d4ad127a449afed2a11d9903d24854ec",
+          "status": "PASS",
+          "assertions": [
+            {
+              "kind": "status",
+              "status": "PASS",
+              "expected": "status 200",
+              "observed": "status 200"
+            },
+            {
+              "kind": "content_type",
+              "status": "PASS",
+              "expected": "application/json",
+              "observed": "application/json"
+            },
+            {
+              "kind": "json",
+              "status": "PASS",
+              "expected": "/items: type array, ≥1 items",
+              "observed": "present, type array"
+            }
+          ],
+          "requestIds": [
+            "6282435b-d515-4c7d-93bc-e2e6f23f010f"
+          ],
+          "request": "GET /api/orders"
+        },
+        {
+          "id": "S2",
+          "key": "orders-access/S2",
+          "title": "S2 — Reader A opens own order (positive control)",
+          "action": "http",
+          "actor": "reader_a",
+          "contentSha256": "0c0cc059e3d9fc5865ec2b590028302c86cb07b797571c4e5d1e7947a70e92a5",
+          "status": "PASS",
+          "assertions": [
+            {
+              "kind": "status",
+              "status": "PASS",
+              "expected": "status 200",
+              "observed": "status 200"
+            },
+            {
+              "kind": "access",
+              "status": "PASS",
+              "expected": "allowed (2xx)",
+              "observed": "status 200"
+            },
+            {
+              "kind": "json",
+              "status": "PASS",
+              "expected": "/id: type string",
+              "observed": "present, type string"
+            },
+            {
+              "kind": "json",
+              "status": "PASS",
+              "expected": "/status: equals expected literal",
+              "observed": "present, type string, matched"
+            }
+          ],
+          "requestIds": [
+            "d171667b-60d5-4987-b131-81052b768b2e"
+          ],
+          "request": "GET /api/orders/{{orderA}}"
+        },
+        {
+          "id": "S3",
+          "key": "orders-access/S3",
+          "title": "S3 — Reader B must not open Reader A's order",
+          "action": "http",
+          "actor": "reader_b",
+          "contentSha256": "a34cafeb3f15ef00ebb9d812b9b0180347140e756c847dfd8c5967a67b00ecf8",
+          "status": "FAIL",
+          "assertions": [
+            {
+              "kind": "access",
+              "status": "FAIL",
+              "expected": "denied",
+              "observed": "status 200, same contract as positive control S2"
+            }
+          ],
+          "requestIds": [
+            "71309c66-9837-4d6a-a923-d9487ac66bfd"
+          ],
+          "request": "GET /api/orders/{{orderA}}",
+          "securityCase": "NSC-AC-003"
+        },
+        {
+          "id": "S4",
+          "key": "orders-access/S4",
+          "title": "S4 — Reader A profile (positive control)",
+          "action": "http",
+          "actor": "reader_a",
+          "contentSha256": "d8c9be463502821e27258e83721660e37673c183f9abd8540c323b0007251565",
+          "status": "PASS",
+          "assertions": [
+            {
+              "kind": "access",
+              "status": "PASS",
+              "expected": "allowed (2xx)",
+              "observed": "status 200"
+            },
+            {
+              "kind": "json",
+              "status": "PASS",
+              "expected": "/role: type string",
+              "observed": "present, type string"
+            }
+          ],
+          "requestIds": [
+            "073c277b-3858-4654-93f3-8da4b0a8023c"
+          ],
+          "request": "GET /api/me"
+        },
+        {
+          "id": "S5",
+          "key": "orders-access/S5",
+          "title": "S5 — Anonymous must not read a profile",
+          "action": "http",
+          "actor": "anonymous",
+          "contentSha256": "3ac46994560c8f491daf5d26ae3a44dd50e94e1efadd080343c582c372fa2866",
+          "status": "FAIL",
+          "assertions": [
+            {
+              "kind": "access",
+              "status": "FAIL",
+              "expected": "denied",
+              "observed": "status 200, same contract as positive control S4"
+            }
+          ],
+          "requestIds": [
+            "0cdcaed1-db29-4aa9-b86e-ab71863677a9"
+          ],
+          "request": "GET /api/me",
+          "securityCase": "NSC-AC-002"
+        },
+        {
+          "id": "S6",
+          "key": "orders-access/S6",
+          "title": "S6 — Admin sees stats (positive control)",
+          "action": "http",
+          "actor": "admin",
+          "contentSha256": "87018fa7cc65bae112d8e47939921343a669fd2cd7eea6a249c7919bb9761602",
+          "status": "PASS",
+          "assertions": [
+            {
+              "kind": "access",
+              "status": "PASS",
+              "expected": "allowed (2xx)",
+              "observed": "status 200"
+            },
+            {
+              "kind": "content_type",
+              "status": "PASS",
+              "expected": "application/json",
+              "observed": "application/json"
+            }
+          ],
+          "requestIds": [
+            "7f2cd025-234a-46e8-bc3f-16a4d539b9b0"
+          ],
+          "request": "GET /api/admin/stats"
+        },
+        {
+          "id": "S7",
+          "key": "orders-access/S7",
+          "title": "S7 — Reader must not see admin stats",
+          "action": "http",
+          "actor": "reader_a",
+          "contentSha256": "a0a3b18555ae9e9601799aaf458ca6b43e14788673e7b5cf1171dff1298af0ac",
+          "status": "FAIL",
+          "assertions": [
+            {
+              "kind": "access",
+              "status": "FAIL",
+              "expected": "denied",
+              "observed": "status 200, same contract as positive control S6"
+            }
+          ],
+          "requestIds": [
+            "368bdfee-43c9-4510-917c-4afae08fbde7"
+          ],
+          "request": "GET /api/admin/stats",
+          "securityCase": "NSC-AC-007"
+        }
+      ],
+      "findings": [
+        "2ed31545305ed6fa20e0a163",
+        "3eef519c1454dd179dcdf801",
+        "4394e9188345a42229ec9d40",
+        "fee4e2b13b1a34242abf2210",
+        "2f0c13798b3f6290b328e559",
+        "7c6bc49d2e83bb56b8b62a1f",
+        "410d1fcc3d4bf29a8b41f77d",
+        "8abac78f653ee5b014e2f490",
+        "887c9e474229a3f22403e9f7",
+        "6b1e8104436e4050b9e69aea",
+        "b8fb462c3914484b16461887",
+        "b6438cdb4cfb8485c2c39cb4",
+        "10818924dc8a1a6ca8a01ce1",
+        "557b65c1e49e747d5e8b1ff7",
+        "f3e727a639f1686ee83fcfde"
+      ],
+      "manualReplay": []
+    },
+    {
+      "id": "profile-journey",
+      "title": "Reader profile journey",
+      "story": "A signed-in reader opens the profile page and navigates to order history; visitors are sent to login.",
+      "file": "profile-journey.flow.md",
+      "declaredLevel": "auto",
+      "level": "e2e",
+      "levelReasons": [
+        "S2 click needs a browser",
+        "S3 see needs a browser"
+      ],
+      "executability": "partial",
+      "review": {
+        "status": "draft",
+        "hashValid": false
+      },
+      "contentSha256": "8239314334729d416fe4f36157c022f386e1e07a6a7c779310e4564682e4a3ca",
+      "status": "FAIL",
+      "reasons": [
+        "S2 NOT_TESTED: click requires the playwright-browser transport (M1b), which is not usable in this release",
+        "S3 NOT_TESTED: see requires the playwright-browser transport (M1b), which is not usable in this release",
+        "S4 FAIL"
+      ],
+      "steps": [
+        {
+          "id": "S1",
+          "key": "profile-journey/S1",
+          "title": "S1 — Profile page loads",
+          "action": "navigate",
+          "actor": "reader_a",
+          "contentSha256": "a9daa93ea502dec78d5a70a7788e78418862e470e7b8f369405176ecec6a2977",
+          "status": "PASS",
+          "assertions": [
+            {
+              "kind": "status",
+              "status": "PASS",
+              "expected": "status 200",
+              "observed": "status 200"
+            },
+            {
+              "kind": "access",
+              "status": "PASS",
+              "expected": "allowed (2xx)",
+              "observed": "status 200"
+            },
+            {
+              "kind": "content_type",
+              "status": "PASS",
+              "expected": "text/html",
+              "observed": "text/html"
+            },
+            {
+              "kind": "text_present",
+              "status": "PASS",
+              "expected": "marker 1 present",
+              "observed": "present"
+            }
+          ],
+          "requestIds": [
+            "ec3eb8db-1c28-4fb2-8815-79218f485d66"
+          ],
+          "request": "GET /app/profile"
+        },
+        {
+          "id": "S2",
+          "key": "profile-journey/S2",
+          "title": "S2 — Open order history",
+          "action": "click",
+          "actor": "reader_a",
+          "contentSha256": "b40e041660a101439aa5a3c92966914c09d064c2dd574b3b7f9236898eb59118",
+          "status": "NOT_TESTED",
+          "assertions": [],
+          "requestIds": [],
+          "reason": "click requires the playwright-browser transport (M1b), which is not usable in this release"
+        },
+        {
+          "id": "S3",
+          "key": "profile-journey/S3",
+          "title": "S3 — History is visible",
+          "action": "see",
+          "actor": "reader_a",
+          "contentSha256": "fa5df6897893a3b68ec41ed9e15e47c16e62d41b1881aabf12d30c0f6241b594",
+          "status": "NOT_TESTED",
+          "assertions": [],
+          "requestIds": [],
+          "reason": "see requires the playwright-browser transport (M1b), which is not usable in this release"
+        },
+        {
+          "id": "S4",
+          "key": "profile-journey/S4",
+          "title": "S4 — Visitor is sent to login",
+          "action": "navigate",
+          "actor": "anonymous",
+          "contentSha256": "7b8badab26a94616a79b01f2d5e2e3c5abf9e3ef16e86975ba8d5dcf69442703",
+          "status": "FAIL",
+          "assertions": [
+            {
+              "kind": "access",
+              "status": "FAIL",
+              "expected": "denied",
+              "observed": "status 200, same contract as positive control S1"
+            }
+          ],
+          "requestIds": [
+            "4a9492dd-6b57-4bf4-9654-ee8cddc27418"
+          ],
+          "request": "GET /app/profile",
+          "securityCase": "NSC-AC-002"
+        }
+      ],
+      "findings": [
+        "fee0a4fff083aa2abb24c113",
+        "86733b9437764e1560fc2e38",
+        "0e1ff75fa30e8a236884445c",
+        "537cf1850c28c8f706b2ddec",
+        "61ef9ac144885a9aee7c1d64",
+        "82c6f694fc9f9f46f387b272",
+        "4bab2545a1262edeea8cda03"
+      ],
+      "manualReplay": [
+        "S2 — as reader_a: click link “Orders”",
+        "S3 — as reader_a: check that you can see text “Order history”"
+      ]
+    }
+  ]
+}
