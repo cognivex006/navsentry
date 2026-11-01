@@ -4,11 +4,12 @@
  *   0 = completed, no findings in tested scope   1 = completed with findings
  *   2 = incomplete run (gaps/errors)              3 = usage / configuration error
  */
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { CASES, CATEGORIES } from "./catalog.js";
 import { compareRuns, renderCompareMarkdown } from "./compare.js";
 import { ConfigError, loadManifest } from "./config.js";
+import { DoctorError, HOSTS, applySkillUpdate, doctorReport, normalizeHost, planSkillUpdate, pluginCommands, type Host } from "./doctor.js";
 import { renderJson, renderMarkdown, renderSarif, securityResult, validateRunResult } from "./report/render.js";
 import { executeRun, planRun } from "./runner.js";
 import { allAdapters } from "./transports/registry.js";
@@ -18,7 +19,8 @@ const HELP = `navsentry ${TOOL_VERSION} — Navigate. Validate. Secure.
 Authorized targets only. Default mode is observe (GET/HEAD/OPTIONS + TLS handshake).
 
 Usage:
-  navsentry doctor
+  navsentry doctor [--host claude|codex|gemini|antigravity|agy] [--project <dir>] [--json]
+  navsentry doctor update --host <host> --scope user|project [--project <dir>] [--dry-run]
   navsentry integrations
   navsentry validate --config <manifest.json>
   navsentry plan --config <manifest.json>            (zero network)
@@ -59,11 +61,11 @@ export async function main(argv: string[]): Promise<number> {
         print(TOOL_VERSION);
         return 0;
       case "doctor":
+        return await doctor(rest);
       case "integrations": {
         const st = await Promise.all(allAdapters().map((a) => a.probe()));
         print(`navsentry ${TOOL_VERSION} · node ${process.versions.node} · ${process.platform}-${process.arch}`);
         for (const s of st) print(`${s.usable ? "USABLE     " : s.available ? "DETECTED   " : "UNAVAILABLE"} ${s.id.padEnd(20)} ${s.version ?? ""}  ${s.reason}`);
-        if (cmd === "doctor") print("\nNothing was installed. Optional components are never installed automatically.");
         return 0;
       }
       case "validate": {
@@ -121,7 +123,7 @@ export async function main(argv: string[]): Promise<number> {
         throw new UsageError(`unknown command ${cmd}`);
     }
   } catch (e) {
-    if (e instanceof ConfigError || e instanceof UsageError) {
+    if (e instanceof ConfigError || e instanceof UsageError || e instanceof DoctorError) {
       process.stderr.write(`${e.message}\n`);
       return 3;
     }
@@ -134,5 +136,49 @@ export async function main(argv: string[]): Promise<number> {
   }
 }
 
-const invokedDirectly = process.argv[1] && resolve(process.argv[1]).replace(/\\/g, "/").endsWith("dist/src/cli.js");
+async function doctor(argv: string[]): Promise<number> {
+  const update = argv[0] === "update";
+  const hostArg = arg(argv, "--host");
+  const host = hostArg ? normalizeHost(hostArg) : undefined;
+  if (hostArg && !host) throw new UsageError(`unknown host; one of ${HOSTS.join(", ")} (agy = antigravity)`);
+  const project = resolve(arg(argv, "--project") ?? process.cwd());
+  if (update) {
+    const scope = arg(argv, "--scope");
+    if (!host) throw new UsageError("doctor update needs --host");
+    if (scope !== "user" && scope !== "project") throw new UsageError("doctor update needs --scope user|project");
+    const plan = planSkillUpdate(host, scope, undefined, project);
+    for (const c of plan.copies) print(`${c.replaces === null ? "INSTALL" : "REPLACE"} ${c.skill} ${c.replaces ?? ""}${c.replaces === null ? "" : " -> "}${TOOL_VERSION}  ${c.to}`);
+    if (argv.includes("--dry-run")) { print("dry run: nothing was changed"); return 0; }
+    const backup = applySkillUpdate(plan);
+    print(backup ? `previous copies backed up to ${backup}` : "no previous copies");
+    print("Restart the host session so it loads the new skills. Plugins are updated with the host's own commands (see `navsentry doctor`).");
+    return 0;
+  }
+  const hosts: readonly Host[] = host ? [host] : HOSTS;
+  const r = doctorReport(hosts, undefined, project);
+  const transports = await Promise.all(allAdapters().map((a) => a.probe()));
+  if (argv.includes("--json")) { print(JSON.stringify({ ...r, node: process.versions.node, platform: `${process.platform}-${process.arch}`, transports }, null, 2)); return 0; }
+  print(`navsentry ${TOOL_VERSION} · node ${process.versions.node} · ${process.platform}-${process.arch}`);
+  print(`package: ${r.packageRoot}`);
+  print("\nTransports");
+  for (const s of transports) print(`  ${s.usable ? "USABLE     " : s.available ? "DETECTED   " : "UNAVAILABLE"} ${s.id.padEnd(20)} ${s.version ?? ""}  ${s.reason}`);
+  print("\nPackage versions");
+  for (const m of r.manifests) print(`  ${m.status.padEnd(9)} ${(m.version ?? "-").padEnd(9)} ${m.file}`);
+  print("\nInstallations");
+  if (!r.installations.length) print("  none found");
+  for (const i of r.installations) print(`  ${i.status.padEnd(9)} ${(i.version ?? "-").padEnd(9)} ${i.host.padEnd(12)} ${i.kind.padEnd(6)} ${i.scope.padEnd(7)} ${i.path}`);
+  for (const h of hosts) {
+    const mine = r.installations.filter((i) => i.host === h);
+    const cmds = pluginCommands(h);
+    if (!mine.length) print(`\n${h}: not installed. Install: ${cmds.install.join(" && ")}`);
+    else if (mine.some((i) => i.kind === "plugin" && i.status !== "CURRENT")) print(`\n${h}: plugin not current. Update: ${cmds.update.join(" && ")}`);
+    if (mine.some((i) => i.kind === "skill" && i.status !== "CURRENT")) print(`\n${h}: skill copy not current. Update: navsentry doctor update --host ${h} --scope <user|project>`);
+  }
+  print("\nNothing was installed or changed. Doctor makes no network requests.");
+  return r.manifests.some((m) => m.status !== "CURRENT") ? 2 : 0;
+}
+
+// realpath: npm links the bin on Linux/macOS, so argv[1] may be the symlink, not this file.
+const entry = (() => { try { return realpathSync(process.argv[1] ?? ""); } catch { return ""; } })();
+const invokedDirectly = entry.replace(/\\/g, "/").endsWith("dist/src/cli.js");
 if (invokedDirectly) main(process.argv.slice(2)).then((code) => { process.exitCode = code; });

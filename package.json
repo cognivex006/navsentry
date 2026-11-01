@@ -8,6 +8,18 @@
   "bin": {
     "navsentry": "dist/src/cli.js"
   },
+  "files": [
+    "dist/src/",
+    "skills/",
+    "docs/cases/",
+    "docs/REPORTING.md",
+    "examples/",
+    ".claude-plugin/",
+    ".codex-plugin/",
+    ".antigravity-plugin/",
+    "gemini-extension.json",
+    "CHANGELOG.md"
+  ],
   "engines": {
     "node": ">=22.12.0"
   },
@@ -15,7 +27,8 @@
     "build": "tsc -p tsconfig.json",
     "test": "npm run build && node --test --test-concurrency=1 dist/test/",
     "docs:catalog": "npm run build && node dist/scripts/gen-catalog-docs.js",
-    "gate": "npm run build && node dist/scripts/local-gate.js"
+    "gate": "npm run build && node dist/scripts/local-gate.js",
+    "release:pack": "npm run build && npm pack --pack-destination .navsentry/release"
   },
   "devDependencies": {
     "@types/node": "22.20.5",

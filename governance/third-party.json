@@ -11,7 +11,9 @@
       "license": "Apache-2.0",
       "source": "https://registry.npmjs.org/typescript (publisher: Microsoft, repo github.com/microsoft/TypeScript)",
       "why": "Type checking and compilation. 6.0.3 chosen over 7.0.2 (native binaries, newer) to keep a pure-JS toolchain with longer field history.",
-      "terms": ["https://github.com/microsoft/TypeScript/blob/main/LICENSE.txt"],
+      "terms": [
+        "https://github.com/microsoft/TypeScript/blob/main/LICENSE.txt"
+      ],
       "advisories_checked": "npm audit 2026-10-31: 0 vulnerabilities",
       "reviewed": "2026-10-31",
       "review_due": "2027-04-30",
@@ -25,7 +27,9 @@
       "license": "MIT",
       "source": "https://registry.npmjs.org/@types/node (DefinitelyTyped)",
       "why": "Node.js type declarations matching the minimum supported runtime (Node 22).",
-      "terms": ["https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/LICENSE"],
+      "terms": [
+        "https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/LICENSE"
+      ],
       "advisories_checked": "npm audit 2026-10-31: 0 vulnerabilities",
       "reviewed": "2026-10-31",
       "review_due": "2027-04-30",
@@ -39,7 +43,9 @@
       "license": "MIT",
       "source": "https://registry.npmjs.org/undici-types (Node.js undici project)",
       "why": "Transitive type declarations.",
-      "terms": ["https://github.com/nodejs/undici/blob/main/LICENSE"],
+      "terms": [
+        "https://github.com/nodejs/undici/blob/main/LICENSE"
+      ],
       "advisories_checked": "npm audit 2026-10-31: 0 vulnerabilities",
       "reviewed": "2026-10-31",
       "review_due": "2027-04-30",
@@ -49,13 +55,27 @@
   "services_and_tools": [
     {
       "name": "GitHub (repository hosting)",
-      "usage": "Git hosting of this public repository only. No GitHub Actions, no Dependabot, no GitHub Apps, no automated bulk API activity.",
+      "usage": "Git hosting of this public repository, owner-created version tags and GitHub Releases with a locally built `npm pack` tarball attached. No GitHub Actions, no Dependabot, no GitHub Apps, no automated bulk API activity.",
       "terms": [
         "https://docs.github.com/en/site-policy/github-terms/github-terms-of-service",
         "https://docs.github.com/en/site-policy/acceptable-use-policies/github-acceptable-use-policies",
         "https://docs.github.com/en/site-policy/acceptable-use-policies/github-active-malware-or-exploits"
       ],
       "findings": "Dual-use security research tooling is permitted. Prohibited: using GitHub to deliver attacks or gain unauthorized access, automated excessive bulk activity, inauthentic automated accounts, posting third-party personal information. Customer data from assessment reports must never be committed.",
+      "reviewed": "2026-10-31",
+      "review_due": "2027-04-30",
+      "decision": "APPROVED_WITH_CONDITIONS"
+    },
+    {
+      "name": "Agent host plugin formats (Claude Code marketplace, Codex plugins, Gemini CLI extensions, Antigravity plugins)",
+      "usage": "Static manifest files in this repository (.claude-plugin/, .codex-plugin/, .agents/plugins/marketplace.json, gemini-extension.json, .antigravity-plugin/) that the user's own host reads when the user installs from this Git repository. NavSentry calls no host API, creates no account, publishes to no hosted catalog and runs no host command; `navsentry doctor` only reads local files and prints the host's own commands.",
+      "terms": [
+        "https://code.claude.com/docs/en/plugin-marketplaces",
+        "https://developers.openai.com/codex/plugins",
+        "https://geminicli.com/docs/extensions/reference",
+        "https://antigravity.google/docs/build-plugins"
+      ],
+      "findings": "File formats checked 2026-10-31: Claude manifests pass `claude plugin validate --strict` (Claude Code 2.1.302); Codex manifest fields match installed Codex CLI 0.166.0 plugin examples; Antigravity schema https://antigravity.google/schemas/v1/plugin.json (additionalProperties false, version supported, .antigravity-plugin/plugin.json takes precedence in multi-provider repos). Gemini CLI and agy were not available locally, so their end-to-end installs are unverified. Submitting to an official hosted marketplace would need a separate terms review.",
       "reviewed": "2026-10-31",
       "review_due": "2027-04-30",
       "decision": "APPROVED_WITH_CONDITIONS"
@@ -72,7 +92,10 @@
     {
       "name": "npm public registry (install only)",
       "usage": "Installing pinned dev dependencies; `npm audit` advisory lookup during the local gate. No publishing.",
-      "terms": ["https://docs.npmjs.com/policies/terms", "https://docs.npmjs.com/policies/open-source-terms"],
+      "terms": [
+        "https://docs.npmjs.com/policies/terms",
+        "https://docs.npmjs.com/policies/open-source-terms"
+      ],
       "findings": "No account needed to install. Must not strain infrastructure with unreasonable request volume; must not crawl the website. Normal install/audit volume is far below limits.",
       "reviewed": "2026-10-31",
       "review_due": "2027-04-30",
@@ -81,7 +104,9 @@
     {
       "name": "Node.js runtime",
       "usage": "Runtime >= 22.12 (tested locally on 26.13.0).",
-      "terms": ["https://github.com/nodejs/node/blob/main/LICENSE"],
+      "terms": [
+        "https://github.com/nodejs/node/blob/main/LICENSE"
+      ],
       "findings": "MIT-style license with bundled third-party notices (OpenSSL Apache-2.0, etc.). Not redistributed by NavSentry.",
       "reviewed": "2026-10-31",
       "review_due": "2027-04-30",
@@ -90,7 +115,10 @@
     {
       "name": "Playwright (optional, NOT installed)",
       "usage": "Future M1b browser transport; NavSentry never installs it automatically.",
-      "terms": ["https://github.com/microsoft/playwright/blob/main/LICENSE", "https://playwright.dev/docs/browsers"],
+      "terms": [
+        "https://github.com/microsoft/playwright/blob/main/LICENSE",
+        "https://playwright.dev/docs/browsers"
+      ],
       "findings": "Apache-2.0. `playwright install` downloads open-source Chromium builds by default; branded Chrome/Edge channels are governed by Google/Microsoft terms and must not be used without separate review. Browser binary licenses (Chromium/Firefox/WebKit) not yet reviewed in detail.",
       "reviewed": "2026-10-31",
       "review_due": "before M1b dependency is added",
@@ -99,7 +127,10 @@
     {
       "name": "curl / PowerShell (optional OS executables)",
       "usage": "Detected from fixed system paths only; execution adapters scheduled for M3.",
-      "terms": ["https://curl.se/docs/copyright.html", "https://github.com/PowerShell/PowerShell/blob/master/LICENSE.txt"],
+      "terms": [
+        "https://curl.se/docs/copyright.html",
+        "https://github.com/PowerShell/PowerShell/blob/master/LICENSE.txt"
+      ],
       "findings": "curl license (MIT-like); PowerShell 7 MIT; Windows PowerShell 5.1 is part of Windows (OS license). Not redistributed.",
       "reviewed": "2026-10-31",
       "review_due": "before M3",
@@ -108,7 +139,11 @@
     {
       "name": "OWASP Top 10 / WSTG / ASVS (reference content)",
       "usage": "Category IDs and names only, for mapping. No OWASP text copied.",
-      "terms": ["https://owasp.org/www-policy/operational/licensing", "https://top10.owasp.org/2025", "https://asvs.owasp.org/"],
+      "terms": [
+        "https://owasp.org/www-policy/operational/licensing",
+        "https://top10.owasp.org/2025",
+        "https://asvs.owasp.org/"
+      ],
       "findings": "OWASP projects are generally CC BY-SA 4.0. Using identifiers/names with links is attribution-compatible. Top 10:2025 and ASVS 5.0.0 (30 May 2025) verified as current on 2026-10-31.",
       "reviewed": "2026-10-31",
       "review_due": "2027-04-30",
@@ -117,7 +152,13 @@
     {
       "name": "SaaS advisory APIs (OSV, NVD, GitHub Advisory API), Postman cloud, visual computer-use providers, OWASP ZAP",
       "usage": "NOT USED in v0.1.",
-      "terms": ["https://google.github.io/osv.dev/faq/", "https://nvd.nist.gov/developers/terms-of-use", "https://www.postman.com/legal/terms/", "https://www.anthropic.com/legal/aup", "https://www.zaproxy.org/"],
+      "terms": [
+        "https://google.github.io/osv.dev/faq/",
+        "https://nvd.nist.gov/developers/terms-of-use",
+        "https://www.postman.com/legal/terms/",
+        "https://www.anthropic.com/legal/aup",
+        "https://www.zaproxy.org/"
+      ],
       "findings": "Each requires its own terms review (rate limits, API keys, data sharing of target information, acceptable use) before any integration. Target data must never be sent to a SaaS without the target owner's approval.",
       "reviewed": "2026-10-31",
       "review_due": "before any integration",

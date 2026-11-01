@@ -1,0 +1,19 @@
+{
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json",
+  "name": "navsentry",
+  "displayName": "NavSentry",
+  "version": "0.1.0",
+  "description": "Authorized, non-destructive web security validation with evidence-based reports, fix verification and version doctor.",
+  "author": {
+    "name": "NavSentry contributors"
+  },
+  "homepage": "https://github.com/cognivex006/navsentry",
+  "repository": "https://github.com/cognivex006/navsentry",
+  "license": "Apache-2.0",
+  "keywords": ["security", "web", "dast", "owasp", "agent-skill"],
+  "suggestedPrompts": [
+    "Plan a NavSentry observe run for my staging manifest.",
+    "Compare my before and after NavSentry runs.",
+    "Check my NavSentry installation and versions."
+  ]
+}

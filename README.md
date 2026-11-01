@@ -2,105 +2,195 @@
 
 **Navigate. Validate. Secure.**
 
-AI-assisted browser-based E2E security testing for web applications, with automated vulnerability validation and evidence-based reporting.
+AI-assisted security testing for web applications, with automated vulnerability validation and evidence-based reporting.
 
-> ⚠️ **Authorized targets only.** NavSentry refuses to run without an explicit authorization acknowledgement and an origin allowlist. It never crawls the Internet, never sends injection/DoS payloads, and defaults to passive `observe` mode.
+> ⚠️ **Authorized targets only.** NavSentry refuses to run without an explicit authorization acknowledgement and an origin allowlist. It never crawls the Internet, never sends injection or DoS payloads, and defaults to passive `observe` mode.
 
-## Status — v0.1.0 (M0 + M1-core)
+## Features
 
-| Capability | State |
+- **Scope and authorization gate**: origin, path and method allowlists, checked before each request and again at connect time. It blocks DNS rebinding, private and metadata addresses, and out-of-scope redirects.
+- **Request budget**: limits on request volume, rate and run duration.
+- **20 observe-mode checks**: security headers, cookies, CORS, HTTP methods, caching, information disclosure, PII exposure, JWT handling, HTTPS redirect, plus a TLS handshake probe for protocol versions and certificates.
+- **Evidence-based reports**: JSON, Markdown (English and Thai) and SARIF 2.1.0. Secrets and personal data are redacted before anything is written.
+- **Fix verification**: `compare` shows which issues were fixed, which still fail, and any change a legitimate user would notice (contract drift).
+- **Case catalog**: 50 cases mapped to OWASP Top 10 2021 and 2025, CWE, WSTG and ASVS 5.0, each with VERIFY, FIX and RECHECK prompts for AI agents.
+- **Agent plugins** for Claude Code, Codex, Gemini CLI and Antigravity, plus a portable skill for other agents.
+- **Version doctor**: checks the CLI, plugins and skill copies on every host and shows how to update anything out of date.
+
+## Install
+
+Requires Node.js 22.12 or newer.
+
+Install the CLI from the release tarball:
+
+```bash
+npm install -g https://github.com/cognivex006/navsentry/releases/download/v0.1.0/navsentry-0.1.0.tgz
+```
+
+```bash
+navsentry doctor
+```
+
+### Agent plugins
+
+Each plugin adds the `navsentry` skill and the `navsentry-doctor` skill. The plugins call the CLI, so install the CLI first.
+
+**Claude Code**
+
+```bash
+claude plugin marketplace add cognivex006/navsentry
+```
+
+```bash
+claude plugin install navsentry@navsentry
+```
+
+**Codex**
+
+```bash
+codex plugin marketplace add cognivex006/navsentry
+```
+
+```bash
+codex plugin add navsentry@navsentry
+```
+
+**Gemini CLI**
+
+```bash
+gemini extensions install https://github.com/cognivex006/navsentry
+```
+
+**Antigravity (`agy`)**
+
+```bash
+agy plugin install https://github.com/cognivex006/navsentry
+```
+
+**Skills without a plugin**: `doctor update` copies both skills into a host's skills folder, for one project or for your user:
+
+```bash
+navsentry doctor update --host codex --scope project --project /path/to/your/app
+```
+
+**Other agents**: any agent that reads `SKILL.md` files can use the `skills/navsentry/` and `skills/navsentry-doctor/` folders. `navsentry doctor` prints the package folder that contains them. See [docs/AGENT-INTEGRATIONS.md](docs/AGENT-INTEGRATIONS.md) for details.
+
+## Usage
+
+1. Describe the target in a manifest. Start from [examples/manifest.example.json](examples/manifest.example.json). Credentials are referenced by environment variable names only.
+2. Validate the manifest and review the plan. Neither step sends any network traffic.
+
+   ```bash
+   navsentry validate --config my-manifest.json
+   ```
+
+   ```bash
+   navsentry plan --config my-manifest.json
+   ```
+
+3. Run the checks:
+
+   ```bash
+   navsentry test --config my-manifest.json --out runs/before
+   ```
+
+   Open `runs/before/REPORT.md`. Findings are grouped by priority: `IMMEDIATE` (fix now), `CAUTION` (fix carefully; may affect legitimate users) and `PLANNED` (can wait).
+4. After a fix, run again and compare:
+
+   ```bash
+   navsentry test --config my-manifest.json --out runs/after
+   ```
+
+   ```bash
+   navsentry compare --before runs/before/run.json --after runs/after/run.json
+   ```
+
+5. Render a report in another format or language:
+
+   ```bash
+   navsentry report --input runs/after/run.json --format sarif
+   ```
+
+   ```bash
+   navsentry report --input runs/after/run.json --format markdown --lang th
+   ```
+
+Browse the case catalog:
+
+```bash
+navsentry catalog --category CONF
+```
+
+Example reports: [before](docs/samples/before/REPORT.md), [after](docs/samples/after/REPORT.md), [compare](docs/samples/compare.md).
+
+### With an AI agent
+
+Ask in the agent chat, for example:
+
+- "Use navsentry to plan an observe run for our staging manifest."
+- "Run navsentry and summarize REPORT.md by priority."
+- "Compare the before and after navsentry runs and list any contract drift."
+- "Check my navsentry installation and versions."
+
+The agent reads results as data and asks before running a scan or changing an installation.
+
+## Version doctor
+
+```bash
+navsentry doctor
+```
+
+Shows the CLI version, its package location, the version of every bundled plugin manifest and skill, and every NavSentry plugin or skill installed for Claude Code, Codex, Gemini CLI and Antigravity. Each entry is `CURRENT`, `OUTDATED`, `NEWER` or `UNKNOWN`. Doctor reads local files only, makes no network requests and changes nothing.
+
+| Option | Effect |
 |---|---|
-| Manifest validation, scope & authorization gate (origins, paths, methods, DNS-rebinding/metadata protection, redirect re-check) | ✅ implemented, tested |
-| `direct-http` transport (node:http/https, zero dependencies) | ✅ usable |
-| TLS handshake probe (protocol versions, certificate) | ✅ usable (legacy versions may be INCONCLUSIVE) |
-| 20 deterministic observe-mode checks (headers, cookies, CORS, methods, cache, disclosure, PII, JWT, HTTPS redirect) | ✅ |
-| Reports: JSON (schema v1), Markdown (en/th), SARIF 2.1.0 | ✅ |
-| `compare`: before/after security status + **legitimate-response contract drift** | ✅ |
-| Case Catalog: 50 cases, permanent IDs, OWASP 2021+2025 / CWE / WSTG / ASVS 5.0 mapping, agent prompts | ✅ |
-| Local release gate (no hosted CI) | ✅ |
-| `playwright-browser`, `curl-cli`, `powershell-http` execution | ⏳ M1b / M3 (probe only today; never faked) |
-| Cross-role IDOR, CSRF, session lifecycle scenarios | ⏳ M2 |
-| Visual computer-use, ZAP passive, OpenAPI/Postman import, DevSift bridge | ⏳ M3–M5 |
+| `--host claude\|codex\|gemini\|antigravity` | Check one host (`agy` = `antigravity`) |
+| `--project <dir>` | Project whose skill folders are checked (default: current directory) |
+| `--json` | Machine-readable output |
 
-See [docs/DEV-PLAN.md](docs/DEV-PLAN.md) and [docs/COVERAGE.md](docs/COVERAGE.md).
-
-## Quickstart
-
-Requires Node.js ≥ 22.12 (tested on 26.13.0, Windows 11).
+Update skill copies for one host:
 
 ```bash
-npm ci --ignore-scripts
+navsentry doctor update --host claude --scope user --dry-run
 ```
 
 ```bash
-npm run build
+navsentry doctor update --host claude --scope user
 ```
 
-```bash
-node dist/src/cli.js doctor
-```
+The previous copy is backed up outside the skills folder. Plugins are owned by their host: doctor prints the host's own update command (for example `claude plugin update navsentry@navsentry`) instead of editing the host's files.
 
-```bash
-node dist/src/cli.js validate --config examples/manifest.example.json
-```
+## Commands
 
-```bash
-node dist/src/cli.js plan --config examples/manifest.example.json
-```
-
-```bash
-node dist/src/cli.js test --config my-manifest.json --out runs/before
-```
-
-```bash
-node dist/src/cli.js compare --before runs/before/run.json --after runs/after/run.json
-```
-
-Try it safely against the bundled local demo (127.0.0.1 only, synthetic data):
-
-```bash
-node dist/scripts/demo.js run
-```
-
-It writes [docs/samples/before/REPORT.md](docs/samples/before/REPORT.md), [docs/samples/after/REPORT.md](docs/samples/after/REPORT.md) and [docs/samples/compare.md](docs/samples/compare.md).
-
-## Architecture
-
-```
-Agent / CLI ─► Planner ─► Authorization & Scope Gate ─► Transport Router
-                                │ (pre-request + connect-time DNS check)      │
-                                ▼                                             ▼
-                           Budget (rate/volume/duration)      direct-http · tls-probe · [browser · curl · pwsh · visual · zap]
-                                                                              │
-                         deterministic checks ◄───────────────────────────────┘
-                                │
-                     redaction ─► findings / coverage / response contracts ─► JSON · Markdown · SARIF · compare
-```
-
-Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · Threat model: [docs/THREAT-MODEL.md](docs/THREAT-MODEL.md)
-
-## Results vocabulary
-
-- Check status: `PASS` `FAIL` `INCONCLUSIVE` `NOT_TESTED` `ERROR` — missing evidence is never PASS.
-- Finding lifecycle: `SUSPECTED` `VALIDATED` `NEEDS_REVIEW` `DISMISSED`; severity is separate from confidence.
-- Priority: `IMMEDIATE` (fix now) · `PLANNED` (can wait) · `CAUTION` (fix carefully: may affect legitimate users).
-- CLI exit: `0` no findings in tested scope · `1` findings · `2` incomplete · `3` usage/config error.
-
-## Documentation
-
-| For | Read |
+| Command | Purpose |
 |---|---|
-| Users / consumer agents | [skills/navsentry/SKILL.md](skills/navsentry/SKILL.md), [docs/AGENT-INTEGRATIONS.md](docs/AGENT-INTEGRATIONS.md), [docs/REPORTING.md](docs/REPORTING.md) |
-| Case knowledge base | [docs/cases/CASE-CATALOG.md](docs/cases/CASE-CATALOG.md), [docs/ISSUE-CVE-MATRIX.md](docs/ISSUE-CVE-MATRIX.md) |
-| Maintainers | [AGENTS.md](AGENTS.md), [DEVELOPMENT.md](DEVELOPMENT.md), [docs/TESTING.md](docs/TESTING.md), [docs/THIRD-PARTY-GOVERNANCE.md](docs/THIRD-PARTY-GOVERNANCE.md), [docs/adr/](docs/adr/) |
-| Review of this delivery | [docs/reports/HUMAN-SUMMARY.md](docs/reports/HUMAN-SUMMARY.md) (Thai), [01 issues](docs/reports/01-ISSUE-REGISTER.md), [02 fixes](docs/reports/02-FIX-REPORT.md), [03 QA](docs/reports/03-QA-REPORT.md) |
+| `navsentry doctor` | Versions, installations and available transports |
+| `navsentry integrations` | Available transports only |
+| `navsentry validate --config <m>` | Check a manifest |
+| `navsentry plan --config <m>` | Show planned requests and skipped cases (no network) |
+| `navsentry test --config <m> [--out <dir>]` | Run observe-mode checks and write reports |
+| `navsentry report --input <run.json> --format markdown\|json\|sarif [--lang en\|th]` | Render a saved run |
+| `navsentry compare --before <run.json> --after <run.json>` | Before/after verdict and contract drift |
+| `navsentry catalog [--category <CODE>]` | List catalog cases |
+
+Exit codes: `0` no findings in tested scope · `1` findings · `2` incomplete run · `3` usage or configuration error.
+
+## Results
+
+- Check status: `PASS`, `FAIL`, `INCONCLUSIVE`, `NOT_TESTED`, `ERROR`. Missing evidence is never `PASS`.
+- Finding status: `SUSPECTED`, `VALIDATED`, `NEEDS_REVIEW`, `DISMISSED`. Severity is reported separately from confidence.
 
 ## Limitations
 
-- Zero findings ≠ secure. Most injection, access-control and business-logic classes need M2 scenarios or authorized manual testing.
-- No hosted CI by policy; quality gates run locally with `npm run gate`.
-- Linux/macOS and Node 22/24 have not been executed yet ([TESTING.md](docs/TESTING.md#platform-matrix)).
+- Zero findings does not mean the application is secure. Injection, access control and business-logic issues need authorized manual testing.
+- Checks run over HTTP and TLS. Browser-based (DOM and visual) checks are reported as `NOT_TESTED`.
+
+## More
+
+- [Case catalog](docs/cases/CASE-CATALOG.md) · [Issue/CVE matrix](docs/ISSUE-CVE-MATRIX.md)
+- [Reading reports](docs/REPORTING.md) · [Agent integrations](docs/AGENT-INTEGRATIONS.md)
+- [Threat model](docs/THREAT-MODEL.md) · [Security policy](SECURITY.md)
 
 ## License
 
-Apache-2.0 — see [LICENSE](LICENSE). Security reports: [SECURITY.md](SECURITY.md).
+Apache-2.0. See [LICENSE](LICENSE).
