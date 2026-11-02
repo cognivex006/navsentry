@@ -7,7 +7,7 @@ import { parseManifest } from "../src/config.js";
 const publicManifest = () =>
   parseManifest({
     version: "1", project: "p", environment: "staging",
-    authorization: { acknowledged: true, owner: "o" },
+    authorization: { acknowledged: true, owner: "o", reference: "CHG-1", expires_at: "2099-01-01" },
     targets: { origins: ["https://staging.example.test"], allowed_paths: ["/app/**", "/login"], denied_paths: ["/app/admin/**"] },
   });
 

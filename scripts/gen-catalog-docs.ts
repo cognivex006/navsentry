@@ -10,6 +10,7 @@ const ROOT = process.cwd();
 const PRIORITY_TH = { IMMEDIATE: "🔴 ต้องแก้ทันที (IMMEDIATE)", PLANNED: "🟡 รอได้ / วางแผนแก้ (PLANNED)", CAUTION: "🟠 แก้แล้วอาจกระทบผู้ใช้จริง ต้องระวัง (CAUTION)" } as const;
 const AUTO_TH: Record<string, string> = {
   auto: "auto — NavSentry ตรวจอัตโนมัติได้ใน v0.1 (observe)",
+  flow: "flow — ตรวจอัตโนมัติเมื่อมี Flow ที่เจ้าของระบุว่าต้องถูกปฏิเสธการเข้าถึง (docs/FLOWS.md)",
   "planned-auto": "planned-auto — วางแผนให้ตรวจอัตโนมัติ",
   assisted: "assisted — NavSentry เก็บหลักฐาน, คน/Agent ยืนยัน",
   "manual-active": "manual-active — ต้องใช้ payload เชิงรุก ห้ามรันอัตโนมัติ ต้องมีอนุญาตเฉพาะ",
@@ -35,7 +36,7 @@ ${c.evidence.map((e) => `- ${e}`).join("\n")}
 Method:
 1. navsentry validate --config <MANIFEST>  then  navsentry test --config <MANIFEST> --out runs/before
 2. Read runs/before/run.json coverage row "${c.id}" and any finding with ruleId "${c.id}".
-${c.automation === "auto" ? "3. Confirm in a real browser/DevTools:" : `3. This case is "${c.automation}" — NavSentry alone cannot conclude it. Gather the evidence above manually:`}
+${c.automation === "auto" ? "3. Confirm in a real browser/DevTools:" : c.automation === "flow" ? "3. Requires a flow with access: denied and a positive control (docs/FLOWS.md); then confirm in a real browser:" : `3. This case is "${c.automation}" — NavSentry alone cannot conclude it. Gather the evidence above manually:`}
 ${c.webRecheck.map((w) => `   - ${w}`).join("\n")}
 4. Decide exactly one status: PASS | FAIL | INCONCLUSIVE | NOT_TESTED | ERROR, with a reason.
    Missing evidence is never PASS. Pattern-only evidence stays SUSPECTED until a human confirms.

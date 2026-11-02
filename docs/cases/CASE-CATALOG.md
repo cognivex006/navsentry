@@ -8,7 +8,7 @@
 
 ## สารบัญตามหมวด
 
-- **AC** Access Control (authorization, CORS, SSRF, CSRF): [NSC-AC-001](#nsc-ac-001), [NSC-AC-002](#nsc-ac-002), [NSC-AC-003](#nsc-ac-003), [NSC-AC-004](#nsc-ac-004), [NSC-AC-005](#nsc-ac-005), [NSC-AC-006](#nsc-ac-006)
+- **AC** Access Control (authorization, CORS, SSRF, CSRF): [NSC-AC-001](#nsc-ac-001), [NSC-AC-002](#nsc-ac-002), [NSC-AC-003](#nsc-ac-003), [NSC-AC-007](#nsc-ac-007), [NSC-AC-004](#nsc-ac-004), [NSC-AC-005](#nsc-ac-005), [NSC-AC-006](#nsc-ac-006)
 - **AUTH** Identification & Authentication: [NSC-AUTH-001](#nsc-auth-001), [NSC-AUTH-002](#nsc-auth-002)
 - **SESS** Session & Token Management: [NSC-SESS-001](#nsc-sess-001), [NSC-SESS-002](#nsc-sess-002), [NSC-SESS-003](#nsc-sess-003), [NSC-SESS-004](#nsc-sess-004)
 - **CRYPT** Cryptography & Transport Security: [NSC-CRYPT-001](#nsc-crypt-001), [NSC-CRYPT-002](#nsc-crypt-002), [NSC-CRYPT-003](#nsc-crypt-003), [NSC-CRYPT-004](#nsc-crypt-004), [NSC-CRYPT-005](#nsc-crypt-005), [NSC-CRYPT-006](#nsc-crypt-006)
@@ -158,7 +158,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 |---|---|
 | Severity (default) | high |
 | Priority | 🔴 ต้องแก้ทันที (IMMEDIATE) |
-| Automation | planned-auto — วางแผนให้ตรวจอัตโนมัติ (M2) |
+| Automation | flow — ตรวจอัตโนมัติเมื่อมี Flow ที่เจ้าของระบุว่าต้องถูกปฏิเสธการเข้าถึง (docs/FLOWS.md) (M2 (login-based actors)) |
 | OWASP Top 10:2025 | A01:2025 Broken Access Control<br>A07:2025 Authentication Failures |
 | OWASP Top 10:2021 | A01:2021 Broken Access Control<br>A07:2021 Identification and Authentication Failures |
 | CWE | CWE-306 |
@@ -189,6 +189,10 @@ An endpoint that returns non-public data responds 2xx to an anonymous actor.
 
 **⚠️ ผลกระทบต่อผู้ใช้จริง / Regression guard** — Public endpoints used before login (health, login config, static config) must be explicitly allow-listed; compare anonymous and authenticated runs before/after.
 
+**Caveats / False positive**
+
+- Evaluated only where a flow declares anonymous `access: denied` with an authenticated positive control; a 2xx with a different contract (login page) is INCONCLUSIVE, not FAIL.
+
 <details><summary>Prompt: VERIFY (ตรวจสอบ)</summary>
 
 ```text
@@ -206,11 +210,14 @@ Collect EVIDENCE (redact tokens, cookies, PII, internal IPs BEFORE writing anyth
 Method:
 1. navsentry validate --config <MANIFEST>  then  navsentry test --config <MANIFEST> --out runs/before
 2. Read runs/before/run.json coverage row "NSC-AC-002" and any finding with ruleId "NSC-AC-002".
-3. This case is "planned-auto" — NavSentry alone cannot conclude it. Gather the evidence above manually:
+3. Requires a flow with access: denied and a positive control (docs/FLOWS.md); then confirm in a real browser:
    - Open the endpoint in a private browser window: 401/redirect to login
    - Logged-in user still sees data
 4. Decide exactly one status: PASS | FAIL | INCONCLUSIVE | NOT_TESTED | ERROR, with a reason.
    Missing evidence is never PASS. Pattern-only evidence stays SUSPECTED until a human confirms.
+
+Known caveats / false positives:
+- Evaluated only where a flow declares anonymous `access: denied` with an authenticated positive control; a 2xx with a different contract (login page) is INCONCLUSIVE, not FAIL.
 
 Output: an ISSUE entry (template docs/reports/templates/ISSUE.md) with ID NSC-AC-002, status,
 fingerprint(s), evidence list and this checklist:
@@ -280,7 +287,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 |---|---|
 | Severity (default) | high |
 | Priority | 🔴 ต้องแก้ทันที (IMMEDIATE) |
-| Automation | planned-auto — วางแผนให้ตรวจอัตโนมัติ (M2) |
+| Automation | flow — ตรวจอัตโนมัติเมื่อมี Flow ที่เจ้าของระบุว่าต้องถูกปฏิเสธการเข้าถึง (docs/FLOWS.md) (M2 (modification)) |
 | OWASP Top 10:2025 | A01:2025 Broken Access Control |
 | OWASP Top 10:2021 | A01:2021 Broken Access Control |
 | CWE | CWE-639, CWE-284 |
@@ -313,6 +320,7 @@ An actor can read or modify an object owned by another actor by changing an iden
 **Caveats / False positive**
 
 - UI hiding alone NEVER proves authorization.
+- 0.1.2 verifies read access only (flow step with object_owner and access: denied); modification needs safe-validate (M2).
 
 <details><summary>Prompt: VERIFY (ตรวจสอบ)</summary>
 
@@ -331,13 +339,14 @@ Collect EVIDENCE (redact tokens, cookies, PII, internal IPs BEFORE writing anyth
 Method:
 1. navsentry validate --config <MANIFEST>  then  navsentry test --config <MANIFEST> --out runs/before
 2. Read runs/before/run.json coverage row "NSC-AC-003" and any finding with ruleId "NSC-AC-003".
-3. This case is "planned-auto" — NavSentry alone cannot conclude it. Gather the evidence above manually:
+3. Requires a flow with access: denied and a positive control (docs/FLOWS.md); then confirm in a real browser:
    - As actor B in a separate browser profile, paste actor A's object URL: access denied
 4. Decide exactly one status: PASS | FAIL | INCONCLUSIVE | NOT_TESTED | ERROR, with a reason.
    Missing evidence is never PASS. Pattern-only evidence stays SUSPECTED until a human confirms.
 
 Known caveats / false positives:
 - UI hiding alone NEVER proves authorization.
+- 0.1.2 verifies read access only (flow step with object_owner and access: denied); modification needs safe-validate (M2).
 
 Output: an ISSUE entry (template docs/reports/templates/ISSUE.md) with ID NSC-AC-003, status,
 fingerprint(s), evidence list and this checklist:
@@ -388,6 +397,137 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
    (or a documented, owner-approved DISMISSED/Exception).
 2. On the real web page / endpoint:
    - [ ] As actor B in a separate browser profile, paste actor A's object URL: access denied
+3. Regression: main user flows still work and compare shows no unexplained contract drift.
+4. Verdict QA-PASS or QA-FAIL. On QA-FAIL you MUST write improvement criteria
+   (template docs/reports/templates/QA.md): failed acceptance item, expected vs observed (redacted),
+   most likely cause, next concrete action, owner. "Failed" without a reason is not accepted.
+```
+
+</details>
+
+<a id="nsc-ac-007"></a>
+
+### NSC-AC-007 — Missing function-level authorization (vertical privilege escalation)
+
+**ผู้ใช้สิทธิ์ต่ำเรียกใช้ฟังก์ชันของสิทธิ์สูงได้ (Missing Function-Level Authorization)**
+
+| Field | Value |
+|---|---|
+| Severity (default) | high |
+| Priority | 🔴 ต้องแก้ทันที (IMMEDIATE) |
+| Automation | flow — ตรวจอัตโนมัติเมื่อมี Flow ที่เจ้าของระบุว่าต้องถูกปฏิเสธการเข้าถึง (docs/FLOWS.md) |
+| OWASP Top 10:2025 | A01:2025 Broken Access Control |
+| OWASP Top 10:2021 | A01:2021 Broken Access Control |
+| CWE | CWE-285, CWE-862 |
+| OWASP WSTG | WSTG-ATHZ-03 |
+| OWASP ASVS 5.0 (chapter) | V8 Authorization |
+| CVE | — |
+| Seen in sources | — (required by NavSentry scope, no source occurrence yet) |
+
+**FACT (ข้อเท็จจริง)**
+
+A lower-privileged authenticated actor receives the same 2xx contract as a privileged actor on a privileged function, because the server does not check the role or permission.
+
+**EVIDENCE (หลักฐานที่ต้องเก็บ)**
+
+- Lower-role vs privileged-role status and response contract for the same request (bodies redacted)
+
+**ACCEPTANCE CRITERIA (เกณฑ์ผ่าน)**
+
+- [ ] Lower role receives 401/403
+- [ ] Privileged role keeps its 2xx contract (positive control)
+
+**ตรวจซ้ำบนหน้าเว็บจริง (Web recheck)**
+
+- [ ] As the lower-role user in a separate browser profile, open the privileged URL: access denied
+- [ ] The privileged user still sees the function
+
+**แนวทางแก้ (Fix)** — Enforce deny-by-default role/permission checks on the server for every privileged route or handler; do not rely on hidden menus.
+
+**⚠️ ผลกระทบต่อผู้ใช้จริง / Regression guard** — Delegated or support roles that legitimately use the function must be encoded as positive controls before tightening.
+
+**Caveats / False positive**
+
+- Hidden menus or disabled buttons never prove authorization.
+- Evaluated only where a flow declares access: denied for the lower role with a privileged positive control.
+
+<details><summary>Prompt: VERIFY (ตรวจสอบ)</summary>
+
+```text
+[NavSentry NSC-AC-007 — VERIFY / ตรวจสอบ]
+Role: security verification agent. Target: <ORIGIN> (environment <ENV>) — only if listed in an
+authorized NavSentry manifest. Read-only: do not change code, config or data.
+Goal: confirm or refute "Missing function-level authorization (vertical privilege escalation)" (ผู้ใช้สิทธิ์ต่ำเรียกใช้ฟังก์ชันของสิทธิ์สูงได้ (Missing Function-Level Authorization)).
+
+FACT to test:
+A lower-privileged authenticated actor receives the same 2xx contract as a privileged actor on a privileged function, because the server does not check the role or permission.
+
+Collect EVIDENCE (redact tokens, cookies, PII, internal IPs BEFORE writing anything):
+- Lower-role vs privileged-role status and response contract for the same request (bodies redacted)
+
+Method:
+1. navsentry validate --config <MANIFEST>  then  navsentry test --config <MANIFEST> --out runs/before
+2. Read runs/before/run.json coverage row "NSC-AC-007" and any finding with ruleId "NSC-AC-007".
+3. Requires a flow with access: denied and a positive control (docs/FLOWS.md); then confirm in a real browser:
+   - As the lower-role user in a separate browser profile, open the privileged URL: access denied
+   - The privileged user still sees the function
+4. Decide exactly one status: PASS | FAIL | INCONCLUSIVE | NOT_TESTED | ERROR, with a reason.
+   Missing evidence is never PASS. Pattern-only evidence stays SUSPECTED until a human confirms.
+
+Known caveats / false positives:
+- Hidden menus or disabled buttons never prove authorization.
+- Evaluated only where a flow declares access: denied for the lower role with a privileged positive control.
+
+Output: an ISSUE entry (template docs/reports/templates/ISSUE.md) with ID NSC-AC-007, status,
+fingerprint(s), evidence list and this checklist:
+- [ ] Target is in the authorized manifest scope
+- [ ] NavSentry run.json attached (path) and coverage row quoted
+- [ ] Evidence redacted (no secret/PII values)
+- [ ] Status + reason recorded; priority = IMMEDIATE
+```
+
+</details>
+
+<details><summary>Prompt: FIX (แก้ไข)</summary>
+
+```text
+[NavSentry NSC-AC-007 — FIX / แก้ไข]
+Role: remediation agent in the application repository. Follow that repository's own
+AGENTS.md/CONTRIBUTING rules. Change only what NSC-AC-007 needs; no unrelated refactors.
+
+Problem (FACT): A lower-privileged authenticated actor receives the same 2xx contract as a privileged actor on a privileged function, because the server does not check the role or permission.
+Required change: Enforce deny-by-default role/permission checks on the server for every privileged route or handler; do not rely on hidden menus.
+
+DO NOT BREAK LEGITIMATE CALLERS:
+Delegated or support roles that legitimately use the function must be encoded as positive controls before tightening.
+
+Steps:
+1. Keep the BEFORE run (runs/before/run.json) from the VERIFY step.
+2. Implement the change (configuration first, code only if needed) and add/adjust an automated test.
+3. Deploy to the authorized staging environment.
+4. navsentry test --config <MANIFEST> --out runs/after
+5. navsentry compare --before runs/before/run.json --after runs/after/run.json
+   Required: NSC-AC-007 in "Fixed" AND no unexplained "Legitimate-response contract drift".
+
+ACCEPTANCE CRITERIA:
+- [ ] Lower role receives 401/403
+- [ ] Privileged role keeps its 2xx contract (positive control)
+- [ ] compare verdict IMPROVED_NO_DRIFT (or every drift row approved by the owner in writing)
+- [ ] Changed files + commit recorded in a FIX entry (template docs/reports/templates/FIX.md)
+```
+
+</details>
+
+<details><summary>Prompt: RECHECK (ตรวจซ้ำ)</summary>
+
+```text
+[NavSentry NSC-AC-007 — RECHECK / ตรวจซ้ำบนหน้าเว็บจริง]
+Role: independent QA agent (not the agent that wrote the fix). Read-only.
+1. Re-run: navsentry test --config <MANIFEST> --out runs/recheck ; coverage "NSC-AC-007" must be PASS
+   (or a documented, owner-approved DISMISSED/Exception).
+2. On the real web page / endpoint:
+   - [ ] As the lower-role user in a separate browser profile, open the privileged URL: access denied
+   - [ ] The privileged user still sees the function
 3. Regression: main user flows still work and compare shows no unexplained contract drift.
 4. Verdict QA-PASS or QA-FAIL. On QA-FAIL you MUST write improvement criteria
    (template docs/reports/templates/QA.md): failed acceptance item, expected vs observed (redacted),

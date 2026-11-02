@@ -1,0 +1,66 @@
+{
+  "version": "1",
+  "project": "my-web-flows",
+  "environment": "staging",
+  "authorization": {
+    "acknowledged": true,
+    "owner": "application-owner",
+    "reference": "ticket or written approval ID",
+    "expires_at": "2027-12-31"
+  },
+  "targets": {
+    "origins": [
+      "https://staging.example.test"
+    ],
+    "allowed_paths": [
+      "/app/**",
+      "/api/**",
+      "/login"
+    ],
+    "denied_paths": [
+      "/app/admin/**",
+      "/api/export/**"
+    ],
+    "seed_paths": [
+      "/login",
+      "/app/",
+      "/api/health"
+    ]
+  },
+  "safety": {
+    "mode": "observe",
+    "max_requests": 200,
+    "max_requests_per_second": 2,
+    "max_duration_seconds": 600,
+    "concurrency": 1
+  },
+  "transports": {
+    "order": [
+      "direct-http"
+    ],
+    "visual_computer_use": false
+  },
+  "actors": {
+    "reader_a": {
+      "authorization_header_env": "NAVSENTRY_READER_A_AUTH_HEADER"
+    },
+    "reader_b": {
+      "authorization_header_env": "NAVSENTRY_READER_B_AUTH_HEADER"
+    },
+    "admin": {
+      "authorization_header_env": "NAVSENTRY_ADMIN_AUTH_HEADER"
+    }
+  },
+  "checks": {
+    "disabled": []
+  },
+  "report": {
+    "language": "th",
+    "formats": [
+      "json",
+      "markdown",
+      "sarif"
+    ],
+    "evidence": "redacted-only"
+  }
+}

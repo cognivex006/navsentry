@@ -13,6 +13,7 @@ import type { Priority, Severity } from "./types.js";
 
 export type Automation =
   | "auto" // implemented deterministic check in this release (observe mode)
+  | "flow" // deterministic check that runs only on an owner-declared flow expectation (docs/FLOWS.md)
   | "planned-auto" // deterministic check scheduled (milestone in `milestone`)
   | "assisted" // NavSentry collects evidence; human/agent confirms
   | "manual-active" // needs active payloads: never automated without active-approved authorization
@@ -482,7 +483,7 @@ export const CASES: CaseDef[] = [
   },
   {
     id: "NSC-AC-002", category: "AC", titleEn: "Missing authentication on API endpoint", titleTh: "API ไม่มีการยืนยันตัวตน (Missing Authentication)",
-    severity: "high", priority: "IMMEDIATE", automation: "planned-auto", milestone: "M2",
+    severity: "high", priority: "IMMEDIATE", automation: "flow", milestone: "M2 (login-based actors)",
     owasp2021: [T21.A01, T21.A07], owasp2025: [T25.A01, T25.A07], cwe: ["CWE-306"], wstg: ["WSTG-ATHZ-02"], asvs5Chapter: [V5.V8, V5.V4],
     sources: [{ src: "SRC-E", count: 1, label: "Access Control: Missing Authentication", severity: "high", status: "Fixed" }],
     fact: "An endpoint that returns non-public data responds 2xx to an anonymous actor.",
@@ -491,10 +492,11 @@ export const CASES: CaseDef[] = [
     webRecheck: ["Open the endpoint in a private browser window: 401/redirect to login", "Logged-in user still sees data"],
     fix: "Apply authentication middleware with deny-by-default to the whole API group; whitelist truly public routes explicitly.",
     regressionGuard: "Public endpoints used before login (health, login config, static config) must be explicitly allow-listed; compare anonymous and authenticated runs before/after.",
+    caveats: ["Evaluated only where a flow declares anonymous `access: denied` with an authenticated positive control; a 2xx with a different contract (login page) is INCONCLUSIVE, not FAIL."],
   },
   {
     id: "NSC-AC-003", category: "AC", titleEn: "IDOR / BOLA (cross-user object access)", titleTh: "เข้าถึงข้อมูลของผู้ใช้อื่นได้ด้วยการเปลี่ยน ID (IDOR/BOLA)",
-    severity: "high", priority: "IMMEDIATE", automation: "planned-auto", milestone: "M2",
+    severity: "high", priority: "IMMEDIATE", automation: "flow", milestone: "M2 (modification)",
     owasp2021: [T21.A01], owasp2025: [T25.A01], cwe: ["CWE-639", "CWE-284"], wstg: ["WSTG-ATHZ-04"], asvs5Chapter: [V5.V8],
     sources: [],
     fact: "An actor can read or modify an object owned by another actor by changing an identifier, because ownership is not checked server-side.",
@@ -503,7 +505,20 @@ export const CASES: CaseDef[] = [
     webRecheck: ["As actor B in a separate browser profile, paste actor A's object URL: access denied"],
     fix: "Enforce ownership/tenant checks in the service layer for every object lookup; prefer scoped queries (WHERE owner_id = current_user).",
     regressionGuard: "Shared/delegated objects (team, admin, delegated approver) must keep access — encode those rules explicitly and test them as positive controls.",
-    caveats: ["UI hiding alone NEVER proves authorization."],
+    caveats: ["UI hiding alone NEVER proves authorization.", "0.1.2 verifies read access only (flow step with object_owner and access: denied); modification needs safe-validate (M2)."],
+  },
+  {
+    id: "NSC-AC-007", category: "AC", titleEn: "Missing function-level authorization (vertical privilege escalation)", titleTh: "ผู้ใช้สิทธิ์ต่ำเรียกใช้ฟังก์ชันของสิทธิ์สูงได้ (Missing Function-Level Authorization)",
+    severity: "high", priority: "IMMEDIATE", automation: "flow",
+    owasp2021: [T21.A01], owasp2025: [T25.A01], cwe: ["CWE-285", "CWE-862"], wstg: ["WSTG-ATHZ-03"], asvs5Chapter: [V5.V8],
+    sources: [],
+    fact: "A lower-privileged authenticated actor receives the same 2xx contract as a privileged actor on a privileged function, because the server does not check the role or permission.",
+    evidence: ["Lower-role vs privileged-role status and response contract for the same request (bodies redacted)"],
+    acceptance: ["Lower role receives 401/403", "Privileged role keeps its 2xx contract (positive control)"],
+    webRecheck: ["As the lower-role user in a separate browser profile, open the privileged URL: access denied", "The privileged user still sees the function"],
+    fix: "Enforce deny-by-default role/permission checks on the server for every privileged route or handler; do not rely on hidden menus.",
+    regressionGuard: "Delegated or support roles that legitimately use the function must be encoded as positive controls before tightening.",
+    caveats: ["Hidden menus or disabled buttons never prove authorization.", "Evaluated only where a flow declares access: denied for the lower role with a privileged positive control."],
   },
   {
     id: "NSC-AC-004", category: "AC", titleEn: "Permissive CORS policy", titleTh: "ตั้งค่า CORS กว้างเกินไป",

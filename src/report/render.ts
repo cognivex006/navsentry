@@ -3,8 +3,8 @@ import { CASE_BY_ID } from "../catalog.js";
 import type { CheckStatus, RunResult } from "../types.js";
 
 const L = {
-  en: { title: "NavSentry Report", summary: "Summary", exec: "Execution status", sec: "Security result", findings: "Findings", coverage: "Coverage matrix", transports: "Transports", incomplete: "Incomplete / limitations", denials: "Requests denied before execution", none: "None", note: "Zero findings does not mean the application is secure. NOT_TESTED, INCONCLUSIVE and ERROR rows are gaps, not passes.", priority: { IMMEDIATE: "Fix immediately", PLANNED: "Planned fix", CAUTION: "Fix with caution (may affect legitimate users)" } },
-  th: { title: "รายงาน NavSentry", summary: "สรุป", exec: "สถานะการทำงาน", sec: "ผลด้านความปลอดภัย", findings: "รายการปัญหาที่พบ", coverage: "ตารางความครอบคลุม", transports: "ช่องทางที่ใช้ทดสอบ", incomplete: "ส่วนที่ไม่สมบูรณ์ / ข้อจำกัด", denials: "คำขอที่ถูกปฏิเสธก่อนส่ง", none: "ไม่มี", note: "การไม่พบปัญหาไม่ได้แปลว่าระบบปลอดภัย แถวที่เป็น NOT_TESTED, INCONCLUSIVE และ ERROR คือช่องว่างที่ยังไม่ได้ทดสอบ ไม่ใช่ผ่าน", priority: { IMMEDIATE: "ต้องแก้ทันที", PLANNED: "วางแผนแก้ได้", CAUTION: "แก้แล้วอาจกระทบผู้ใช้จริง ต้องระวัง" } },
+  en: { title: "NavSentry Report", summary: "Summary", exec: "Execution status", sec: "Security result", findings: "Findings", coverage: "Coverage matrix", transports: "Transports", incomplete: "Incomplete / limitations", denials: "Requests denied before execution", capture: "Capture", workspace: "Workspace", none: "None", note: "Zero findings does not mean the application is secure. NOT_TESTED, INCONCLUSIVE and ERROR rows are gaps, not passes.", priority: { IMMEDIATE: "Fix immediately", PLANNED: "Planned fix", CAUTION: "Fix with caution (may affect legitimate users)" } },
+  th: { title: "รายงาน NavSentry", summary: "สรุป", exec: "สถานะการทำงาน", sec: "ผลด้านความปลอดภัย", findings: "รายการปัญหาที่พบ", coverage: "ตารางความครอบคลุม", transports: "ช่องทางที่ใช้ทดสอบ", incomplete: "ส่วนที่ไม่สมบูรณ์ / ข้อจำกัด", denials: "คำขอที่ถูกปฏิเสธก่อนส่ง", capture: "การเก็บข้อมูลตอบกลับ", workspace: "ความสะอาดของโฟลเดอร์โปรเจกต์", none: "ไม่มี", note: "การไม่พบปัญหาไม่ได้แปลว่าระบบปลอดภัย แถวที่เป็น NOT_TESTED, INCONCLUSIVE และ ERROR คือช่องว่างที่ยังไม่ได้ทดสอบ ไม่ใช่ผ่าน", priority: { IMMEDIATE: "ต้องแก้ทันที", PLANNED: "วางแผนแก้ได้", CAUTION: "แก้แล้วอาจกระทบผู้ใช้จริง ต้องระวัง" } },
 } as const;
 
 export function securityResult(r: RunResult): "FINDINGS" | "NO_FINDINGS_IN_TESTED_SCOPE" | "INCOMPLETE" {
@@ -20,7 +20,8 @@ export function renderMarkdown(r: RunResult, lang: "en" | "th" = "en"): string {
   const counts = (s: CheckStatus) => r.coverage.filter((c) => c.status === s).length;
   const out: string[] = [];
   out.push(`# ${t.title} — ${r.project} (${r.environment})`, "");
-  out.push(`- Run ID: \`${r.runId}\``, `- Started: ${r.startedAt} · Finished: ${r.finishedAt}`, `- Tool: ${r.tool.name} ${r.tool.version} · Node ${r.tool.node} · ${r.tool.platform}`, `- Mode: \`${r.mode}\` · Origins: ${r.scope.origins.map((o) => `\`${o}\``).join(", ")}`, `- ${t.exec}: **${r.executionStatus}** · ${t.sec}: **${securityResult(r)}**`, `- Requests: ${r.budget.requestsUsed}/${r.budget.requestsMax} · Denied before execution: ${r.budget.deniedBeforeExecution}`, "");
+  out.push(`- Run ID: \`${r.runId}\``, `- Started: ${r.startedAt} · Finished: ${r.finishedAt}`, `- Tool: ${r.tool.name} ${r.tool.version} · Node ${r.tool.node} · ${r.tool.platform}`, `- Mode: \`${r.mode}\`${r.scanMode ? ` · Scan mode: \`${r.scanMode}\`` : ""}${r.profile ? ` · Profile: \`${r.profile}\`` : ""}${r.engine ? ` · Engine: \`${r.engine.used}\`${r.engine.analyze ? " + analyze" : ""}` : ""} · Origins: ${r.scope.origins.map((o) => `\`${o}\``).join(", ")}`,
+    ...(r.authorizationReference ? [`- Authorization reference: \`${esc(r.authorizationReference)}\``] : []), `- ${t.exec}: **${r.executionStatus}** · ${t.sec}: **${securityResult(r)}**`, `- Requests: ${r.budget.requestsUsed}/${r.budget.requestsMax} · Denied before execution: ${r.budget.deniedBeforeExecution}`, "");
   out.push(`## ${t.summary}`, "", `| PASS | FAIL | INCONCLUSIVE | ERROR | NOT_TESTED | Findings |`, `|---|---|---|---|---|---|`, `| ${counts("PASS")} | ${counts("FAIL")} | ${counts("INCONCLUSIVE")} | ${counts("ERROR")} | ${counts("NOT_TESTED")} | ${r.findings.length} |`, "", `> ${t.note}`, "");
   out.push(`## ${t.findings}`, "");
   if (!r.findings.length) out.push(t.none, "");
@@ -40,6 +41,16 @@ export function renderMarkdown(r: RunResult, lang: "en" | "th" = "en"): string {
   out.push(...(r.incompleteReasons.length ? r.incompleteReasons.map((x) => `- ${x}`) : [t.none]), "");
   out.push(`## ${t.denials}`, "");
   out.push(...(r.denials.length ? r.denials.map((d) => `- ${d.method} \`${esc(d.url)}\` — ${d.reason}`) : [t.none]), "");
+  if (r.capture) {
+    const c = r.capture;
+    out.push(`## ${t.capture}`, "", "| Wire bytes | Decoded bytes | Truncated | Aborted | Partially inspected bodies |", "|---|---|---|---|---|", `| ${c.wireBytes} | ${c.decodedBytes} | ${c.truncated} | ${c.aborted} | ${c.partialBodies} |`, "");
+  }
+  if (r.workspace) {
+    const w = r.workspace;
+    out.push(`## ${t.workspace}`, "", `- Leftover check: **${w.status}**${w.reason ? ` — ${esc(w.reason)}` : ""} · Cleanup: **${w.cleanup}**${w.cleanupReason ? ` (${esc(w.cleanupReason)})` : ""} · Report files written: ${w.promoted}`);
+    for (const [k, v] of [["Created", w.created], ["Modified", w.modified], ["Deleted", w.deleted]] as const) if (v.length) out.push(`- ${k}: ${v.map((x) => `\`${esc(x)}\``).join(", ")}`);
+    out.push(...w.limitations.map((x) => `- Limitation: ${x}`), "");
+  }
   return out.join("\n");
 }
 
@@ -88,6 +99,10 @@ export function validateRunResult(x: unknown): RunResult {
   const o = x as RunResult;
   const ok = !!o && o.schemaVersion === "1" && typeof o.runId === "string" && Array.isArray(o.findings) && Array.isArray(o.coverage) && Array.isArray(o.requests) && Array.isArray(o.checks) && typeof o.executionStatus === "string";
   if (!ok) throw new Error("input is not a NavSentry run result (schemaVersion 1)");
+  // 0.1.3 additive fields; 0.1.2 reports without them stay readable (absent coverage is unknown, never PASS).
+  if (o.scanMode !== undefined && !["page", "spider", "flow"].includes(o.scanMode)) throw new Error("invalid scanMode");
+  if (!["observe", "safe-validate", "active-approved"].includes(o.mode)) throw new Error("invalid safety mode");
+  if (o.workspace !== undefined && !["PASS", "FAIL", "NOT_TESTED"].includes(o.workspace.status)) throw new Error("invalid workspace status");
   for (const c of o.coverage) if (!["PASS", "FAIL", "INCONCLUSIVE", "NOT_TESTED", "ERROR"].includes(c.status)) throw new Error("invalid coverage status");
   return o;
 }

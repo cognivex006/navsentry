@@ -6,9 +6,75 @@
       "tool": {
         "driver": {
           "name": "NavSentry",
-          "version": "0.1.0",
+          "version": "0.1.2",
           "informationUri": "https://github.com/cognivex006/navsentry",
           "rules": [
+            {
+              "id": "NSC-AC-002",
+              "name": "MissingauthenticationonAPIendpoint",
+              "shortDescription": {
+                "text": "Missing authentication on API endpoint"
+              },
+              "fullDescription": {
+                "text": "An endpoint that returns non-public data responds 2xx to an anonymous actor."
+              },
+              "help": {
+                "text": "Apply authentication middleware with deny-by-default to the whole API group; whitelist truly public routes explicitly."
+              },
+              "properties": {
+                "tags": [
+                  "CWE-306",
+                  "A01:2025 Broken Access Control",
+                  "A07:2025 Authentication Failures"
+                ],
+                "category": "AC",
+                "priority": "IMMEDIATE"
+              }
+            },
+            {
+              "id": "NSC-AC-003",
+              "name": "IDORBOLAcrossuserobjectaccess",
+              "shortDescription": {
+                "text": "IDOR / BOLA (cross-user object access)"
+              },
+              "fullDescription": {
+                "text": "An actor can read or modify an object owned by another actor by changing an identifier, because ownership is not checked server-side."
+              },
+              "help": {
+                "text": "Enforce ownership/tenant checks in the service layer for every object lookup; prefer scoped queries (WHERE owner_id = current_user)."
+              },
+              "properties": {
+                "tags": [
+                  "CWE-639",
+                  "CWE-284",
+                  "A01:2025 Broken Access Control"
+                ],
+                "category": "AC",
+                "priority": "IMMEDIATE"
+              }
+            },
+            {
+              "id": "NSC-AC-007",
+              "name": "Missingfunctionlevelauthorizationverticalprivilegeescalation",
+              "shortDescription": {
+                "text": "Missing function-level authorization (vertical privilege escalation)"
+              },
+              "fullDescription": {
+                "text": "A lower-privileged authenticated actor receives the same 2xx contract as a privileged actor on a privileged function, because the server does not check the role or permission."
+              },
+              "help": {
+                "text": "Enforce deny-by-default role/permission checks on the server for every privileged route or handler; do not rely on hidden menus."
+              },
+              "properties": {
+                "tags": [
+                  "CWE-285",
+                  "CWE-862",
+                  "A01:2025 Broken Access Control"
+                ],
+                "category": "AC",
+                "priority": "IMMEDIATE"
+              }
+            },
             {
               "id": "NSC-PRIV-001",
               "name": "NationalIDpersonalidentifierdisclosure",
@@ -348,19 +414,119 @@
         }
       },
       "automationDetails": {
-        "id": "navsentry/demo-before/46eabb5a-2c3f-4099-81d1-d3eccd997b1e"
+        "id": "navsentry/demo-before/07cab76a-5f94-418d-b373-720b3ca0c67f"
       },
       "invocations": [
         {
           "executionSuccessful": true,
-          "startTimeUtc": "2026-10-31T06:06:18.988Z",
-          "endTimeUtc": "2026-10-31T06:06:20.338Z"
+          "startTimeUtc": "2026-11-01T15:00:00.125Z",
+          "endTimeUtc": "2026-11-01T15:00:02.727Z"
         }
       ],
       "results": [
         {
-          "ruleId": "NSC-PRIV-001",
+          "ruleId": "NSC-AC-002",
           "ruleIndex": 0,
+          "level": "error",
+          "message": {
+            "text": "Missing authentication on API endpoint: Missing authentication on API endpoint: access was granted"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/me"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "2ed31545305ed6fa20e0a163"
+          },
+          "properties": {
+            "lifecycle": "SUSPECTED",
+            "confidence": "medium",
+            "severity": "high"
+          }
+        },
+        {
+          "ruleId": "NSC-AC-002",
+          "ruleIndex": 0,
+          "level": "error",
+          "message": {
+            "text": "Missing authentication on API endpoint: Missing authentication on API endpoint: access was granted"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/app/profile"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "fee0a4fff083aa2abb24c113"
+          },
+          "properties": {
+            "lifecycle": "SUSPECTED",
+            "confidence": "medium",
+            "severity": "high"
+          }
+        },
+        {
+          "ruleId": "NSC-AC-003",
+          "ruleIndex": 1,
+          "level": "error",
+          "message": {
+            "text": "IDOR / BOLA (cross-user object access): IDOR / BOLA (cross-user object access): access was granted"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/orders/{{orderA}}"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "3eef519c1454dd179dcdf801"
+          },
+          "properties": {
+            "lifecycle": "SUSPECTED",
+            "confidence": "medium",
+            "severity": "high"
+          }
+        },
+        {
+          "ruleId": "NSC-AC-007",
+          "ruleIndex": 2,
+          "level": "error",
+          "message": {
+            "text": "Missing function-level authorization (vertical privilege escalation): Missing function-level authorization (vertical privilege escalation): access was granted"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/admin/stats"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "4394e9188345a42229ec9d40"
+          },
+          "properties": {
+            "lifecycle": "SUSPECTED",
+            "confidence": "medium",
+            "severity": "high"
+          }
+        },
+        {
+          "ruleId": "NSC-PRIV-001",
+          "ruleIndex": 3,
           "level": "error",
           "message": {
             "text": "National ID / personal identifier disclosure: Checksum-valid personal identifiers in response"
@@ -385,7 +551,7 @@
         },
         {
           "ruleId": "NSC-AC-004",
-          "ruleIndex": 1,
+          "ruleIndex": 4,
           "level": "warning",
           "message": {
             "text": "Permissive CORS policy: Untrusted Origin reflected WITH credentials"
@@ -410,7 +576,7 @@
         },
         {
           "ruleId": "NSC-AC-004",
-          "ruleIndex": 1,
+          "ruleIndex": 4,
           "level": "warning",
           "message": {
             "text": "Permissive CORS policy: Untrusted Origin reflected WITH credentials"
@@ -435,7 +601,7 @@
         },
         {
           "ruleId": "NSC-AC-004",
-          "ruleIndex": 1,
+          "ruleIndex": 4,
           "level": "warning",
           "message": {
             "text": "Permissive CORS policy: Untrusted Origin reflected WITH credentials"
@@ -460,7 +626,7 @@
         },
         {
           "ruleId": "NSC-AC-004",
-          "ruleIndex": 1,
+          "ruleIndex": 4,
           "level": "warning",
           "message": {
             "text": "Permissive CORS policy: Untrusted Origin reflected WITH credentials"
@@ -485,7 +651,7 @@
         },
         {
           "ruleId": "NSC-AC-004",
-          "ruleIndex": 1,
+          "ruleIndex": 4,
           "level": "warning",
           "message": {
             "text": "Permissive CORS policy: Untrusted Origin reflected WITH credentials"
@@ -510,7 +676,7 @@
         },
         {
           "ruleId": "NSC-CONF-002",
-          "ruleIndex": 2,
+          "ruleIndex": 5,
           "level": "warning",
           "message": {
             "text": "Content Security Policy missing or unsafe: Content-Security-Policy header missing"
@@ -534,8 +700,33 @@
           }
         },
         {
+          "ruleId": "NSC-CONF-002",
+          "ruleIndex": 5,
+          "level": "warning",
+          "message": {
+            "text": "Content Security Policy missing or unsafe: Content-Security-Policy header missing"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/app/profile"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "86733b9437764e1560fc2e38"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
           "ruleId": "NSC-CRYPT-006",
-          "ruleIndex": 3,
+          "ruleIndex": 6,
           "level": "warning",
           "message": {
             "text": "Cleartext HTTP served without redirect to HTTPS: Plain HTTP serves content (HTTP 200) without HTTPS redirect"
@@ -560,7 +751,7 @@
         },
         {
           "ruleId": "NSC-CRYPT-006",
-          "ruleIndex": 3,
+          "ruleIndex": 6,
           "level": "warning",
           "message": {
             "text": "Cleartext HTTP served without redirect to HTTPS: Plain HTTP serves content (HTTP 200) without HTTPS redirect"
@@ -585,7 +776,7 @@
         },
         {
           "ruleId": "NSC-CRYPT-006",
-          "ruleIndex": 3,
+          "ruleIndex": 6,
           "level": "warning",
           "message": {
             "text": "Cleartext HTTP served without redirect to HTTPS: Plain HTTP serves content (HTTP 500) without HTTPS redirect"
@@ -610,7 +801,7 @@
         },
         {
           "ruleId": "NSC-CRYPT-006",
-          "ruleIndex": 3,
+          "ruleIndex": 6,
           "level": "warning",
           "message": {
             "text": "Cleartext HTTP served without redirect to HTTPS: Plain HTTP serves content (HTTP 200) without HTTPS redirect"
@@ -635,7 +826,7 @@
         },
         {
           "ruleId": "NSC-CRYPT-006",
-          "ruleIndex": 3,
+          "ruleIndex": 6,
           "level": "warning",
           "message": {
             "text": "Cleartext HTTP served without redirect to HTTPS: Plain HTTP serves content (HTTP 302) without HTTPS redirect"
@@ -659,8 +850,133 @@
           }
         },
         {
+          "ruleId": "NSC-CRYPT-006",
+          "ruleIndex": 6,
+          "level": "warning",
+          "message": {
+            "text": "Cleartext HTTP served without redirect to HTTPS: Plain HTTP serves content (HTTP 200) without HTTPS redirect"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/orders"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "fee4e2b13b1a34242abf2210"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
+          "ruleId": "NSC-CRYPT-006",
+          "ruleIndex": 6,
+          "level": "warning",
+          "message": {
+            "text": "Cleartext HTTP served without redirect to HTTPS: Plain HTTP serves content (HTTP 200) without HTTPS redirect"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/orders/{{orderA}}"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "2f0c13798b3f6290b328e559"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
+          "ruleId": "NSC-CRYPT-006",
+          "ruleIndex": 6,
+          "level": "warning",
+          "message": {
+            "text": "Cleartext HTTP served without redirect to HTTPS: Plain HTTP serves content (HTTP 200) without HTTPS redirect"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/me"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "7c6bc49d2e83bb56b8b62a1f"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
+          "ruleId": "NSC-CRYPT-006",
+          "ruleIndex": 6,
+          "level": "warning",
+          "message": {
+            "text": "Cleartext HTTP served without redirect to HTTPS: Plain HTTP serves content (HTTP 200) without HTTPS redirect"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/admin/stats"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "410d1fcc3d4bf29a8b41f77d"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
+          "ruleId": "NSC-CRYPT-006",
+          "ruleIndex": 6,
+          "level": "warning",
+          "message": {
+            "text": "Cleartext HTTP served without redirect to HTTPS: Plain HTTP serves content (HTTP 200) without HTTPS redirect"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/app/profile"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "0e1ff75fa30e8a236884445c"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "medium"
+          }
+        },
+        {
           "ruleId": "NSC-ERR-001",
-          "ruleIndex": 4,
+          "ruleIndex": 7,
           "level": "warning",
           "message": {
             "text": "Verbose error, stack trace or unhandled exception exposed: Internal error details exposed (HTTP 500)"
@@ -685,7 +1001,7 @@
         },
         {
           "ruleId": "NSC-SESS-004",
-          "ruleIndex": 5,
+          "ruleIndex": 8,
           "level": "warning",
           "message": {
             "text": "JWT missing protection claims or weak algorithm: JWT missing protection claims or weak alg"
@@ -710,7 +1026,7 @@
         },
         {
           "ruleId": "NSC-CONF-003",
-          "ruleIndex": 6,
+          "ruleIndex": 9,
           "level": "note",
           "message": {
             "text": "Clickjacking protection missing: No frame-ancestors or valid X-Frame-Options"
@@ -734,8 +1050,33 @@
           }
         },
         {
+          "ruleId": "NSC-CONF-003",
+          "ruleIndex": 9,
+          "level": "note",
+          "message": {
+            "text": "Clickjacking protection missing: No frame-ancestors or valid X-Frame-Options"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/app/profile"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "537cf1850c28c8f706b2ddec"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
           "ruleId": "NSC-CONF-004",
-          "ruleIndex": 7,
+          "ruleIndex": 10,
           "level": "note",
           "message": {
             "text": "MIME sniffing not disabled / insecure Content-Type: text response without charset; X-Content-Type-Options: nosniff missing"
@@ -760,7 +1101,7 @@
         },
         {
           "ruleId": "NSC-CONF-004",
-          "ruleIndex": 7,
+          "ruleIndex": 10,
           "level": "note",
           "message": {
             "text": "MIME sniffing not disabled / insecure Content-Type: X-Content-Type-Options: nosniff missing"
@@ -785,7 +1126,7 @@
         },
         {
           "ruleId": "NSC-CONF-004",
-          "ruleIndex": 7,
+          "ruleIndex": 10,
           "level": "note",
           "message": {
             "text": "MIME sniffing not disabled / insecure Content-Type: X-Content-Type-Options: nosniff missing"
@@ -810,7 +1151,7 @@
         },
         {
           "ruleId": "NSC-CONF-004",
-          "ruleIndex": 7,
+          "ruleIndex": 10,
           "level": "note",
           "message": {
             "text": "MIME sniffing not disabled / insecure Content-Type: X-Content-Type-Options: nosniff missing"
@@ -834,8 +1175,133 @@
           }
         },
         {
+          "ruleId": "NSC-CONF-004",
+          "ruleIndex": 10,
+          "level": "note",
+          "message": {
+            "text": "MIME sniffing not disabled / insecure Content-Type: X-Content-Type-Options: nosniff missing"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/orders"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "8abac78f653ee5b014e2f490"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-CONF-004",
+          "ruleIndex": 10,
+          "level": "note",
+          "message": {
+            "text": "MIME sniffing not disabled / insecure Content-Type: X-Content-Type-Options: nosniff missing"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/orders/{{orderA}}"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "887c9e474229a3f22403e9f7"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-CONF-004",
+          "ruleIndex": 10,
+          "level": "note",
+          "message": {
+            "text": "MIME sniffing not disabled / insecure Content-Type: X-Content-Type-Options: nosniff missing"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/me"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "6b1e8104436e4050b9e69aea"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-CONF-004",
+          "ruleIndex": 10,
+          "level": "note",
+          "message": {
+            "text": "MIME sniffing not disabled / insecure Content-Type: X-Content-Type-Options: nosniff missing"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/admin/stats"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "b8fb462c3914484b16461887"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-CONF-004",
+          "ruleIndex": 10,
+          "level": "note",
+          "message": {
+            "text": "MIME sniffing not disabled / insecure Content-Type: X-Content-Type-Options: nosniff missing"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/app/profile"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "61ef9ac144885a9aee7c1d64"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
           "ruleId": "NSC-CONF-006",
-          "ruleIndex": 8,
+          "ruleIndex": 11,
           "level": "note",
           "message": {
             "text": "Unnecessary HTTP methods or method override enabled: Dangerous methods advertised: TRACE"
@@ -860,7 +1326,7 @@
         },
         {
           "ruleId": "NSC-CONF-006",
-          "ruleIndex": 8,
+          "ruleIndex": 11,
           "level": "note",
           "message": {
             "text": "Unnecessary HTTP methods or method override enabled: Dangerous methods advertised: TRACE"
@@ -885,7 +1351,7 @@
         },
         {
           "ruleId": "NSC-CONF-006",
-          "ruleIndex": 8,
+          "ruleIndex": 11,
           "level": "note",
           "message": {
             "text": "Unnecessary HTTP methods or method override enabled: Dangerous methods advertised: TRACE"
@@ -910,7 +1376,7 @@
         },
         {
           "ruleId": "NSC-CONF-006",
-          "ruleIndex": 8,
+          "ruleIndex": 11,
           "level": "note",
           "message": {
             "text": "Unnecessary HTTP methods or method override enabled: Dangerous methods advertised: TRACE"
@@ -935,7 +1401,7 @@
         },
         {
           "ruleId": "NSC-CONF-006",
-          "ruleIndex": 8,
+          "ruleIndex": 11,
           "level": "note",
           "message": {
             "text": "Unnecessary HTTP methods or method override enabled: Dangerous methods advertised: TRACE"
@@ -960,7 +1426,7 @@
         },
         {
           "ruleId": "NSC-CONF-007",
-          "ruleIndex": 9,
+          "ruleIndex": 12,
           "level": "note",
           "message": {
             "text": "Insecure cache policy for sensitive responses: Sensitive response is cacheable"
@@ -984,8 +1450,83 @@
           }
         },
         {
+          "ruleId": "NSC-CONF-007",
+          "ruleIndex": 12,
+          "level": "note",
+          "message": {
+            "text": "Insecure cache policy for sensitive responses: Sensitive response is cacheable"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/profile"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "973b78c7baf56069037bc3e8"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-CONF-007",
+          "ruleIndex": 12,
+          "level": "note",
+          "message": {
+            "text": "Insecure cache policy for sensitive responses: Sensitive response is cacheable"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/error"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "b2ae6e48d832d0fbdb60a801"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-CONF-007",
+          "ruleIndex": 12,
+          "level": "note",
+          "message": {
+            "text": "Insecure cache policy for sensitive responses: Sensitive response is cacheable"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/app/profile"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "82c6f694fc9f9f46f387b272"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
           "ruleId": "NSC-INFO-001",
-          "ruleIndex": 10,
+          "ruleIndex": 13,
           "level": "note",
           "message": {
             "text": "Server / framework version disclosure: Product version disclosed"
@@ -1010,7 +1551,7 @@
         },
         {
           "ruleId": "NSC-INFO-001",
-          "ruleIndex": 10,
+          "ruleIndex": 13,
           "level": "note",
           "message": {
             "text": "Server / framework version disclosure: Product version disclosed"
@@ -1035,7 +1576,7 @@
         },
         {
           "ruleId": "NSC-INFO-001",
-          "ruleIndex": 10,
+          "ruleIndex": 13,
           "level": "note",
           "message": {
             "text": "Server / framework version disclosure: Product version disclosed"
@@ -1060,7 +1601,7 @@
         },
         {
           "ruleId": "NSC-INFO-001",
-          "ruleIndex": 10,
+          "ruleIndex": 13,
           "level": "note",
           "message": {
             "text": "Server / framework version disclosure: Product version disclosed"
@@ -1085,7 +1626,7 @@
         },
         {
           "ruleId": "NSC-INFO-001",
-          "ruleIndex": 10,
+          "ruleIndex": 13,
           "level": "note",
           "message": {
             "text": "Server / framework version disclosure: Product version disclosed"
@@ -1109,8 +1650,133 @@
           }
         },
         {
+          "ruleId": "NSC-INFO-001",
+          "ruleIndex": 13,
+          "level": "note",
+          "message": {
+            "text": "Server / framework version disclosure: Product version disclosed"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/orders"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "b6438cdb4cfb8485c2c39cb4"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-INFO-001",
+          "ruleIndex": 13,
+          "level": "note",
+          "message": {
+            "text": "Server / framework version disclosure: Product version disclosed"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/orders/{{orderA}}"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "10818924dc8a1a6ca8a01ce1"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-INFO-001",
+          "ruleIndex": 13,
+          "level": "note",
+          "message": {
+            "text": "Server / framework version disclosure: Product version disclosed"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/me"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "557b65c1e49e747d5e8b1ff7"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-INFO-001",
+          "ruleIndex": 13,
+          "level": "note",
+          "message": {
+            "text": "Server / framework version disclosure: Product version disclosed"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/api/admin/stats"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "f3e727a639f1686ee83fcfde"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
+          "ruleId": "NSC-INFO-001",
+          "ruleIndex": 13,
+          "level": "note",
+          "message": {
+            "text": "Server / framework version disclosure: Product version disclosed"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:4173/app/profile"
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "navsentryFingerprint": "4bab2545a1262edeea8cda03"
+          },
+          "properties": {
+            "lifecycle": "VALIDATED",
+            "confidence": "high",
+            "severity": "low"
+          }
+        },
+        {
           "ruleId": "NSC-INFO-003",
-          "ruleIndex": 11,
+          "ruleIndex": 14,
           "level": "note",
           "message": {
             "text": "Internal IP address disclosure: Private IP address literals disclosed"
@@ -1135,7 +1801,7 @@
         },
         {
           "ruleId": "NSC-SESS-002",
-          "ruleIndex": 12,
+          "ruleIndex": 15,
           "level": "note",
           "message": {
             "text": "Cookie without HttpOnly flag: Session-like cookie(s) readable by JavaScript"
@@ -1160,7 +1826,7 @@
         },
         {
           "ruleId": "NSC-SESS-003",
-          "ruleIndex": 13,
+          "ruleIndex": 16,
           "level": "note",
           "message": {
             "text": "Cookie SameSite missing or contradictory: SameSite missing or contradictory"
@@ -1185,7 +1851,7 @@
         },
         {
           "ruleId": "NSC-INFO-004",
-          "ruleIndex": 14,
+          "ruleIndex": 17,
           "level": "note",
           "message": {
             "text": "Email address disclosure: 1 email address(es) in response"
