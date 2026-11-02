@@ -1,6 +1,6 @@
 {
   "name": "navsentry",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "AI-assisted browser-based E2E security testing for web applications, with automated vulnerability validation and evidence-based reporting.",
   "license": "Apache-2.0",
   "type": "module",

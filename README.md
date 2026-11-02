@@ -25,7 +25,7 @@ Requires Node.js 22.12 or newer.
 Install the CLI from the release tarball:
 
 ```bash
-npm install -g https://github.com/cognivex006/navsentry/releases/download/v0.1.2/navsentry-0.1.2.tgz
+npm install -g https://github.com/cognivex006/navsentry/releases/download/v0.1.3/navsentry-0.1.3.tgz
 ```
 
 ```bash

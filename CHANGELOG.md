@@ -4,6 +4,8 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-11-02
+
 ### Added
 - Scan modes and profiles, milestone 0.1.3-a1 ([SPEC-0.1.3](docs/specs/SPEC-0.1.3-SCAN-MODES-AND-WORKSPACE.md), [ADR-0007](docs/adr/0007-scan-modes-profiles-and-workspace.md)):
   - `navsentry scan --mode page|spider|flow [--engine http|playwright|analyzer] [--analyze] [--env …]`. `page` without `--url` is the seed scan of `test`; `flow` is `test --flows <path> --flows-only`. `spider` and `page --url` exit 3 with "scheduled for 0.1.3-a2". `--engine computer-use` exits 3 (deferred beyond 0.1.3). A blocked engine (`playwright`) runs nothing and exits 2; unavailable `--analyze` is reported NOT_TESTED (exit 2). Nothing ever falls back to another engine.
