@@ -1,4 +1,4 @@
-import type { HttpMethod, ObservedRequest, TransportStatus } from "../types.js";
+import type { CaptureInfo, HttpMethod, ObservedRequest, TransportStatus } from "../types.js";
 
 export type SideEffectClass = "none" | "read" | "state-change";
 export type TrustLevel = "in-process" | "vetted-executable" | "external-provider";
@@ -40,7 +40,9 @@ export interface HttpRequestSpec {
 export interface RawResponse {
   status: number;
   headers: Record<string, string[]>;
+  /** The retained prefix of the body (≤ capture.memory_buffer_bytes); see `capture`. */
   body: Buffer;
+  capture?: CaptureInfo;
   /** Location of a redirect that was NOT followed (scope re-check happens in the runner). */
   redirectLocation?: string;
 }

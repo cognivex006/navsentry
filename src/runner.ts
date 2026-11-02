@@ -1,10 +1,10 @@
 /** Plan (zero network) and execute (observe mode) runs. */
 import { createHash, randomUUID } from "node:crypto";
-import { Budget, BudgetExceeded } from "./budget.js";
+import { Budget, BudgetExceeded, ByteBudget } from "./budget.js";
 import { CASES, getCase } from "./catalog.js";
 import * as P from "./checks/passive.js";
 import { probeTls } from "./checks/tls.js";
-import type { Manifest } from "./config.js";
+import { assertAuthorizationWindow, assertNoLiveTokens, type Manifest } from "./config.js";
 import { Redactor } from "./redact.js";
 import { ScopeGate } from "./scope.js";
 import { DirectHttpAdapter, ScopeDenied } from "./transports/direct-http.js";
@@ -14,7 +14,7 @@ import { functionalResult, runFlows } from "./flow/execute.js";
 import { classify, flowSetHash } from "./flow/classify.js";
 import { fillPath, flowOrigin, VAR_SENTINEL } from "./flow/lint.js";
 import { UI_ACTIONS, type FlowDoc } from "./flow/parse.js";
-import { TOOL_NAME, TOOL_VERSION, REPORT_SCHEMA_VERSION, FLOW_RESULT_SCHEMA_VERSION, type CheckResult, type CheckStatus, type CoverageRow, type Finding, type FlowRunResult, type FlowStatus, type RunResult, type TestLevel } from "./types.js";
+import { TOOL_NAME, TOOL_VERSION, REPORT_SCHEMA_VERSION, FLOW_RESULT_SCHEMA_VERSION, type CheckResult, type CheckStatus, type CoverageRow, type Finding, type FlowRunResult, type FlowStatus, type RunResult, type ScanMode, type TestLevel } from "./types.js";
 
 /** Reserved, non-resolvable origin used to probe CORS reflection (RFC 2606 .invalid). */
 export const CORS_PROBE_ORIGIN = "https://navsentry-cors-probe.invalid";
@@ -158,6 +158,11 @@ export interface ExecuteOptions {
   /** Linted flows to replay after the seed phase. */
   flows?: FlowDoc[];
   flowsOnly?: boolean;
+  /** 0.1.3: recorded in run.json beside the safety `mode`. */
+  scanMode?: ScanMode;
+  engine?: RunResult["engine"];
+  /** Run ID chosen by the caller (it also names the work directory). */
+  runId?: string;
 }
 
 export async function executeRun(m: Manifest, opts: ExecuteOptions = {}): Promise<RunResult> {
@@ -167,14 +172,18 @@ export async function executeRun(m: Manifest, opts: ExecuteOptions = {}): Promis
 /** Runs seeds and flows through one ScopeGate, Budget and Redactor. */
 export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promise<{ run: RunResult; flowRun?: FlowRunResult }> {
   const env = opts.env ?? process.env;
+  // Production guards run before any network activity, for every entry point (SPEC-0.1.3 §3.1, S2).
+  assertAuthorizationWindow(m, opts.now?.() ?? new Date());
   const startedAt = new Date().toISOString();
   const gate = new ScopeGate(m);
-  const budget = new Budget(m.safety.max_requests, m.safety.max_requests_per_second, m.safety.max_duration_seconds * 1000);
+  const budget = new Budget(m.safety.max_requests, m.safety.max_requests_per_second, m.safety.max_duration_seconds * 1000, m.authorization.expires_at ? new Date(m.authorization.expires_at) : undefined);
+  const bytes = new ByteBudget(m.capture.max_run_bytes, m.capture.max_wire_bytes);
   const { usable, skipped, secrets } = resolveActors(m, env);
+  assertNoLiveTokens(m, secrets);
   for (const d of opts.flows ?? []) for (const v of Object.values(d.header.vars)) if ("env" in v && env[v.env]) secrets.push(env[v.env] as string);
   const redactor = new Redactor(secrets, m.targets.origins.map((o) => new URL(o).hostname.replace(/^\[|\]$/g, "")));
   const denials: RunResult["denials"] = [];
-  const http = new DirectHttpAdapter(gate, budget, redactor, (url, method, reason) => denials.push({ url, method, reason }));
+  const http = new DirectHttpAdapter(gate, budget, redactor, (url, method, reason) => denials.push({ url, method, reason }), { maxResponseBytes: m.capture.max_response_bytes, memoryBufferBytes: m.capture.memory_buffer_bytes, bytes });
   const transports = await Promise.all(allAdapters().map((a) => a.probe()));
   const exchanges: Exchange[] = [];
   const checks: CheckResult[] = [];
@@ -191,7 +200,7 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
       throw e;
     }
   };
-  const runId = randomUUID();
+  const runId = opts.runId ?? randomUUID();
 
   try {
     for (const origin of m.targets.origins) {
@@ -268,7 +277,17 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
     }
   }
 
+  budget.close();
   for (const ex of exchanges) if (!ex.record.redaction.safe) incomplete.push(`evidence withheld for request ${ex.record.id} (${ex.record.redaction.kinds.join(",")})`);
+  const cap = { wireBytes: bytes.wireBytes, decodedBytes: bytes.decodedBytes, truncated: 0, aborted: 0, partialBodies: 0 };
+  for (const ex of exchanges) {
+    const c = ex.record.capture;
+    if (!c) continue;
+    if (c.status === "truncated") { cap.truncated++; incomplete.push(`response ${ex.record.id} truncated: ${c.reason}`); }
+    if (c.status === "aborted") { cap.aborted++; incomplete.push(`response ${ex.record.id} aborted: ${c.reason}`); }
+    if (c.retainedBytes < c.decodedBytes) { cap.partialBodies++; incomplete.push(`response ${ex.record.id}: body checks covered the first ${c.retainedBytes} of ${c.decodedBytes} bytes`); }
+    if (c.encoding) incomplete.push(`response ${ex.record.id}: content-encoding ${c.encoding} is not decoded; body checks are unsupported`);
+  }
 
   const coverage = buildCoverage(checks, disabled);
   const findings = buildFindings(checks);
@@ -292,6 +311,11 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
     coverage,
     budget: { requestsUsed: budget.requestsUsed, requestsMax: m.safety.max_requests, deniedBeforeExecution: denials.length },
     denials,
+    profile: m.profile,
+    ...(opts.scanMode ? { scanMode: opts.scanMode } : {}),
+    ...(opts.engine ? { engine: opts.engine } : {}),
+    ...(m.profile === "production" && m.authorization.reference ? { authorizationReference: m.authorization.reference } : {}),
+    capture: cap,
   };
   if (!opts.flows || !flowOutcome) return { run };
   for (const f of flowOutcome.flows) {

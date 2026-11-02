@@ -282,7 +282,7 @@ test("CLI: test --flows writes flows.json, TEST-REPORT.md and junit; exit codes 
     assert.equal(await main(["flow", "approve", "--flows", join(init, "my-story.flow.md"), "--by", "owner"]), 0);
     assert.equal(await main(["flow", "lint", "--config", mpath, "--flows", init]), 0);
     const prod = join(dir, "prod.json");
-    writeFileSync(prod, readFileSync(mpath, "utf8").replace('"environment":"local"', '"environment":"production"'));
+    writeFileSync(prod, readFileSync(mpath, "utf8").replace('"environment":"local"', '"environment":"production"').replace('"owner":"navsentry-tests"}', '"owner":"navsentry-tests","reference":"CHG-1","expires_at":"2099-01-01"}'));
     assert.equal(await main(["test", "--config", prod, "--flows", flows, "--include-drafts", "--out", out]), 3, "drafts refused for production");
   } finally {
     process.env = saved;

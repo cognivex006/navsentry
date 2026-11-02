@@ -43,7 +43,30 @@ export interface ObservedRequest {
   redaction: RedactionOutcome;
   /** Present when the request was made by a flow step. */
   flow?: { id: string; step: string; deniedProbe?: true };
+  /** Streamed-capture completion metadata (0.1.3). */
+  capture?: CaptureInfo;
 }
+
+/**
+ * How completely a response body was read. `truncated`: NavSentry stopped at a budget.
+ * `aborted`: the peer closed early or the request was cancelled. Only `complete` with
+ * retainedBytes === decodedBytes supports a body-based PASS.
+ */
+export interface CaptureInfo {
+  status: "complete" | "truncated" | "aborted";
+  reason?: string;
+  wireBytes: number;
+  decodedBytes: number;
+  /** Bytes kept in memory for checks (the prefix). */
+  retainedBytes: number;
+  /** sha256 of all bytes read, computed incrementally. */
+  sha256: string;
+  /** Non-identity content-encoding: bytes were not decoded and body checks are unsupported. */
+  encoding?: string;
+}
+
+export type ScanMode = "page" | "spider" | "flow";
+export type Engine = "http" | "playwright" | "computer-use";
 
 export interface ResponseContract {
   status: number;
@@ -141,6 +164,28 @@ export interface RunResult {
   budget: { requestsUsed: number; requestsMax: number; deniedBeforeExecution: number };
   denials: { url: string; method: string; reason: string }[];
   flowSet?: { flows: number; steps: number; sha256: string; resultFile: "flows.json" };
+  // 0.1.3 additive fields. `mode` stays the safety mode; `scanMode` is separate.
+  scanMode?: ScanMode;
+  profile?: "development" | "production";
+  engine?: { requested: Engine | "analyzer"; used: Engine; analyze: boolean };
+  /** Authorization reference, production profile only. */
+  authorizationReference?: string;
+  capture?: { wireBytes: number; decodedBytes: number; truncated: number; aborted: number; partialBodies: number };
+  workspace?: WorkspaceResult;
+}
+
+export interface WorkspaceResult {
+  /** PASS: no unexpected change. FAIL: WORKSPACE_DIRTY (exit 4). NOT_TESTED: tree too large or unreadable. */
+  status: "PASS" | "FAIL" | "NOT_TESTED";
+  reason?: string;
+  /** Redacted, project-relative display paths. */
+  created: string[];
+  modified: string[];
+  deleted: string[];
+  cleanup: "COMPLETE" | "FAILED";
+  cleanupReason?: string;
+  promoted: number;
+  limitations: string[];
 }
 
 // ───────────────────────── Flows (0.1.2) ─────────────────────────

@@ -1,6 +1,6 @@
 # SPEC 0.1.3 — Scan modes, environments, analyzer scripts and workspace hygiene
 
-- Status: **DRAFT** (design only, nothing implemented) · Drafted: 2026-11-02 · Review: rounds 1–3 done 2026-11-02 ([§13](#13-review-log)) · Before implementation: owner decisions ([§12](#12-owner-decisions)) and the readiness checklist ([§14](#14-implementation-readiness-checklist))
+- Status: **ACCEPTED** · Drafted: 2026-11-02 · Review: rounds 1–3 done 2026-11-02 ([§13](#13-review-log)) · Owner decisions D1–D10: decided 2026-11-02 with the recommended options ([§12](#12-owner-decisions)) · Implementation: milestone 0.1.3-a1 done ([ADR-0007](../adr/0007-scan-modes-profiles-and-workspace.md)); later milestones open ([§14](#14-implementation-readiness-checklist))
 - Builds on: [SPEC-0.1.2](SPEC-0.1.2-FLOW-TEST-CASES.md), [ADR-0001](../adr/0001-typescript-node-stack.md), [ADR-0003](../adr/0003-zero-runtime-dependencies.md), [ADR-0004](../adr/0004-scope-enforcement-at-transport.md), [ADR-0006](../adr/0006-flow-files-and-test-levels.md) · Baseline: 0.1.2 (`feat/flows-0.1.2` @ `318825c`, not yet on `main`)
 - Security is still the primary purpose. Functional results come along with it; they never replace it.
 - Compatibility: existing flow files, report paths and development manifests keep working. Three changes are intentional: production-profile manifests need more authorization fields, exit code 4 is new, and `run.json` gains `scanMode` beside the existing `mode`. See §3.1.
@@ -95,7 +95,7 @@ navsentry knowledge status | lookup --product <id> [--version <v>] | propose --i
 - **Plan first.** The zero-network `plan` gains the mode and engine options. It reports the effective profile, budgets, optional checks, unavailable capabilities and the exposure probes it would send. Unavailable analysis never silently disappears: HTTP capture may complete, but the requested analysis is `NOT_TESTED` and the run is incomplete (exit 2 unless a higher-precedence code applies).
 
 ### 3.2 New manifest keys
-All keys below are new and additive; a 0.1.2 build rejects them as unknown keys, which is the safe failure. Every value is validated in `src/config.ts` with the ranges shown. The profile supplies its defaults **before** parsing; omission is never inferred by comparing a parsed value with today's default. Values marked *proposed* are the starting point for D2, D6 and D9.
+All keys below are new and additive; a 0.1.2 build rejects them as unknown keys, which is the safe failure. Every value is validated in `src/config.ts` with the ranges shown. The profile supplies its defaults **before** parsing; omission is never inferred by comparing a parsed value with today's default. Values follow owner decisions D2, D6 and D9 (2026-11-02) and may be tuned after the large-fixture measurements.
 
 | Key | Type and range | development default | production default |
 |---|---|---|---|
@@ -103,20 +103,20 @@ All keys below are new and additive; a 0.1.2 build rejects them as unknown keys,
 | `authorization.expires_at` (existing) | ISO date | optional | **required** |
 | `authorization.not_before` | ISO date, before `expires_at` | — | — |
 | `authorization.allow_live_tokens` | boolean | `false` | `false` |
-| `safety.max_requests` (existing) | 1–5000 | 200 | 100 *(proposed)* |
-| `safety.max_requests_per_second` (existing) | 0.1–20 | 2 | 1 *(proposed)* |
-| `safety.max_depth` | integer 1–10 | 4 *(proposed)* | 2 |
+| `safety.max_requests` (existing) | 1–5000 | 200 | 100 |
+| `safety.max_requests_per_second` (existing) | 0.1–20 | 2 | 1 |
+| `safety.max_depth` | integer 1–10 | 4 | 2 |
 | `safety.representatives_per_pattern` | integer 1–10 | 3 | 2 |
-| `safety.max_frontier` | integer 10–100 000 (URLs queued or recorded) | 5 000 *(proposed)* | 1 000 *(proposed)* |
-| `capture.max_response_bytes` | safe integer ≥ 64 KiB; decoded bytes per response | 256 MiB *(proposed)* | 256 MiB *(proposed)* |
-| `capture.max_run_bytes` | safe integer ≥ `max_response_bytes`; decoded bytes per run | 2 GiB *(proposed)* | 2 GiB *(proposed)* |
-| `capture.max_wire_bytes` | safe integer ≥ 1 MiB; bytes on the wire per run | 2 GiB *(proposed)* | 2 GiB *(proposed)* |
-| `capture.max_work_bytes` | safe integer ≥ `max_response_bytes`; on-disk spool per run | 2 GiB *(proposed)* | 2 GiB *(proposed)* |
-| `capture.memory_buffer_bytes` | 64 KiB – 256 MiB and ≤ `max_response_bytes`; buffered input per active pipeline | 8 MiB *(proposed)* | 8 MiB *(proposed)* |
-| `capture.max_console_messages` | integer 1–1 000 000 | 10 000 *(proposed)* | 10 000 *(proposed)* |
-| `capture.max_console_bytes` | 64 KiB – `max_run_bytes` | 16 MiB *(proposed)* | 16 MiB *(proposed)* |
-| `capture.cache_max_age_days` | integer 0–365; 0 means never reuse | 30 *(proposed)* | 30 *(proposed)* |
-| `analyzer.timeout_seconds` | integer 1–3600, per document, within `max_duration_seconds` | 120 *(proposed)* | 120 *(proposed)* |
+| `safety.max_frontier` | integer 10–100 000 (URLs queued or recorded) | 5 000 | 1 000 |
+| `capture.max_response_bytes` | safe integer ≥ 64 KiB; decoded bytes per response | 256 MiB | 256 MiB |
+| `capture.max_run_bytes` | safe integer ≥ `max_response_bytes`; decoded bytes per run | 2 GiB | 2 GiB |
+| `capture.max_wire_bytes` | safe integer ≥ 1 MiB; bytes on the wire per run | 2 GiB | 2 GiB |
+| `capture.max_work_bytes` | safe integer ≥ `max_response_bytes`; on-disk spool per run | 2 GiB | 2 GiB |
+| `capture.memory_buffer_bytes` | 64 KiB – 256 MiB and ≤ `max_response_bytes`; buffered input per active pipeline | 8 MiB | 8 MiB |
+| `capture.max_console_messages` | integer 1–1 000 000 | 10 000 | 10 000 |
+| `capture.max_console_bytes` | 64 KiB – `max_run_bytes` | 16 MiB | 16 MiB |
+| `capture.cache_max_age_days` | integer 0–365; 0 means never reuse | 30 | 30 |
+| `analyzer.timeout_seconds` | integer 1–3600, per document, within `max_duration_seconds` | 120 | 120 |
 | `analyzer.include_text` | boolean; opt-in for titles and headings in page models (§5.2) | `false` | `false` |
 | `workspace.ignore` | ≤ 50 relative globs, no `..`, no absolute or drive paths | `[]` | `[]` |
 
@@ -534,7 +534,7 @@ Implementation order, top to bottom. Each step needs its own fixture acceptance 
 Docs to update with the implementation: DEV-PLAN (live discovery moves from M1b to 0.1.3-a2; Computer Use deferred), README and CLI HELP (`scan`, `workspace`, `knowledge`, exit 4), ARCHITECTURE, THREAT-MODEL (analyzer subprocess, Computer Use deferral, workspace deletion, knowledge ingestion), FLOWS.md (`requires`/`imports`, `console: silent`), AGENTS.md (the generated knowledge Markdown), the consumer SKILL.md (never open `.navsentry/work/`; call `knowledge propose` after research), CHANGELOG, and the catalog with regenerated docs.
 
 ## 12. Owner decisions
-| # | Decision | Options | Recommendation |
+| # | Decision | Options | Recommendation (all adopted by the owner on 2026-11-02) |
 |---|---|---|---|
 | D1 | Default consumer folder | `navsentry/`; `tests/security/`; other | `navsentry/`: it is separate from the project's own tests and easy to find. |
 | D2 | Spider representatives per pattern | 3 in development and 2 in production; other numbers | 3 and 2, as drafted. |
@@ -609,12 +609,12 @@ No requirement from rounds 1–2 was removed. This pass resolved contradictions 
 ## 14. Implementation readiness checklist
 Implementation of a milestone starts only when every item it depends on is done.
 
-- [ ] Owner answers D1–D10 (§12). Milestone 0.1.3-a1 needs D1, D4, D6, D8 and D9; 0.1.3-a2 needs D2 and D10; 0.1.3-b needs D3 and D5.
-- [ ] §3.2 values confirmed or changed, and every "proposed" mark removed.
+- [x] Owner answers D1–D10 (§12): recommended options adopted 2026-11-02. Milestone 0.1.3-a1 needs D1, D4, D6, D8 and D9; 0.1.3-a2 needs D2 and D10; 0.1.3-b needs D3 and D5.
+- [x] §3.2 values confirmed (D9 values) and every "proposed" mark removed.
 - [ ] Catalog entries drafted for NSC-AC-008, NSC-INFO-006, NSC-INFO-007, NSC-INFO-008, NSC-CONF-009 and NSC-SUPPLY-002, with CWE mappings verified (§6.4).
-- [ ] An ADR for scan modes and profiles (ADR-0007 if D3 picks Python, otherwise the next free number), and the threat-model update.
+- [x] An ADR for scan modes and profiles ([ADR-0007](../adr/0007-scan-modes-profiles-and-workspace.md); D3 picked Node), and the threat-model update (TM-21 to TM-24).
 - [ ] Governance: nothing new is needed for 0.1.3-a1, a2, f, s, v (framework) and d. A CPython entry is needed only if D3 picks Python. An advisory-source entry is needed before any real advisory record is imported.
-- [ ] The 0.1.2 baseline (`feat/flows-0.1.2`) is merged, or this branch is rebased on whatever replaces it.
+- [x] The 0.1.2 baseline: owner chose to stack 0.1.3 on it and merge both to `main` together.
 - [ ] One branch per milestone, tests written with the change, vulnerable and secure fixture variants for every new check, CHANGELOG under Unreleased, `npm run gate` PASS, and independent review before merge.
 
-The repository gate for this documentation change validates the existing implementation only. Tests 1–19 are future requirements, not tests claimed to pass today.
+Milestone 0.1.3-a1 is covered by `test/a1.test.ts` (parts of tests 4, 5, 9, 10, 14, 15, 16 and 17) and GATE-09. The other numbered tests are requirements of later milestones and are not claimed to pass yet. Within a1, streamed capture keeps a bounded in-memory prefix rather than spooling to disk; spooling arrives with the detectors that need it (0.1.3-s).

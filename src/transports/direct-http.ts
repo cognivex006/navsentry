@@ -3,20 +3,32 @@
  * - Scope is checked before the request and again at connect time via a custom `lookup`,
  *   so a hostname that re-resolves to a private/metadata address is refused (DNS rebinding).
  * - Redirects are never followed here; the runner re-checks scope for each hop.
- * - Bodies are bounded; nothing raw leaves this module except the in-memory RawResponse.
+ * - Bodies are streamed: every byte is counted and hashed, a bounded prefix is retained, and
+ *   the capture records whether it is complete, truncated (budget) or aborted (early close).
+ *   Nothing raw leaves this module except the in-memory RawResponse.
  */
 import { lookup as dnsLookup, type LookupAddress } from "node:dns";
 import http from "node:http";
 import https from "node:https";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { buildContract } from "../contract.js";
-import type { Budget } from "../budget.js";
+import { CAPTURE_DEFAULTS } from "../config.js";
+import type { Budget, ByteBudget } from "../budget.js";
 import type { Redactor } from "../redact.js";
 import type { ScopeGate } from "../scope.js";
-import type { TransportStatus } from "../types.js";
+import type { CaptureInfo, TransportStatus } from "../types.js";
 import type { ExecutionAdapter, Exchange, HttpRequestSpec, TransportCapabilities } from "./types.js";
 
-export const MAX_BODY_BYTES = 1024 * 1024;
+export interface CaptureOptions {
+  /** Decoded bytes read per response before the capture is `truncated`. */
+  maxResponseBytes: number;
+  /** Prefix kept in memory for checks. */
+  memoryBufferBytes: number;
+  /** Shared run-level byte budget. */
+  bytes?: ByteBudget;
+}
+
+export const DEFAULT_CAPTURE: CaptureOptions = { maxResponseBytes: CAPTURE_DEFAULTS.max_response_bytes, memoryBufferBytes: CAPTURE_DEFAULTS.memory_buffer_bytes };
 export const USER_AGENT = "NavSentry/0.1 (+authorized-security-test)";
 
 export class ScopeDenied extends Error {}
@@ -47,6 +59,7 @@ export class DirectHttpAdapter implements ExecutionAdapter {
     private readonly budget: Budget,
     private readonly redactor: Redactor,
     private readonly onDenied: (url: string, method: string, reason: string) => void = () => {},
+    private readonly capture: CaptureOptions = DEFAULT_CAPTURE,
   ) {}
 
   async probe(): Promise<TransportStatus> {
@@ -91,34 +104,68 @@ export class DirectHttpAdapter implements ExecutionAdapter {
       ...(spec.flow ? { flow: spec.flow } : {}),
     };
     const mod = u.protocol === "https:" ? https : http;
+    const lim = this.capture;
     try {
-      const raw = await new Promise<{ status: number; headers: Record<string, string[]>; body: Buffer }>((resolve, reject) => {
+      const raw = await new Promise<{ status: number; headers: Record<string, string[]>; body: Buffer; capture: CaptureInfo }>((resolve, reject) => {
+        const signal = this.budget.signal;
+        if (signal.aborted) return reject(new Error("authorization window ended"));
         const req = mod.request(
           u,
           { method: spec.method, headers, lookup: this.guardedLookup as never, timeout: this.capabilities.timeoutMs, agent: false },
           (res) => {
+            // Streamed capture: count and hash every byte, retain a bounded prefix, stop at budgets.
+            // Nothing here trusts Content-Length; limits apply to observed bytes.
             const chunks: Buffer[] = [];
-            let size = 0;
+            const hash = createHash("sha256");
+            let decoded = 0, retained = 0;
+            let stop: { status: "truncated" | "aborted"; reason: string } | undefined;
+            const halt = (s: NonNullable<typeof stop>) => { stop ??= s; res.destroy(); };
             res.on("data", (c: Buffer) => {
-              size += c.length;
-              if (size <= MAX_BODY_BYTES) chunks.push(c);
-              else res.destroy();
+              if (stop) return;
+              const room = lim.maxResponseBytes - decoded;
+              const part = c.length > room ? c.subarray(0, Math.max(0, room)) : c;
+              decoded += part.length;
+              hash.update(part);
+              if (retained < lim.memoryBufferBytes) {
+                const keep = part.subarray(0, lim.memoryBufferBytes - retained);
+                chunks.push(keep);
+                retained += keep.length;
+              }
+              if (lim.bytes && !lim.bytes.take(c.length, part.length)) return halt({ status: "truncated", reason: "run byte budget exhausted" });
+              if (c.length > room) halt({ status: "truncated", reason: `response exceeded capture.max_response_bytes (${lim.maxResponseBytes})` });
             });
-            const done = () => {
+            let settled = false;
+            const done = (ended: boolean) => {
+              if (settled) return;
+              settled = true;
+              signal.removeEventListener("abort", onAbort);
               const hdrs: Record<string, string[]> = {};
               for (let i = 0; i < res.rawHeaders.length; i += 2) {
                 const k = (res.rawHeaders[i] as string).toLowerCase();
                 (hdrs[k] ??= []).push(res.rawHeaders[i + 1] as string);
               }
-              resolve({ status: res.statusCode ?? 0, headers: hdrs, body: Buffer.concat(chunks) });
+              const enc = hdrs["content-encoding"]?.[0]?.trim().toLowerCase();
+              const st = stop ?? (ended ? undefined : { status: "aborted" as const, reason: "connection closed before the body ended" });
+              const capture: CaptureInfo = {
+                status: st?.status ?? "complete",
+                ...(st ? { reason: st.reason } : {}),
+                wireBytes: res.socket?.bytesRead ?? decoded,
+                decodedBytes: decoded,
+                retainedBytes: retained,
+                sha256: hash.digest("hex"),
+                ...(enc && enc !== "identity" ? { encoding: enc } : {}),
+              };
+              resolve({ status: res.statusCode ?? 0, headers: hdrs, body: Buffer.concat(chunks, retained), capture });
             };
-            res.on("end", done);
-            res.on("close", done);
-            res.on("error", reject);
+            res.on("end", () => done(true));
+            res.on("close", () => done(res.complete));
+            res.on("error", (e) => { if (stop) done(false); else reject(e); });
           },
         );
+        const onAbort = () => req.destroy(new Error("authorization window ended"));
+        signal.addEventListener("abort", onAbort, { once: true });
         req.on("timeout", () => req.destroy(new Error("request timeout")));
-        req.on("error", reject);
+        req.on("error", (e) => { signal.removeEventListener("abort", onAbort); reject(e); });
         req.end();
       });
       const ct = raw.headers["content-type"]?.[0] ?? "";
@@ -132,9 +179,10 @@ export class DirectHttpAdapter implements ExecutionAdapter {
           status: raw.status,
           responseHeaders,
           ...(body.excerpt !== undefined ? { bodyExcerpt: body.excerpt } : {}),
-          bodyBytes: raw.body.length,
+          bodyBytes: raw.capture.decodedBytes,
           contract: buildContract(raw.status, raw.headers, raw.body),
           redaction: body.outcome,
+          capture: raw.capture,
         },
         raw: { ...raw, ...(loc ? { redirectLocation: new URL(loc, u).toString() } : {}) },
       };
@@ -161,5 +209,6 @@ export function safeError(e: unknown): string {
   const err = e as NodeJS.ErrnoException;
   if (err?.code) return `network error: ${err.code}`;
   if (err?.message === "request timeout") return "network error: timeout";
+  if (err?.message === "authorization window ended") return "cancelled: authorization window ended";
   return "network error";
 }

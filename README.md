@@ -191,12 +191,16 @@ The previous copy is backed up outside the skills folder. Plugins are owned by t
 | `navsentry integrations` | Available transports only |
 | `navsentry validate --config <m>` | Check a manifest |
 | `navsentry plan --config <m>` | Show planned requests and skipped cases (no network) |
-| `navsentry test --config <m> [--out <dir>]` | Run observe-mode checks and write reports |
+| `navsentry test --config <m> [--out <dir>] [--env <profile>] [--project <dir>]` | Run observe-mode checks and write reports |
+| `navsentry scan --config <m> --mode page\|flow [--engine http] [--env <profile>]` | Scan by mode (0.1.3; `spider` and `page --url` come in 0.1.3-a2) |
+| `navsentry workspace status\|clean [--project <dir>] [--dry-run]` | Show or remove NavSentry leftovers in a project |
 | `navsentry report --input <run.json> --format markdown\|json\|sarif [--lang en\|th]` | Render a saved run |
 | `navsentry compare --before <run.json> --after <run.json>` | Before/after verdict and contract drift |
 | `navsentry catalog [--category <CODE>]` | List catalog cases |
 
-Exit codes: `0` no findings in tested scope · `1` findings · `2` incomplete run · `3` usage or configuration error.
+Exit codes: `0` no findings in tested scope · `1` findings · `2` incomplete run · `3` usage or configuration error · `4` workspace dirty (a leftover or unexpected change in the project, or a cleanup failure). When several apply: 3 > 4 > 1 > 2 > 0.
+
+Profiles: `local` and `dev` manifests use the `development` profile; `staging` and `production` use the `production` profile, which requires `authorization.reference` and `authorization.expires_at` and refuses to run outside that window.
 
 ## Results
 

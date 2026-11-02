@@ -8,6 +8,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
+import { diffSnapshots, snapshot } from "../src/workspace.js";
 
 type G = "PASS" | "FAIL" | "INCOMPLETE";
 interface Gate { id: string; title: string; status: G; detail: string; fixHint?: string }
@@ -22,6 +23,13 @@ const runNpm = (args: string[]) => (npmCli ? run(process.execPath, [npmCli, ...a
 // G1 — owner policy: no hosted CI workflows.
 const wf = join(ROOT, ".github", "workflows");
 add("GATE-01", "No GitHub Actions workflows (owner policy)", existsSync(wf) && readdirSync(wf).length ? "FAIL" : "PASS", existsSync(wf) ? `found ${readdirSync(wf).join(", ")}` : ".github/workflows absent", "Delete .github/workflows; use `npm run gate` locally.");
+
+// G9 (recorded here, reported after G8) — workspace hygiene: snapshot before and after the tests.
+// Git status alone misses changes to an already-dirty path, so a filesystem snapshot is compared too.
+const HYGIENE_IGNORE = ["dist/**"];
+const gitState = () => run("git", ["status", "--porcelain=v1", "-z", "--untracked-files=all", "--ignored=matching"]);
+const gitBefore = gitState();
+const fsBefore = snapshot(ROOT, HYGIENE_IGNORE);
 
 // G2 — tests.
 const t = run(process.execPath, ["--test", "--test-concurrency=1", "dist/test/"]);
@@ -97,6 +105,29 @@ for (const f of files) {
   for (const [n, re] of [...generic, ...custom]) if (re.test(text)) hits.push(`${f}: ${n}`);
 }
 add("GATE-08", "Publication safety (secrets, customer identifiers)", hits.length ? "FAIL" : custom.length ? "PASS" : "INCOMPLETE", hits.length ? hits.join("; ") : custom.length ? `${files.length} files scanned with ${generic.length} generic + ${custom.length} owner terms` : "generic scan clean, but .navsentry/forbidden-terms.txt (owner terms) is missing", "Remove/anonymize the content (use SRC-x labels). Keep owner terms in the untracked file.");
+
+// G9 — workspace hygiene (SPEC-0.1.3 §7.3).
+{
+  const gitAfter = gitState();
+  const fsAfter = snapshot(ROOT, HYGIENE_IGNORE);
+  const problems: string[] = [];
+  let incomplete = "";
+  if (gitBefore.status !== 0 || gitAfter.status !== 0) incomplete = "git status failed";
+  else if (!fsBefore.complete || !fsAfter.complete) incomplete = fsBefore.reason ?? fsAfter.reason ?? "snapshot incomplete";
+  else {
+    const d = diffSnapshots(fsBefore, fsAfter);
+    for (const [k, v] of [["created", d.created], ["modified", d.modified], ["deleted", d.deleted]] as const) if (v.length) problems.push(`${k} during tests: ${v.slice(0, 10).join(", ")}${v.length > 10 ? ` (+${v.length - 10})` : ""}`);
+    if (gitBefore.stdout !== gitAfter.stdout) problems.push("git status changed during tests");
+  }
+  // Untracked helper scripts outside the excluded trees fail independently; tracked scripts are not affected.
+  const untracked = run("git", ["ls-files", "-o", "--exclude-standard", "-z"]).stdout.split("\0").filter(Boolean);
+  const helper = /(^|\/)tmp[^/]*$|\.(cjs|py|ps1|sh)$/i;
+  const helpers = untracked.filter((f) => !/^(node_modules|dist|\.navsentry)\//.test(f) && helper.test(f));
+  if (helpers.length) problems.push(`untracked helper scripts: ${helpers.join(", ")}`);
+  add("GATE-09", "Workspace hygiene (no leftovers, no changes during tests)", problems.length ? "FAIL" : incomplete ? "INCOMPLETE" : "PASS",
+    problems.length ? problems.join("; ") : incomplete || `${fsAfter.entries.size} entries unchanged; no untracked helper scripts`,
+    "Move helper scripts to the OS temp directory or the agent scratchpad; make tests write only under os.tmpdir().");
+}
 
 // Report
 const overall: G = gates.some((g) => g.status === "FAIL") ? "FAIL" : gates.some((g) => g.status === "INCOMPLETE") ? "INCOMPLETE" : "PASS";

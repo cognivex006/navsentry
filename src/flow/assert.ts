@@ -52,7 +52,15 @@ export function evaluate(e: Expect, ex: Exchange, origin: string): AssertionResu
   if (e.content_type) out.push(r("content_type", mediaType(ex) === e.content_type, e.content_type, mediaType(ex) || "none"));
   for (const h of e.headers_present ?? []) out.push(r("header_present", h in raw.headers, `${h} present`, h in raw.headers ? "present" : "absent"));
   for (const h of e.headers_absent ?? []) out.push(r("header_absent", !(h in raw.headers), `${h} absent`, h in raw.headers ? "present" : "absent"));
-  if (e.json || e.shape) {
+  // A body that was not captured completely never supports PASS or FAIL (SPEC-0.1.3 §6.5-A).
+  const partial = raw.capture && (raw.capture.status !== "complete" || raw.capture.retainedBytes < raw.capture.decodedBytes);
+  if (partial && (e.json || e.shape || e.text_present || e.text_absent)) {
+    const why = `body ${raw.capture!.status}, ${raw.capture!.retainedBytes} of ${raw.capture!.decodedBytes} bytes retained`;
+    for (const j of e.json ?? []) out.push(r("json", "inconclusive", `${j.pointer || "/"}`, why));
+    if (e.shape) out.push(r("shape", "inconclusive", `JSON shape ${e.shape}`, why));
+    (e.text_present ?? []).forEach((_, i) => out.push(r("text_present", "inconclusive", `marker ${i + 1} present`, why)));
+    (e.text_absent ?? []).forEach((_, i) => out.push(r("text_absent", "inconclusive", `marker ${i + 1} absent`, why)));
+  } else if (e.json || e.shape) {
     let parsed: unknown;
     let ok = true;
     try {
@@ -79,7 +87,7 @@ export function evaluate(e: Expect, ex: Exchange, origin: string): AssertionResu
       out.push(r("shape", h === e.shape, `JSON shape ${e.shape}`, h === e.shape ? "matched" : h ? "differs" : "body is not JSON"));
     }
   }
-  if (e.text_present || e.text_absent) {
+  if (!partial && (e.text_present || e.text_absent)) {
     const body = raw.body.toString("utf8");
     (e.text_present ?? []).forEach((t, i) => out.push(r("text_present", body.includes(t), `marker ${i + 1} present`, body.includes(t) ? "present" : "absent")));
     (e.text_absent ?? []).forEach((t, i) => out.push(r("text_absent", !body.includes(t), `marker ${i + 1} absent`, body.includes(t) ? "present" : "absent")));
