@@ -297,3 +297,26 @@ export function checkMethods(ex: Exchange): CheckResult {
   const bad = allow.filter((m) => DANGEROUS_METHODS.includes(m));
   return bad.length ? result(id, ex, "FAIL", `Dangerous methods advertised: ${bad.join(", ")}`, [`advertised: ${[...new Set(allow)].join(", ")}`]) : result(id, ex, "PASS", `Advertised: ${[...new Set(allow)].join(", ")}`);
 }
+
+/**
+ * NSC-AC-008 open-redirect observation (SPEC-0.1.3 §4.2). Looks only at query parameters already
+ * present in the requested URL (seed or crawled link) and never injects a value. Emits nothing
+ * when no parameter value looks like a URL or path.
+ */
+export function checkOpenRedirect(ex: Exchange, rawUrl: string): CheckResult[] {
+  const id = "NSC-AC-008";
+  let req: URL;
+  try { req = new URL(rawUrl); } catch { return []; }
+  const params = [...req.searchParams.entries()].filter(([, v]) => /^(https?:)?\/\//i.test(v) || /^\/[^/\\]/.test(v));
+  if (!params.length || !ex.raw) return [];
+  const loc = ex.raw.redirectLocation;
+  if (!isRedirect(ex) || !loc) return [result(id, ex, "PASS", "URL-like parameter did not cause a redirect", [`parameters: ${params.map(([k]) => k).join(", ")}`])];
+  const target = new URL(loc);
+  const reflected = params.filter(([, v]) => {
+    try { return new URL(v, req).toString() === target.toString(); } catch { return false; }
+  });
+  if (reflected.length && target.origin !== req.origin) {
+    return [result(id, ex, "FAIL", `Redirect target taken from parameter ${reflected.map(([k]) => k).join(", ")} leaves the origin`, [`status ${ex.raw.status}`, "Location origin differs from the request origin", "parameter value equals the redirect target"])];
+  }
+  return [result(id, ex, "PASS", reflected.length ? "Parameter-driven redirect stays on the same origin" : "Redirect target is not taken from a parameter", [`parameters: ${params.map(([k]) => k).join(", ")}`])];
+}

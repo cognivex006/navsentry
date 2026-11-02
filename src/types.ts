@@ -172,6 +172,27 @@ export interface RunResult {
   authorizationReference?: string;
   capture?: { wireBytes: number; decodedBytes: number; truncated: number; aborted: number; partialBodies: number };
   workspace?: WorkspaceResult;
+  redirectChains?: RedirectChain[];
+  spider?: SpiderResult;
+}
+
+/** A redirect chain followed hop by hop; every hop passed ScopeGate (SPEC-0.1.3 §4.2). */
+export interface RedirectChain {
+  /** Display URL (query values masked). */
+  start: string;
+  actor: string;
+  hops: { url: string; status: number; location?: string; decision: string; securityHeaders: string[]; requestId: string }[];
+}
+
+/** Template-aware crawl coverage (SPEC-0.1.3 §6.2). Sampled-out pages are NOT_TESTED, never PASS. */
+export interface SpiderResult {
+  groups: { origin: string; actor: string; pattern: string; queryKeys: string[]; representatives: string[]; shapeHashes: string[]; mixedShape: boolean; sampledOut: number; spread: number; notTested: string[] }[];
+  /** First 500 skipped URLs with reasons; `skippedTotal` counts all. */
+  skipped: { url: string; reason: string }[];
+  skippedTotal: number;
+  robots: { origin: string; status: "policy" | "no-policy" | "unreachable"; group?: string; rules?: number; reason?: string; enforced: boolean }[];
+  frontierOverflow: boolean;
+  pagesFetched: number;
 }
 
 export interface WorkspaceResult {

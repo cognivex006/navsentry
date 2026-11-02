@@ -54,4 +54,4 @@ Security testing stays primary. Every flow run is also a security run; summarize
 ## Exit codes
 0 no findings in tested scope · 1 findings (or a failed flow) · 2 incomplete (including E2E flows with UI steps and requested analysis that is not available) · 3 usage/config/flow error · 4 workspace dirty. Precedence: 3 > 4 > 1 > 2 > 0.
 
-`navsentry scan --mode page` is the seed scan; `--mode flow --flows <dir>` replays flows. `--mode spider` and `--engine computer-use` are not available in this release and exit 3: say so, and never substitute a host browser.
+`navsentry scan --mode page` is the seed scan (`--url` for one in-scope page); `--mode spider` crawls from the seed paths and samples representatives per template; `--mode flow --flows <dir>` replays flows. Report sampled-out pages as not tested, never as covered. `--engine computer-use` is not available in this release and exits 3: say so, and never substitute a host browser.

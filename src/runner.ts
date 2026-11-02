@@ -14,7 +14,9 @@ import { functionalResult, runFlows } from "./flow/execute.js";
 import { classify, flowSetHash } from "./flow/classify.js";
 import { fillPath, flowOrigin, VAR_SENTINEL } from "./flow/lint.js";
 import { UI_ACTIONS, type FlowDoc } from "./flow/parse.js";
-import { TOOL_NAME, TOOL_VERSION, REPORT_SCHEMA_VERSION, FLOW_RESULT_SCHEMA_VERSION, type CheckResult, type CheckStatus, type CoverageRow, type Finding, type FlowRunResult, type FlowStatus, type RunResult, type ScanMode, type TestLevel } from "./types.js";
+import { groupKey, pathPattern, scanHtml, urlIdentity } from "./spider/html.js";
+import { classifyRobots, robotsAllows, type RobotsPolicy } from "./spider/robots.js";
+import { TOOL_NAME, TOOL_VERSION, REPORT_SCHEMA_VERSION, FLOW_RESULT_SCHEMA_VERSION, type CheckResult, type CheckStatus, type CoverageRow, type Finding, type FlowRunResult, type FlowStatus, type RedirectChain, type RunResult, type ScanMode, type SpiderResult, type TestLevel } from "./types.js";
 
 /** Reserved, non-resolvable origin used to probe CORS reflection (RFC 2606 .invalid). */
 export const CORS_PROBE_ORIGIN = "https://navsentry-cors-probe.invalid";
@@ -23,7 +25,9 @@ export const MAX_REDIRECTS = 5;
 /** Rules whose evidence is pattern-based: FAIL becomes SUSPECTED until a human confirms semantics. */
 /** Rules evaluated only from flow access expectations. */
 const FLOW_RULES = new Set(["NSC-AC-002", "NSC-AC-003", "NSC-AC-007"]);
-const SUSPECT_ONLY = new Set(["NSC-INFO-003", "NSC-INFO-004", "NSC-PRIV-001", "NSC-PRIV-002"]);
+const SUSPECT_ONLY = new Set(["NSC-INFO-003", "NSC-INFO-004", "NSC-PRIV-001", "NSC-PRIV-002", "NSC-AC-008"]);
+/** Security headers whose presence is compared across redirect hops. */
+const HOP_HEADERS = ["strict-transport-security", "content-security-policy", "x-frame-options", "x-content-type-options", "set-cookie"];
 
 export interface PlannedStep {
   kind: "http" | "tls";
@@ -60,7 +64,7 @@ export interface Plan {
   warnings?: string[];
 }
 
-const PER_EXCHANGE = ["NSC-CONF-001", "NSC-CONF-002", "NSC-CONF-003", "NSC-CONF-004", "NSC-CONF-007", "NSC-INFO-001", "NSC-ERR-001", "NSC-INFO-003", "NSC-INFO-004", "NSC-PRIV-001", "NSC-PRIV-002", "NSC-SESS-001", "NSC-SESS-002", "NSC-SESS-003", "NSC-SESS-004", "NSC-CRYPT-006"];
+const PER_EXCHANGE = ["NSC-CONF-001", "NSC-CONF-002", "NSC-CONF-003", "NSC-CONF-004", "NSC-CONF-007", "NSC-INFO-001", "NSC-ERR-001", "NSC-INFO-003", "NSC-INFO-004", "NSC-PRIV-001", "NSC-PRIV-002", "NSC-SESS-001", "NSC-SESS-002", "NSC-SESS-003", "NSC-SESS-004", "NSC-CRYPT-006", "NSC-AC-008"];
 
 interface ActorRuntime {
   name: string;
@@ -163,6 +167,10 @@ export interface ExecuteOptions {
   engine?: RunResult["engine"];
   /** Run ID chosen by the caller (it also names the work directory). */
   runId?: string;
+  /** `scan --mode page --url`: absolute in-scope URLs fetched instead of the seed paths. */
+  urls?: string[];
+  /** `scan --mode spider`: template-aware crawl from the seed paths (SPEC-0.1.3 §6.2). */
+  spider?: boolean;
 }
 
 export async function executeRun(m: Manifest, opts: ExecuteOptions = {}): Promise<RunResult> {
@@ -201,6 +209,45 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
     }
   };
   const runId = opts.runId ?? randomUUID();
+  const chains: RedirectChain[] = [];
+
+  /**
+   * GETs a URL and follows redirects hop by hop (≤ MAX_REDIRECTS), re-checking scope for every hop.
+   * Every hop runs the per-exchange checks; chains with at least one redirect are recorded (§4.2).
+   */
+  const finalUrlOf = new WeakMap<Exchange, string>();
+  const findingsFor = (ids: Set<string>) => checks.some((c) => c.status === "FAIL" && c.requestIds.some((r) => ids.has(r)));
+  const fetchChain = async (start: string, actor: ActorRuntime, runChecks = true): Promise<Exchange | undefined> => {
+    let url = start;
+    const chain: RedirectChain = { start: redactor.url(start), actor: actor.name, hops: [] };
+    let last: Exchange | undefined;
+    for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+      const ex = await send("GET", url, actor);
+      if (!ex) { if (chain.hops.length) chain.hops[chain.hops.length - 1]!.decision = "denied at request"; break; }
+      last = ex;
+      finalUrlOf.set(ex, url);
+      if (ex.record.error) {
+        const err = ex.record.error;
+        if (runChecks) checks.push(...PER_EXCHANGE.filter((id) => !disabled.has(id)).map((ruleId): CheckResult => ({ ruleId, status: "ERROR", target: `GET ${ex.record.url}`, transport: "direct-http", summary: "request failed", observations: [], requestIds: [ex.record.id], reason: err })));
+        break;
+      }
+      if (runChecks) checks.push(...perExchange(ex, actor.name, url).filter((c) => !disabled.has(c.ruleId)));
+      const next = ex.raw?.redirectLocation;
+      const isRedir = !!next && ex.raw!.status >= 300 && ex.raw!.status < 400;
+      const headers = HOP_HEADERS.filter((h) => h in (ex.raw?.headers ?? {}));
+      chain.hops.push({ url: ex.record.url, status: ex.raw!.status, securityHeaders: headers, decision: isRedir ? "followed" : "final", requestId: ex.record.id, ...(isRedir ? { location: redactor.url(next!) } : {}) });
+      if (!isRedir) break;
+      if (hop === MAX_REDIRECTS) { chain.hops[chain.hops.length - 1]!.decision = `not followed: more than ${MAX_REDIRECTS} redirects`; incomplete.push(`redirect chain from ${redactor.url(start)} exceeded ${MAX_REDIRECTS} hops`); break; }
+      // Redirect escape protection: re-check scope for every hop before following.
+      const d = gate.checkRequest(next!, "GET");
+      if (!d.allowed) { chain.hops[chain.hops.length - 1]!.decision = `not followed: ${d.reason}`; denials.push({ url: redactor.url(next!), method: "GET", reason: `redirect not followed: ${d.reason}` }); break; }
+      if (chain.hops.some((h) => h.url === redactor.url(next!))) { chain.hops[chain.hops.length - 1]!.decision = "not followed: redirect loop"; incomplete.push(`redirect loop from ${redactor.url(start)}`); break; }
+      url = next!;
+    }
+    if (chain.hops.length > 1 || chain.hops[0]?.location) chains.push(chain);
+    return last;
+  };
+  let spider: SpiderResult | undefined;
 
   try {
     for (const origin of m.targets.origins) {
@@ -208,28 +255,9 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
         const tlsOut = await probeTls(gate, budget, origin);
         checks.push(...tlsOut.checks.filter((c) => !disabled.has(c.ruleId)));
       }
-      for (const path of opts.flowsOnly ? [] : m.targets.seed_paths) {
-        const seed = new URL(path, origin).toString();
-        for (const actor of usable) {
-          let url = seed;
-          for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
-            const ex = await send("GET", url, actor);
-            if (!ex) break;
-            if (ex.record.error) {
-              const err = ex.record.error;
-              checks.push(...PER_EXCHANGE.filter((id) => !disabled.has(id)).map((ruleId): CheckResult => ({ ruleId, status: "ERROR", target: `GET ${ex.record.url}`, transport: "direct-http", summary: "request failed", observations: [], requestIds: [ex.record.id], reason: err })));
-              break;
-            }
-            checks.push(...perExchange(ex, actor.name, url).filter((c) => !disabled.has(c.ruleId)));
-            const next = ex.raw?.redirectLocation;
-            if (!next || !(ex.raw!.status >= 300 && ex.raw!.status < 400)) break;
-            if (hop === MAX_REDIRECTS) { incomplete.push(`redirect chain from ${redactor.url(seed)} exceeded ${MAX_REDIRECTS} hops`); break; }
-            // Redirect escape protection: re-check scope for every hop before following.
-            const d = gate.checkRequest(next, "GET");
-            if (!d.allowed) { denials.push({ url: redactor.url(next), method: "GET", reason: `redirect not followed: ${d.reason}` }); break; }
-            url = next;
-          }
-        }
+      const targets = opts.flowsOnly || opts.spider ? [] : opts.urls ? opts.urls.filter((u) => new URL(u).origin === origin) : m.targets.seed_paths.map((p) => new URL(p, origin).toString());
+      for (const seed of targets) {
+        for (const actor of usable) await fetchChain(seed, actor);
         const anon = usable[0]!;
         if (!disabled.has("NSC-AC-004")) {
           const ex = await send("GET", seed, anon, { origin: CORS_PROBE_ORIGIN });
@@ -240,6 +268,10 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
           if (ex && !ex.record.error) checks.push(P.checkMethods(ex));
         }
       }
+    }
+    if (opts.spider) {
+      spider = { groups: [], skipped: [], skippedTotal: 0, robots: [], frontierOverflow: false, pagesFetched: 0 };
+      await crawl(m, gate, usable, spider, fetchChain, (ex) => finalUrlOf.get(ex), findingsFor, incomplete, redactor);
     }
   } catch (e) {
     if (e instanceof BudgetExceeded) incomplete.push(e.message);
@@ -316,6 +348,8 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
     ...(opts.engine ? { engine: opts.engine } : {}),
     ...(m.profile === "production" && m.authorization.reference ? { authorizationReference: m.authorization.reference } : {}),
     capture: cap,
+    ...(chains.length ? { redirectChains: chains } : {}),
+    ...(spider ? { spider } : {}),
   };
   if (!opts.flows || !flowOutcome) return { run };
   for (const f of flowOutcome.flows) {
@@ -350,7 +384,7 @@ function perExchange(ex: Exchange, actor: string, rawUrl: string): CheckResult[]
   return [
     P.checkHsts(ex), P.checkCsp(ex), P.checkFraming(ex), P.checkContentType(ex), P.checkCache(ex, ctx),
     P.checkVersionDisclosure(ex), P.checkErrorDisclosure(ex), P.checkInternalIp(ex), P.checkEmail(ex), P.checkPii(ex),
-    P.checkSensitiveUrl(ex, rawUrl), ...P.checkCookies(ex), P.checkJwt(ex), P.checkHttpsRedirect(ex),
+    P.checkSensitiveUrl(ex, rawUrl), ...P.checkCookies(ex), P.checkJwt(ex), P.checkHttpsRedirect(ex), ...P.checkOpenRedirect(ex, rawUrl),
   ];
 }
 
@@ -406,4 +440,153 @@ export function buildFindings(checks: CheckResult[]): Finding[] {
   }
   const sevRank = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
   return [...byFp.values()].sort((a, b) => sevRank[a.severity] - sevRank[b.severity] || a.ruleId.localeCompare(b.ruleId));
+}
+
+// ───────────────────────── Spider (SPEC-0.1.3 §6.2) ─────────────────────────
+
+const SKIP_SAMPLE_CAP = 500;
+
+interface Group {
+  key: string;
+  origin: string;
+  actor: string;
+  pattern: string;
+  queryKeys: string[];
+  fetched: { url: string; shape?: string; requestIds: string[] }[];
+  pool: string[];
+  sampledOut: number;
+  spread: number;
+}
+
+/**
+ * BFS from the seed paths up to safety.max_depth. Pages are grouped by (origin, actor, path pattern,
+ * query-key set) before fetching; N representatives per group are fetched and the rest recorded as
+ * `sampled-out`. A finding or a mixed shape leads to up to N more pages of that group (≤ 2N in all).
+ * Links are queued only when the static ScopeGate allows them; the runtime check stays authoritative.
+ * No forms are submitted and no parameters are changed.
+ */
+async function crawl(
+  m: Manifest,
+  gate: ScopeGate,
+  actors: ActorRuntime[],
+  out: SpiderResult,
+  fetchChain: (url: string, actor: ActorRuntime, runChecks?: boolean) => Promise<Exchange | undefined>,
+  finalUrl: (ex: Exchange) => string | undefined,
+  hasFinding: (ids: Set<string>) => boolean,
+  incomplete: string[],
+  redactor: Redactor,
+): Promise<void> {
+  const n = m.safety.representatives_per_pattern;
+  const finalUrlOf = finalUrl;
+  const groups = new Map<string, Group>();
+  let recorded = 0;
+  const skip = (url: string, reason: string) => {
+    out.skippedTotal++;
+    if (out.skipped.length < SKIP_SAMPLE_CAP) out.skipped.push({ url: redactor.url(url), reason });
+  };
+  const robots = new Map<string, RobotsPolicy | "blocked" | "none">();
+  for (const origin of m.targets.origins) {
+    const ex = await fetchChain(new URL("/robots.txt", origin).toString(), actors[0]!, false).catch((e) => { if (e instanceof BudgetExceeded) throw e; return undefined; });
+    const body = ex?.raw ? ex.raw.body.toString("utf8", 0, Math.min(ex.raw.body.length, 500 * 1024)) : "";
+    const outcome = classifyRobots(ex?.raw && !ex.record.error ? ex.raw.status : undefined, ex?.raw?.headers["content-type"]?.[0] ?? "", body);
+    const enforced = m.profile === "production";
+    if (outcome.kind === "policy") {
+      robots.set(origin, outcome.policy);
+      out.robots.push({ origin, status: "policy", group: outcome.policy.group, rules: outcome.policy.rules.length, enforced });
+    } else if (outcome.kind === "no-policy") {
+      robots.set(origin, "none");
+      out.robots.push({ origin, status: "no-policy", reason: outcome.reason, enforced });
+    } else {
+      robots.set(origin, enforced ? "blocked" : "none");
+      out.robots.push({ origin, status: "unreachable", reason: outcome.reason, enforced });
+      if (enforced) incomplete.push(`spider: robots.txt for ${origin} is unreachable (${outcome.reason}); crawling that origin is blocked in the production profile`);
+    }
+  }
+
+  for (const actor of actors) {
+    const seen = new Set<string>();
+    const queue: { url: string; depth: number }[] = [];
+    const offer = (raw: string, depth: number, from?: string): void => {
+      let u: URL;
+      try { u = new URL(raw, from); } catch { skip(raw.slice(0, 200), "unparseable link"); return; }
+      if (!["http:", "https:"].includes(u.protocol)) { skip(`${u.protocol}…`, `${u.protocol.replace(":", "")} link (never followed)`); return; }
+      const id = urlIdentity(u);
+      if (seen.has(id)) return;
+      seen.add(id);
+      if (recorded >= m.safety.max_frontier) { out.frontierOverflow = true; return; }
+      recorded++;
+      const d = gate.checkRequest(id, "GET");
+      if (!d.allowed) { skip(id, `out of scope: ${d.reason}`); return; }
+      const pol = robots.get(u.origin);
+      if (pol === "blocked") { skip(id, "robots: policy unreachable (production)"); return; }
+      if (pol && pol !== "none" && !robotsAllows(pol, u.pathname + u.search)) {
+        if (m.profile === "production") { skip(id, "robots: disallowed"); return; }
+      }
+      if (depth > m.safety.max_depth) { skip(id, "depth limit"); return; }
+      const key = groupKey(u, actor.name);
+      let g = groups.get(key);
+      if (!g) {
+        g = { key, origin: u.origin, actor: actor.name, pattern: pathPattern(u.pathname), queryKeys: [...new Set(u.searchParams.keys())].sort(), fetched: [], pool: [], sampledOut: 0, spread: 0 };
+        groups.set(key, g);
+      }
+      if (g.fetched.length + queue.filter((q) => groupKey(new URL(q.url), actor.name) === key).length < n) queue.push({ url: id, depth });
+      else { g.sampledOut++; if (g.pool.length < n) g.pool.push(id); skip(id, "sampled-out"); }
+    };
+    for (const p of m.targets.seed_paths) for (const o of m.targets.origins) offer(new URL(p, o).toString(), 0);
+    while (queue.length) {
+      if (out.pagesFetched >= m.safety.max_pages) { for (const q of queue.splice(0)) skip(q.url, "max_pages reached"); incomplete.push(`spider: safety.max_pages (${m.safety.max_pages}) reached`); break; }
+      const { url, depth } = queue.shift()!;
+      const g = groups.get(groupKey(new URL(url), actor.name))!;
+      const ex = await fetchChain(url, actor);
+      out.pagesFetched++;
+      const page = visit(ex, g, url);
+      if (page) for (const href of page.hrefs) offer(href, depth + 1, page.base);
+    }
+    // Spread: a finding or a mixed shape leads to up to N more pages of the same group (≤ 2N).
+    for (const g of groups.values()) {
+      if (g.actor !== actor.name) continue;
+      const ids = new Set(g.fetched.flatMap((f) => f.requestIds));
+      const mixed = new Set(g.fetched.map((f) => f.shape).filter(Boolean)).size > 1;
+      if (!hasFinding(ids) && !mixed) continue;
+      while (g.pool.length && g.fetched.length < 2 * n && out.pagesFetched < m.safety.max_pages) {
+        const url = g.pool.shift()!;
+        const ex = await fetchChain(url, actor);
+        out.pagesFetched++;
+        g.spread++;
+        g.sampledOut--;
+        out.skippedTotal--;
+        const i = out.skipped.findIndex((x) => x.url === redactor.url(url) && x.reason === "sampled-out");
+        if (i >= 0) out.skipped.splice(i, 1);
+        visit(ex, g, url);
+      }
+    }
+  }
+  if (out.frontierOverflow) incomplete.push(`spider: frontier limit safety.max_frontier (${m.safety.max_frontier}) reached; further links were not recorded`);
+  for (const g of groups.values()) {
+    const shapes = [...new Set(g.fetched.map((f) => f.shape).filter((x): x is string => !!x))];
+    out.groups.push({
+      origin: g.origin, actor: g.actor, pattern: g.pattern, queryKeys: g.queryKeys,
+      representatives: g.fetched.map((f) => redactor.url(f.url)), shapeHashes: shapes.map((h) => h.slice(0, 16)),
+      mixedShape: shapes.length > 1, sampledOut: g.sampledOut, spread: g.spread,
+      notTested: g.sampledOut ? [`${g.sampledOut} page(s) NOT_TESTED: sampled-out (never inherit a PASS)`] : [],
+    });
+  }
+  const sampled = out.groups.reduce((a, g) => a + g.sampledOut, 0);
+  if (sampled) incomplete.push(`spider: ${sampled} page(s) sampled-out and NOT_TESTED; coverage holds only for the fetched representatives`);
+
+  function visit(ex: Exchange | undefined, g: Group, url: string): { hrefs: string[]; base?: string } | undefined {
+    const entry: Group["fetched"][number] = { url, requestIds: ex ? [ex.record.id] : [] };
+    g.fetched.push(entry);
+    if (!ex?.raw || ex.record.error) return undefined;
+    const ct = ex.raw.headers["content-type"]?.[0] ?? "";
+    if (!/text\/html|application\/xhtml/i.test(ct)) return undefined;
+    const scan = scanHtml(ex.raw.body.toString("utf8"));
+    entry.shape = scan.shapeHash;
+    if (scan.truncated) incomplete.push(`spider: tag limit reached on ${redactor.url(url)}; links and shape are partial`);
+    // The final URL after redirects is the base for relative links.
+    const finalUrl = finalUrlOf(ex) ?? url;
+    let base = finalUrl;
+    if (scan.base) { try { base = new URL(scan.base, finalUrl).toString(); } catch { /* keep the page URL */ } }
+    return { hrefs: scan.hrefs, base };
+  }
 }
