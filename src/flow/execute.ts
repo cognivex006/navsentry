@@ -11,7 +11,7 @@ import type { Exchange } from "../transports/types.js";
 import type { AssertionResult, CheckResult, CheckStatus, FlowResult, FlowStatus, StepResult } from "../types.js";
 import { evaluate, resolvePointer, worst } from "./assert.js";
 import { classify, flowHash, requestTemplate, stepHash, stepTransport } from "./classify.js";
-import { fillPath, flowOrigin, placeholders } from "./lint.js";
+import { fillPath, flowOrigin, placeholders, topoOrder } from "./lint.js";
 import { UI_ACTIONS, type FlowDoc, type FlowStep } from "./parse.js";
 
 export const MAX_FLOW_REDIRECTS = 5;
@@ -85,7 +85,16 @@ function flowStatus(steps: StepResult[]): FlowStatus {
   return "PASS";
 }
 
-async function runDoc(doc: FlowDoc, ctx: FlowContext, budget: { exhausted?: string }, checks: CheckResult[]): Promise<FlowResult> {
+interface ChainState {
+  /** Dependency reason that makes every step NOT_TESTED. */
+  blocked?: string;
+  /** Imported values (already resolved from PASS steps of required flows). */
+  imports: Map<string, string>;
+  /** Out: variables this flow extracted in PASS steps. */
+  exports: Map<string, string>;
+}
+
+async function runDoc(doc: FlowDoc, ctx: FlowContext, budget: { exhausted?: string }, checks: CheckResult[], chain: ChainState = { imports: new Map(), exports: new Map() }): Promise<FlowResult> {
   const origin = flowOrigin(doc, ctx.manifest)!;
   const cls = classify(doc);
   const approved = doc.header.review.status === "approved" && doc.header.review.content_sha256 === flowHash(doc);
@@ -96,6 +105,7 @@ async function runDoc(doc: FlowDoc, ctx: FlowContext, budget: { exhausted?: stri
     else if (ctx.env[v.env]) vars.set(n, ctx.env[v.env] as string);
     else varMissing.set(n, `env ${v.env} is not set`);
   }
+  for (const [n, v] of chain.imports) vars.set(n, v);
   const runs: StepRun[] = [];
   const byId = new Map<string, StepRun>();
 
@@ -109,6 +119,7 @@ async function runDoc(doc: FlowDoc, ctx: FlowContext, budget: { exhausted?: stri
     byId.set(s.id, run);
     const skip = (reason: string) => { res.reason = reason; };
 
+    if (chain.blocked) { skip(chain.blocked); continue; }
     if (UI_ACTIONS.has(s.action)) { skip(uiReason(s)); continue; }
     if (budget.exhausted) { skip("budget exhausted"); continue; }
     const actorHeaders = ctx.actors.get(s.actor);
@@ -172,7 +183,7 @@ async function runDoc(doc: FlowDoc, ctx: FlowContext, budget: { exhausted?: stri
             v = undefined;
           }
         } else v = ex.raw!.headers[x.name]?.[0];
-        if (typeof v === "string" || (typeof v === "number" && Number.isFinite(v))) vars.set(name, String(v));
+        if (typeof v === "string" || (typeof v === "number" && Number.isFinite(v))) { vars.set(name, String(v)); chain.exports.set(name, String(v)); }
       }
     }
   }
@@ -220,7 +231,9 @@ async function runDoc(doc: FlowDoc, ctx: FlowContext, budget: { exhausted?: stri
 
   const steps = runs.map((x) => x.result);
   for (const st of steps) if (st.status === "NOT_TESTED" && !st.reason) st.reason = "not executed";
-  const status = flowStatus(steps);
+  // A value extracted by a step that later failed its denied post-pass is not exported.
+  for (const r of runs) if (r.result.status !== "PASS") for (const n of Object.keys(r.step.extract ?? {})) chain.exports.delete(n);
+  const status = chain.blocked ? "NOT_TESTED" : flowStatus(steps);
   const reasons = [...new Set(steps.filter((x) => x.status !== "PASS").map((x) => `${x.id} ${x.status}${x.reason ? `: ${x.reason}` : ""}`))];
   return {
     id: doc.header.id,
@@ -241,12 +254,37 @@ async function runDoc(doc: FlowDoc, ctx: FlowContext, budget: { exhausted?: stri
   };
 }
 
-/** Executes flows sequentially by id. Security CheckResults are returned for coverage/findings. */
+/**
+ * Executes flows in dependency order (ties by id); each selected flow runs once, so a shared
+ * dependency in a diamond runs once under the one run Budget. A dependent of a flow that is not PASS
+ * is NOT_TESTED with "dependency <id> is <status>", never FAIL or PASS (SPEC-0.1.3 §5.5).
+ */
 export async function runFlows(docs: FlowDoc[], ctx: FlowContext): Promise<FlowsOutcome> {
   const checks: CheckResult[] = [];
   const budget: { exhausted?: string } = {};
   const flows: FlowResult[] = [];
-  for (const d of docs) flows.push(await runDoc(d, ctx, budget, checks));
+  const done = new Map<string, { status: FlowStatus; exports: Map<string, string> }>();
+  for (const d of topoOrder(docs)) {
+    let blocked: string | undefined;
+    for (const id of d.header.requires) {
+      const r = done.get(id);
+      if (!r) { blocked = `dependency ${id} is not selected (drafts need --include-drafts; production runs approved flows only)`; break; }
+      if (r.status !== "PASS") { blocked = `dependency ${id} is ${r.status}`; break; }
+    }
+    const imports = new Map<string, string>();
+    if (!blocked) {
+      for (const [name, imp] of Object.entries(d.header.imports)) {
+        const v = done.get(imp.flow)!.exports.get(imp.var);
+        if (v === undefined) { blocked = `dependency ${imp.flow} did not export ${imp.var} from a PASS step`; break; }
+        imports.set(name, v);
+      }
+    }
+    const chain: ChainState = { ...(blocked ? { blocked } : {}), imports, exports: new Map() };
+    const res = await runDoc(d, ctx, budget, checks, chain);
+    if (blocked) res.reasons = [blocked];
+    flows.push(res);
+    done.set(d.header.id, { status: res.status, exports: chain.exports });
+  }
   return { flows, checks, incomplete: budget.exhausted ? [budget.exhausted] : [] };
 }
 

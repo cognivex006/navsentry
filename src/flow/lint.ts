@@ -72,7 +72,8 @@ function lintDoc(doc: FlowDoc, m: Manifest, gate: ScopeGate, red: Redactor, E: s
     else check(h.line, "/login_path", h.login_path, "GET");
   }
 
-  const defined = new Set(Object.keys(h.vars));
+  const defined = new Set([...Object.keys(h.vars), ...Object.keys(h.imports)]);
+  for (const n of Object.keys(h.imports)) if (n in h.vars) at(h.line, `/imports/${n}`, "collides with a local variable of the same name");
   const seen = new Set<string>();
   const cls = classify(doc);
   if (h.level !== "auto" && h.level !== cls.level) at(h.line, "/level", `declared ${h.level} but derived ${cls.level}: ${cls.levelReasons.join("; ")}`);
@@ -149,5 +150,68 @@ export function lintFlows(docs: FlowDoc[], m: Manifest): LintResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   for (const d of docs) lintDoc(d, m, gate, red, errors, warnings);
+  lintGraph(docs, m, errors);
   return { errors, warnings };
+}
+
+/** Chain graph rules (SPEC-0.1.3 §5.5), all reported before any I/O. */
+function lintGraph(docs: FlowDoc[], m: Manifest, E: string[]): void {
+  const byId = new Map(docs.map((d) => [d.header.id, d]));
+  for (const d of docs) {
+    const h = d.header;
+    const at = (ptr: string, msg: string) => E.push(`${d.file}:${h.line}: ${ptr}: ${msg}`);
+    for (const id of h.requires) {
+      if (id === h.id) at("/requires", "a flow cannot require itself");
+      else if (!byId.has(id)) at("/requires", `no flow "${id}" in the selected flow root`);
+    }
+    for (const [name, imp] of Object.entries(h.imports)) {
+      const ptr = `/imports/${name}`;
+      if (!h.requires.includes(imp.flow)) { at(ptr, `undeclared dependency: add "${imp.flow}" to requires`); continue; }
+      const src = byId.get(imp.flow);
+      if (!src) continue;
+      const producers = src.steps.filter((s) => s.extract && imp.var in s.extract);
+      if (!producers.length) { at(ptr, `missing export: flow "${imp.flow}" never extracts "${imp.var}"`); continue; }
+      const users = d.steps.filter((s) => placeholders(s).includes(name));
+      if (!imp.allowCrossActor) {
+        const actors = new Set(producers.map((s) => s.actor));
+        const cross = users.filter((s) => !actors.has(s.actor));
+        if (cross.length) at(ptr, `value crosses an actor boundary (${[...actors].join(",")} → ${[...new Set(cross.map((s) => s.actor))].join(",")}); declare allow_cross_actor in the reviewed flow if intended`);
+      }
+      if (!imp.allowCrossOrigin && flowOrigin(src, m) !== flowOrigin(d, m)) at(ptr, "value crosses an origin boundary; declare allow_cross_origin in the reviewed flow if intended");
+    }
+  }
+  // Cycles: depth-first search with colours.
+  const state = new Map<string, 1 | 2>();
+  const reported = new Set<string>();
+  const visit = (id: string, path: string[]): void => {
+    const d = byId.get(id);
+    if (!d) return;
+    if (state.get(id) === 2) return;
+    if (state.get(id) === 1) {
+      const cyc = [...path.slice(path.indexOf(id)), id];
+      const key = [...cyc].sort().join(",");
+      if (!reported.has(key)) { reported.add(key); E.push(`${d.file}:${d.header.line}: /requires: dependency cycle ${cyc.join(" → ")}`); }
+      return;
+    }
+    state.set(id, 1);
+    for (const r of d.header.requires) if (r !== id) visit(r, [...path, id]);
+    state.set(id, 2);
+  };
+  for (const d of docs) visit(d.header.id, []);
+}
+
+/** Topological order (dependencies first, ties by id). Assumes a linted, acyclic graph. */
+export function topoOrder(docs: FlowDoc[]): FlowDoc[] {
+  const byId = new Map(docs.map((d) => [d.header.id, d]));
+  const out: FlowDoc[] = [];
+  const done = new Set<string>();
+  const visit = (d: FlowDoc, stack: Set<string>) => {
+    if (done.has(d.header.id) || stack.has(d.header.id)) return;
+    stack.add(d.header.id);
+    for (const r of [...d.header.requires].sort()) { const x = byId.get(r); if (x) visit(x, stack); }
+    done.add(d.header.id);
+    out.push(d);
+  };
+  for (const d of [...docs].sort((a, b) => a.header.id.localeCompare(b.header.id))) visit(d, new Set());
+  return out;
 }
