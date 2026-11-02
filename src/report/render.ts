@@ -41,6 +41,31 @@ export function renderMarkdown(r: RunResult, lang: "en" | "th" = "en"): string {
   out.push(...(r.incompleteReasons.length ? r.incompleteReasons.map((x) => `- ${x}`) : [t.none]), "");
   out.push(`## ${t.denials}`, "");
   out.push(...(r.denials.length ? r.denials.map((d) => `- ${d.method} \`${esc(d.url)}\` — ${d.reason}`) : [t.none]), "");
+  if (r.spider) {
+    const sp = r.spider;
+    out.push("## Coverage by template", "", `Pages fetched: ${sp.pagesFetched} · Skipped: ${sp.skippedTotal}${sp.frontierOverflow ? " · frontier limit reached" : ""}`, "", "> Only fetched representatives are covered. Sampled-out pages are NOT_TESTED and never inherit a PASS; a shape hash is a grouping heuristic, never evidence.", "", "| Origin | Actor | Pattern | Query keys | Representatives | Shape hashes | Mixed shape | Spread | Sampled-out |", "|---|---|---|---|---|---|---|---|---|");
+    for (const g of sp.groups) out.push(`| ${esc(g.origin)} | ${g.actor} | \`${esc(g.pattern)}\` | ${esc(g.queryKeys.join(", ")) || "—"} | ${g.representatives.length} | ${g.shapeHashes.map((h) => `\`${h}\``).join(" ") || "—"} | ${g.mixedShape ? "**mixed-shape**" : "no"} | ${g.spread} | ${g.sampledOut} |`);
+    out.push("", "### robots.txt", "", "| Origin | Result | Detail | Enforced |", "|---|---|---|---|");
+    for (const x of sp.robots) out.push(`| ${esc(x.origin)} | ${x.status} | ${esc(x.status === "policy" ? `group ${x.group}, ${x.rules} rule(s)` : x.reason ?? "")} | ${x.enforced ? "yes (production)" : "recorded only (development)"} |`);
+    const reasons = new Map<string, number>();
+    for (const k of sp.skipped) reasons.set(k.reason, (reasons.get(k.reason) ?? 0) + 1);
+    out.push("", "### Skipped pages", "", ...(reasons.size ? [...reasons].map(([k, n]) => `- ${esc(k)}: ${n}`) : [t.none]));
+    if (sp.skippedTotal > sp.skipped.length) out.push(`- (${sp.skippedTotal - sp.skipped.length} more not listed)`);
+    out.push("");
+  }
+  if (r.redirectChains?.length) {
+    out.push("## Redirect chains", "", "Every hop was checked by ScopeGate before it was requested.", "");
+    for (const c of r.redirectChains) {
+      out.push(`- \`${esc(c.start)}\` as ${c.actor}`);
+      let prev: string[] | undefined;
+      for (const h of c.hops) {
+        const changed = prev ? [...h.securityHeaders.filter((x) => !prev!.includes(x)).map((x) => `+${x}`), ...prev.filter((x) => !h.securityHeaders.includes(x)).map((x) => `-${x}`)] : [];
+        out.push(`  - ${h.status} \`${esc(h.url)}\`${h.location ? ` → \`${esc(h.location)}\`` : ""} · ${esc(h.decision)}${changed.length ? ` · security headers ${changed.join(" ")}` : ""}`);
+        prev = h.securityHeaders;
+      }
+    }
+    out.push("");
+  }
   if (r.capture) {
     const c = r.capture;
     out.push(`## ${t.capture}`, "", "| Wire bytes | Decoded bytes | Truncated | Aborted | Partially inspected bodies |", "|---|---|---|---|---|", `| ${c.wireBytes} | ${c.decodedBytes} | ${c.truncated} | ${c.aborted} | ${c.partialBodies} |`, "");

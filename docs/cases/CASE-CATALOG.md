@@ -8,7 +8,7 @@
 
 ## สารบัญตามหมวด
 
-- **AC** Access Control (authorization, CORS, SSRF, CSRF): [NSC-AC-001](#nsc-ac-001), [NSC-AC-002](#nsc-ac-002), [NSC-AC-003](#nsc-ac-003), [NSC-AC-007](#nsc-ac-007), [NSC-AC-004](#nsc-ac-004), [NSC-AC-005](#nsc-ac-005), [NSC-AC-006](#nsc-ac-006)
+- **AC** Access Control (authorization, CORS, SSRF, CSRF): [NSC-AC-001](#nsc-ac-001), [NSC-AC-002](#nsc-ac-002), [NSC-AC-003](#nsc-ac-003), [NSC-AC-007](#nsc-ac-007), [NSC-AC-008](#nsc-ac-008), [NSC-AC-004](#nsc-ac-004), [NSC-AC-005](#nsc-ac-005), [NSC-AC-006](#nsc-ac-006)
 - **AUTH** Identification & Authentication: [NSC-AUTH-001](#nsc-auth-001), [NSC-AUTH-002](#nsc-auth-002)
 - **SESS** Session & Token Management: [NSC-SESS-001](#nsc-sess-001), [NSC-SESS-002](#nsc-sess-002), [NSC-SESS-003](#nsc-sess-003), [NSC-SESS-004](#nsc-sess-004)
 - **CRYPT** Cryptography & Transport Security: [NSC-CRYPT-001](#nsc-crypt-001), [NSC-CRYPT-002](#nsc-crypt-002), [NSC-CRYPT-003](#nsc-crypt-003), [NSC-CRYPT-004](#nsc-crypt-004), [NSC-CRYPT-005](#nsc-crypt-005), [NSC-CRYPT-006](#nsc-crypt-006)
@@ -528,6 +528,137 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 2. On the real web page / endpoint:
    - [ ] As the lower-role user in a separate browser profile, open the privileged URL: access denied
    - [ ] The privileged user still sees the function
+3. Regression: main user flows still work and compare shows no unexplained contract drift.
+4. Verdict QA-PASS or QA-FAIL. On QA-FAIL you MUST write improvement criteria
+   (template docs/reports/templates/QA.md): failed acceptance item, expected vs observed (redacted),
+   most likely cause, next concrete action, owner. "Failed" without a reason is not accepted.
+```
+
+</details>
+
+<a id="nsc-ac-008"></a>
+
+### NSC-AC-008 — Open redirect
+
+**Open Redirect — พารามิเตอร์พาผู้ใช้ไปเว็บภายนอกได้**
+
+| Field | Value |
+|---|---|
+| Severity (default) | medium |
+| Priority | 🟡 รอได้ / วางแผนแก้ (PLANNED) |
+| Automation | auto — NavSentry ตรวจอัตโนมัติได้ใน v0.1 (observe) |
+| OWASP Top 10:2025 | A01:2025 Broken Access Control |
+| OWASP Top 10:2021 | A01:2021 Broken Access Control |
+| CWE | CWE-601 |
+| OWASP WSTG | WSTG-CLNT-04 |
+| OWASP ASVS 5.0 (chapter) | V3 Web Frontend Security |
+| CVE | — |
+| Seen in sources | — (required by NavSentry scope, no source occurrence yet) |
+
+**FACT (ข้อเท็จจริง)**
+
+A redirect endpoint takes its destination from a request parameter and sends the browser to another origin without an allowlist, which enables phishing and token leakage through crafted links.
+
+**EVIDENCE (หลักฐานที่ต้องเก็บ)**
+
+- Request URL with the parameter name (value masked), 3xx status, and that the Location origin differs and equals the parameter value
+
+**ACCEPTANCE CRITERIA (เกณฑ์ผ่าน)**
+
+- [ ] Redirect targets come from an allowlist or are relative same-origin paths
+- [ ] Off-origin targets are refused or replaced by a safe default
+
+**ตรวจซ้ำบนหน้าเว็บจริง (Web recheck)**
+
+- [ ] Open the observed link with the parameter pointing to an external site you control in staging: the browser stays on the application
+- [ ] Legitimate post-login and return-to links still work
+
+**แนวทางแก้ (Fix)** — Map redirect parameters to an allowlist of known destinations or accept only same-origin relative paths after normalisation; never echo an absolute URL from the request.
+
+**⚠️ ผลกระทบต่อผู้ใช้จริง / Regression guard** — List every legitimate external destination (SSO, payment, partner sites) in the allowlist before tightening, or those flows break.
+
+**Caveats / False positive**
+
+- Observe mode only looks at parameters already present in seed or crawled URLs; it never injects a destination.
+- A PASS covers only the observed URLs.
+
+<details><summary>Prompt: VERIFY (ตรวจสอบ)</summary>
+
+```text
+[NavSentry NSC-AC-008 — VERIFY / ตรวจสอบ]
+Role: security verification agent. Target: <ORIGIN> (environment <ENV>) — only if listed in an
+authorized NavSentry manifest. Read-only: do not change code, config or data.
+Goal: confirm or refute "Open redirect" (Open Redirect — พารามิเตอร์พาผู้ใช้ไปเว็บภายนอกได้).
+
+FACT to test:
+A redirect endpoint takes its destination from a request parameter and sends the browser to another origin without an allowlist, which enables phishing and token leakage through crafted links.
+
+Collect EVIDENCE (redact tokens, cookies, PII, internal IPs BEFORE writing anything):
+- Request URL with the parameter name (value masked), 3xx status, and that the Location origin differs and equals the parameter value
+
+Method:
+1. navsentry validate --config <MANIFEST>  then  navsentry test --config <MANIFEST> --out runs/before
+2. Read runs/before/run.json coverage row "NSC-AC-008" and any finding with ruleId "NSC-AC-008".
+3. Confirm in a real browser/DevTools:
+   - Open the observed link with the parameter pointing to an external site you control in staging: the browser stays on the application
+   - Legitimate post-login and return-to links still work
+4. Decide exactly one status: PASS | FAIL | INCONCLUSIVE | NOT_TESTED | ERROR, with a reason.
+   Missing evidence is never PASS. Pattern-only evidence stays SUSPECTED until a human confirms.
+
+Known caveats / false positives:
+- Observe mode only looks at parameters already present in seed or crawled URLs; it never injects a destination.
+- A PASS covers only the observed URLs.
+
+Output: an ISSUE entry (template docs/reports/templates/ISSUE.md) with ID NSC-AC-008, status,
+fingerprint(s), evidence list and this checklist:
+- [ ] Target is in the authorized manifest scope
+- [ ] NavSentry run.json attached (path) and coverage row quoted
+- [ ] Evidence redacted (no secret/PII values)
+- [ ] Status + reason recorded; priority = PLANNED
+```
+
+</details>
+
+<details><summary>Prompt: FIX (แก้ไข)</summary>
+
+```text
+[NavSentry NSC-AC-008 — FIX / แก้ไข]
+Role: remediation agent in the application repository. Follow that repository's own
+AGENTS.md/CONTRIBUTING rules. Change only what NSC-AC-008 needs; no unrelated refactors.
+
+Problem (FACT): A redirect endpoint takes its destination from a request parameter and sends the browser to another origin without an allowlist, which enables phishing and token leakage through crafted links.
+Required change: Map redirect parameters to an allowlist of known destinations or accept only same-origin relative paths after normalisation; never echo an absolute URL from the request.
+
+DO NOT BREAK LEGITIMATE CALLERS:
+List every legitimate external destination (SSO, payment, partner sites) in the allowlist before tightening, or those flows break.
+
+Steps:
+1. Keep the BEFORE run (runs/before/run.json) from the VERIFY step.
+2. Implement the change (configuration first, code only if needed) and add/adjust an automated test.
+3. Deploy to the authorized staging environment.
+4. navsentry test --config <MANIFEST> --out runs/after
+5. navsentry compare --before runs/before/run.json --after runs/after/run.json
+   Required: NSC-AC-008 in "Fixed" AND no unexplained "Legitimate-response contract drift".
+
+ACCEPTANCE CRITERIA:
+- [ ] Redirect targets come from an allowlist or are relative same-origin paths
+- [ ] Off-origin targets are refused or replaced by a safe default
+- [ ] compare verdict IMPROVED_NO_DRIFT (or every drift row approved by the owner in writing)
+- [ ] Changed files + commit recorded in a FIX entry (template docs/reports/templates/FIX.md)
+```
+
+</details>
+
+<details><summary>Prompt: RECHECK (ตรวจซ้ำ)</summary>
+
+```text
+[NavSentry NSC-AC-008 — RECHECK / ตรวจซ้ำบนหน้าเว็บจริง]
+Role: independent QA agent (not the agent that wrote the fix). Read-only.
+1. Re-run: navsentry test --config <MANIFEST> --out runs/recheck ; coverage "NSC-AC-008" must be PASS
+   (or a documented, owner-approved DISMISSED/Exception).
+2. On the real web page / endpoint:
+   - [ ] Open the observed link with the parameter pointing to an external site you control in staging: the browser stays on the application
+   - [ ] Legitimate post-login and return-to links still work
 3. Regression: main user flows still work and compare shows no unexplained contract drift.
 4. Verdict QA-PASS or QA-FAIL. On QA-FAIL you MUST write improvement criteria
    (template docs/reports/templates/QA.md): failed acceptance item, expected vs observed (redacted),

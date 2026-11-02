@@ -26,6 +26,7 @@ import type { Manifest } from "./config.js";
 import type { Engine, FlowRunResult, RunResult, ScanMode } from "./types.js";
 import { WorkspaceError, authorize, beginRun, endRun, projectRoot, releaseWorkDir, sweepStale, workspaceStatus } from "./workspace.js";
 import { allAdapters } from "./transports/registry.js";
+import { ScopeGate } from "./scope.js";
 import { TOOL_VERSION } from "./types.js";
 
 const HELP = `navsentry ${TOOL_VERSION} — Navigate. Validate. Secure.
@@ -43,7 +44,7 @@ Usage:
   navsentry scan --config <manifest.json> --mode page|spider|flow [--engine http|playwright|analyzer] [--analyze]
                  [--env development|production] [--url <in-scope URL>] [--flows <path>] [--out <dir>] [--project <dir>]
                  page without --url scans the seed paths, like test; flow equals test --flows <path> --flows-only.
-                 spider and page --url are scheduled for 0.1.3-a2; computer-use is deferred beyond 0.1.3.
+                 spider crawls from the seed paths, grouping pages by template; computer-use is deferred beyond 0.1.3.
   navsentry workspace status|clean [--project <dir>] [--dry-run]
   navsentry report --input <run.json|flows.json> --format markdown|json|sarif|junit [--lang en|th]
   navsentry compare --before <dir|run.json> --after <dir|run.json>   (reads flows.json beside run.json)
@@ -104,7 +105,7 @@ export async function main(argv: string[]): Promise<number> {
         return await flowCommand(rest);
       case "plan":
       case "discover": {
-        if (cmd === "discover" && !rest.includes("--dry-run")) throw new UsageError("live discovery (crawling) is scheduled for milestone M1b; use --dry-run or `plan`");
+        if (cmd === "discover" && !rest.includes("--dry-run")) throw new UsageError("live discovery is `navsentry scan --mode spider` (0.1.3); `discover --dry-run` stays the zero-network plan");
         const m = loadManifest(need(rest, "--config"));
         assertEnv(m, rest);
         const sel = arg(rest, "--flows") ? selectFlows(m, rest) : undefined;
@@ -195,7 +196,7 @@ export function exitCode(r: RunResult, flowRun?: FlowRunResult): number {
   return 0;
 }
 
-interface RunOpts { flows?: FlowDoc[]; flowsOnly?: boolean; warnings?: string[]; scanMode?: ScanMode; engine?: RunResult["engine"]; notTested?: string[] }
+interface RunOpts { urls?: string[]; spider?: boolean; flows?: FlowDoc[]; flowsOnly?: boolean; warnings?: string[]; scanMode?: ScanMode; engine?: RunResult["engine"]; notTested?: string[] }
 
 /** Executes a run inside a managed workspace (SPEC-0.1.3 §7.2), writes the reports and returns the exit code. */
 async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<number> {
@@ -204,7 +205,7 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
   const ws = beginRun(arg(argv, "--project") ?? process.cwd(), runId, m.workspace.ignore);
   let res: Awaited<ReturnType<typeof executeTest>>;
   try {
-    res = await executeTest(m, { runId, ...(o.flows ? { flows: o.flows, flowsOnly: !!o.flowsOnly } : {}), ...(o.scanMode ? { scanMode: o.scanMode } : {}), ...(o.engine ? { engine: o.engine } : {}) });
+    res = await executeTest(m, { runId, ...(o.flows ? { flows: o.flows, flowsOnly: !!o.flowsOnly } : {}), ...(o.scanMode ? { scanMode: o.scanMode } : {}), ...(o.engine ? { engine: o.engine } : {}), ...(o.urls ? { urls: o.urls } : {}), ...(o.spider ? { spider: true } : {}) });
   } catch (e) {
     ws.dispose();
     try { releaseWorkDir(ws.work); } catch { /* reported by the next run's sweep */ }
@@ -266,8 +267,15 @@ async function scan(argv: string[]): Promise<number> {
   assertEnv(m, argv);
   if (!m.transports.order.includes(ENGINE_TRANSPORT[engine])) throw new UsageError(`--engine ${rawEngine} needs transport ${ENGINE_TRANSPORT[engine]} in the manifest transports.order; a flag never overrides manifest policy`);
   if (engine === "playwright" && m.profile === "production") throw new UsageError("--engine playwright is development only");
-  if (mode === "spider") throw new UsageError("--mode spider is scheduled for milestone 0.1.3-a2; use `discover --dry-run` for the zero-network plan");
-  if (arg(argv, "--url") !== undefined) throw new UsageError("--mode page --url is scheduled for milestone 0.1.3-a2; without --url the manifest seed_paths are scanned");
+  const url = arg(argv, "--url");
+  let urls: string[] | undefined;
+  if (url !== undefined) {
+    let u: URL;
+    try { u = new URL(need(argv, "--url")); } catch { throw new UsageError("--url must be an absolute http(s) URL"); }
+    const d = new ScopeGate(m).checkRequest(u.toString(), "GET");
+    if (!d.allowed) throw new UsageError(`--url is outside the manifest scope: ${d.reason}; nothing was sent`);
+    urls = [u.toString()];
+  }
   const eng: NonNullable<RunResult["engine"]> = { requested: rawEngine, used: engine, analyze };
   if (mode === "flow") {
     const sel = selectFlows(m, argv);
@@ -279,7 +287,7 @@ async function scan(argv: string[]): Promise<number> {
     return await runAndReport(m, argv, { flows: sel.docs, flowsOnly: true, warnings: sel.warnings, scanMode: "flow", engine: eng });
   }
   const notTested = analyze ? ["analysis NOT_TESTED: the page-model analyzer is not available yet (milestone 0.1.3-b)"] : [];
-  return await runAndReport(m, argv, { scanMode: "page", engine: eng, notTested });
+  return await runAndReport(m, argv, { scanMode: mode, engine: eng, notTested, ...(urls ? { urls } : {}), ...(mode === "spider" ? { spider: true } : {}) });
 }
 
 function workspaceCommand(argv: string[]): number {

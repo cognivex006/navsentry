@@ -4,6 +4,18 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 
 ## [Unreleased]
 
+### Added
+- Milestone 0.1.3-a2 (SPEC-0.1.3 §6.2, §4.2):
+  - `navsentry scan --mode spider`: a template-aware crawl from the seed paths up to `safety.max_depth`. Pages are grouped by (origin, actor, path pattern, query-key set); `safety.representatives_per_pattern` pages per group are fetched and the rest are recorded as `sampled-out` (NOT_TESTED, never an inherited PASS). A shape hash of the tag skeleton marks `mixed-shape` groups. A finding or a mixed shape leads to more pages of that group, never more than 2N. Links pass the static ScopeGate before they are queued; `javascript:`, `mailto:`, `data:`, off-scope and denied links are recorded, never followed. Frontier, page, depth and request limits are hard limits; no forms are submitted and no parameters changed.
+  - `robots.txt` per RFC 9309, fetched once per origin through ScopeGate and the run Budget: the `NavSentry` group or `*`, longest match, `allow` wins ties, `*` and `$`. Production enforces the policy and blocks an origin whose policy is unreachable (401/403, 5xx, errors); development records it. A 2xx HTML body (SPA fallback) means no policy (D10).
+  - `scan --mode page --url <URL>`: one in-scope URL instead of the seed paths; an out-of-scope URL exits 3 before any request.
+  - Redirect chains are recorded hop by hop (status, masked `Location`, scope decision, security-header changes) and redirect loops are stopped.
+  - New case **NSC-AC-008 Open redirect** (CWE-601): observes query parameters already present in seed or crawled URLs and never injects a destination; findings are SUSPECTED.
+  - REPORT.md: *Coverage by template*, robots.txt, skipped pages and *Redirect chains* sections. `run.json` gains optional `spider` and `redirectChains`.
+
+### Changed
+- Live `discover` now points to `scan --mode spider`; `discover --dry-run` is unchanged.
+
 ## [0.1.3] - 2026-11-02
 
 ### Added
