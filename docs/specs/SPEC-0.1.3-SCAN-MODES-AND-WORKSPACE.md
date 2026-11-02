@@ -15,6 +15,7 @@
 | G6 | Page analysis runs as **local Python analysis scripts**. Page content is not sent to the model for processing. The model sees only compact, redacted summaries. |
 | G7 | Generated scripts and flows live in the project or run root, in clearly separated categories |
 | G8 | **Every temporary or helper script and every leftover must be removed.** None may stay in the main folder. |
+| G9 | Check the client **console** for leaked sensitive values, logging left enabled, and logging that was "disabled" but still leaks. Scan **static files** (bundles, source maps, config) as well, keeping model cost low (§6.4) |
 
 ## 2. Capability matrix (honest status)
 
@@ -130,6 +131,64 @@ Python is a new runtime binary, so hard rule 2 applies. Before any code that spa
   - Screenshots are stored only in `.navsentry/work/` and are deleted. The report keeps only redacted text observations.
   - Hard rule 5: if the host has no Computer Use, the result is `NOT_TESTED` with the reason "host capability absent".
 
+### 6.4 Client console and static asset checks (G9, owner request 2026-11-02)
+
+The aim is to find sensitive values that leak to the client. There are two sources:
+
+- **runtime console:** `console.*` output and uncaught errors;
+- **static assets:** JS bundles, source maps and config files served to the browser.
+
+Both are checked locally. The model never reads bundles or logs.
+
+#### A. Runtime console (needs a browser engine)
+- **Capture:**
+  - With `playwright`, attach `page.on('console')`, `page.on('pageerror')` and `requestfailed` to every page and flow step.
+  - With `computer-use`, the host forwards the console buffer through `navsentry console ingest`.
+  - With `http` only, these checks are `NOT_TESTED` with the reason "no JS runtime".
+- **Raw data stays ephemeral:** messages are written only to `.navsentry/work/<run-id>/console/`. A detector redacts each value before anything is promoted. A report keeps the message hash, the level, the source `file:line`, the rule ID and a masked preview such as `eyJ…[JWT,len=412]`.
+- **Detectors:**
+
+| Case | Detects | Status |
+|---|---|---|
+| NSC-CLI-001 | Secrets or tokens in console output: JWT, `Bearer`, API-key patterns, AWS/GCP/Azure key shapes, private-key headers, and values of in-scope cookies or `*_env` actor tokens (exact-match against known test tokens) | VALIDATED when it exactly matches a known test token, otherwise SUSPECTED |
+| NSC-CLI-002 | PII in console output: email, phone or national-ID shapes | SUSPECTED |
+| NSC-CLI-003 | Debug logging left on in a production build: `console.log`/`debug` present at all in production, verbose framework dev warnings, Redux/Vuex/state dumps, `[HMR]`/`webpack-dev-server` markers | FAIL in production, INFO in development |
+| NSC-CLI-004 | Stack traces or internal paths in `pageerror`/console: absolute file paths, internal hostnames or IPs | SUSPECTED |
+| NSC-CLI-005 | API response bodies echoed to the console, detected by the structural shape of JSON objects with fields such as `password\|token\|secret\|ssn` | SUSPECTED, with field names only |
+
+- **"Disabled but still found" (residual check):** if the owner says logging is disabled (`expect.console: "silent"` in the manifest or flow), any console output at all is a FAIL with the count. NavSentry also checks the static side for evidence that logging was only *hidden*, which is NSC-CLI-006, SUSPECTED. The evidence it looks for:
+  - `console.log = () => {}` overrides, where the original calls remain in the bundle and the arguments are still evaluated;
+  - logger levels toggled at runtime through `localStorage`/query flags such as `?debug=1` or `localStorage.debug`. These are detected from the static bundle only. NavSentry never sets them on a production target;
+  - `drop_console` absent from a minified bundle that still contains `console.` calls carrying sensitive-looking arguments.
+
+#### B. Static asset scan (http engine, no browser needed)
+- **Inventory:**
+  - JS and CSS URLs come from the HTML that the page or spider already fetched, plus `*.map` files referenced by `//# sourceMappingURL`.
+  - Well-known exposure paths are probed once per origin with HEAD and then GET: `/.env`, `/config.js`, `/env.js`, `/asset-manifest.json`, `/manifest.json`, `/.git/HEAD`, `/*.js.map`, `/__ENV.js`. These are GET-only observations from a fixed list (hard rule 6); they are not fuzzing.
+- **Detectors:**
+
+| Case | Detects | Status |
+|---|---|---|
+| NSC-STA-001 | Secrets in bundles: high-entropy strings near `key\|secret\|token\|password`, provider key shapes, private keys | VALIDATED when the provider format is exact or it matches a known test token, otherwise SUSPECTED |
+| NSC-STA-002 | Source maps publicly reachable in production, with `sourcesContent` included | FAIL in production |
+| NSC-STA-003 | Exposed config or env files (`/.env`, `env.js` with non-public keys, `.git/HEAD`) | FAIL |
+| NSC-STA-004 | Internal endpoints or hosts embedded in bundles (RFC1918, `*.internal`, `localhost:*`, staging hostnames) | SUSPECTED |
+| NSC-STA-005 | Debug or dev build shipped: unminified bundle, dev-mode framework flags, `sourceMappingURL` pointing to `file://` | FAIL in production |
+| NSC-STA-006 | Vulnerable client libraries, identified from version banners such as `jQuery v1.x` against a locally pinned advisory snapshot (no SaaS lookup) | SUSPECTED, with version and advisory ID |
+
+#### C. Cost optimisation (model budget)
+Static scanning can be expensive if raw bundles reach the model, so the pipeline is **local-first, model-last**:
+
+1. **Fetch once, dedupe by content hash.** Every asset is stored once by sha256. The same bundle on 200 pages is scanned once. A cache in `.navsentry/cache/assets/<sha256>.json` holds **findings only, not content** and is reused across runs until the hash changes. The cache is cleaned by `workspace clean`, and its age limit is configurable.
+2. **Size and type gates.** Fonts, images and media are skipped by content type. Each asset is limited to 5 MiB, and anything larger is recorded as `skipped: size`. Known vendor chunks, identified by a stable hash across runs or a library banner, are scanned only for NSC-STA-006 and NSC-STA-001.
+3. **Fast regex prefilter, then precise check.** A single pass over the file uses combined anchored patterns. Only candidate spans (±200 chars) go to the entropy and format validators. The whole bundle never goes anywhere.
+4. **Source maps:** read `sources[]` names first; only scan `sourcesContent` when NSC-STA-002 already applies.
+5. **Console streams:** messages are deduplicated by normalised template (numbers and ids stripped), so a log printed 10 000 times is checked once and counted.
+6. **The model sees only a summary**, `client-findings.json`, which has a fixed schema: rule, asset display URL, `line:col`, masked preview, count and template hash. It is capped at 200 entries, and the rest are counted as `truncated`. The model's job is to triage and write the report wording, not to scan.
+7. **Budget accounting.** `run.json → analyzer.cost` records the bytes scanned locally, the bytes sent to the model (target: < 1 % of scanned bytes) and the cache hit ratio, so the optimisation can be measured.
+
+- **Engine:** detectors run in the same local analyzer as §5. They are Python standard library where approved; otherwise the core regex and entropy detectors have a **Node built-in fallback**, so 6.4-B (http) is not blocked by the Python governance step. This is a deliberate exception to §2's "no silent fallback": the fallback is declared and is reported as `engine: node-detector`.
+
 ## 7. Folder layout and workspace hygiene (G7, G8)
 
 ### 7.1 Persistent categories (in the project or run root)
@@ -176,6 +235,8 @@ Python is a new runtime binary, so hard rule 2 applies. Before any code that spa
 | S5 | After every run, nothing new exists outside `navsentry/` and `.navsentry/`; otherwise the run reports `WORKSPACE_DIRTY`. |
 | S6 | An unavailable engine is reported `NOT_TESTED` with its reason, and NavSentry never falls back to another engine silently. |
 | S7 | The spider never submits forms and never mutates parameters. |
+| S8 | Raw console messages and asset content never appear in persisted artifacts or in model-visible input. Only masked previews and hashes do. |
+| S9 | Debug toggles (`?debug=1`, `localStorage.debug`) are detected statically and are never activated on a target. |
 
 ## 10. Acceptance tests (fixture only, 127.0.0.1)
 1. `page`+`http` on the vulnerable fixture: same findings as the seed scan.
@@ -187,12 +248,24 @@ Python is a new runtime binary, so hard rule 2 applies. Before any code that spa
 7. Chains: chain A→B, where A fails, gives B `NOT_TESTED (dependency)`; a cycle is rejected by lint.
 8. Hygiene: kill the run mid-way and the next run removes the stale work directory; planting a file at the root during a run gives `WORKSPACE_DIRTY`; GATE-09 fails when a `tmp.cjs` file is left in the repository.
 9. Computer Use contract: when an action-log entry has no matching `scope check`, the run is `INVALID`; when the host capability is absent, the result is `NOT_TESTED`.
+10. Static assets (vulnerable vs secure fixture):
+    - The vulnerable fixture serves a bundle with a test token, a public `.map` with `sourcesContent`, `/env.js` with a non-public key, and an internal hostname. These produce STA-001, 002, 003 and 004.
+    - The secure fixture keeps the same bundle contract without those values. It produces PASS and no contract drift.
+    - No raw token appears in any artifact.
+11. Cost: a bundle referenced by 50 pages is fetched and scanned once. A second run gets 100 % cache hits for unchanged assets. Model-visible bytes are below 1 % of the bytes scanned.
+12. Console (needs `playwright`; otherwise INCOMPLETE):
+    - A fixture page logs a test token. That gives CLI-001 VALIDATED with a masked preview only.
+    - A page logs with `expect.console: "silent"`. That gives a FAIL.
+    - A bundle with a `console.log = ()=>{}` override and `?debug` toggle code gives CLI-006 SUSPECTED, and the toggle is never set.
+    - With the `http` engine, the console checks are reported `NOT_TESTED` with the reason "no JS runtime".
 
 ## 11. Milestones
 | Step | Content | Blocked by |
 |---|---|---|
 | 0.1.3-a | `--env`, production guards, redirect chains, `spider` (http), workspace layout, cleanup, GATE-09 | — |
 | 0.1.3-b | Python analyzer (shipped scripts, page model, drafts, generated-script sandbox, chains) | governance entry for CPython |
+| 0.1.3-s | Static asset scan (§6.4-B) with the Node detector, hash cache and cost accounting | — |
+| 0.1.3-k | Runtime console checks (§6.4-A) | M1b Playwright, or 0.1.3-c |
 | 0.1.3-c | Computer Use host contract (`scope check`, `budget take`, action log) | owner decision on the host agent's terms |
 | M1b | Playwright engine for `flow` (development) | PRM-GOV-003 |
 
