@@ -4,6 +4,9 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 
 ## [Unreleased]
 
+### Fixed
+- An unrecognized `environment` (for example `development`) still fails safe to the production profile, but the authorization errors no longer claim the manifest said `"staging"`; they explain the fallback and name `local`/`dev`.
+
 ### Added
 - M1b Playwright engine: `scan --mode flow --engine playwright` (development profile) runs `navigate`, `click`, `see` and `wait_for` in the Chromium headless shell. Every browser request is fulfilled through direct-http (ScopeGate before the request and at connect time, Budget, redaction); non-observe methods are refused, WebSocket is closed, service workers are blocked, and Chromium launches against a dead proxy ([ADR-0008](docs/adr/0008-playwright-engine-s1.md)). `fill`, `select` and `submit` stay NOT_TESTED until M2. Without the browser, UI steps are NOT_TESTED with no http fallback.
 - `playwright-core` 1.64.1 as a dev and optional peer dependency (owner approved 2026-11-03). Install the browser yourself with `npx playwright-core install --only-shell chromium`; NavSentry never downloads it.
