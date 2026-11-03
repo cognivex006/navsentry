@@ -55,7 +55,23 @@ test("lookup is offline and bounded; an unresolved alias returns candidates and 
   assert.match(unknown.research!.reason, /research needed/);
   assert.equal(lookup(s, { product: "php", version: "7.2.1" }).matches[0]!.applicability, "affected");
   assert.equal(snapshotStatus(s, new Date("2100-01-01")).stale, 2, "past next-review date");
-  assert.equal(SNAPSHOT.records.length, 0, "the packaged snapshot holds no real records until a source is approved");
+});
+
+test("packaged snapshot: real GitHub Advisory Database records, attributed, candidate until independent review", () => {
+  assert.ok(SNAPSHOT.records.length > 0);
+  for (const r of SNAPSHOT.records) {
+    assert.equal(r.synthetic, undefined, `${r.id} is not synthetic`);
+    assert.equal(r.state, "candidate", `${r.id} needs independent review before it is reviewed`);
+    assert.ok(r.sources.every((s) => s.url === `https://github.com/advisories/${r.id}`), `${r.id} links its CC-BY source`);
+    assert.ok(r.identifiers.advisory.includes(r.id));
+  }
+  // Fixture checks against the advisory ranges (GHSA pages read 2026-11-03).
+  const at = (v: string) => lookup(SNAPSHOT, { product: "jquery", version: v }).matches.filter((m) => m.applicability === "affected").map((m) => m.record.id).sort();
+  assert.deepEqual(at("3.3.1"), ["GHSA-6c3j-c64m-qhgq", "GHSA-gxr4-xjj5-5px2", "GHSA-jpcq-cgw6-v4j6"]);
+  assert.deepEqual(at("3.4.1"), ["GHSA-gxr4-xjj5-5px2", "GHSA-jpcq-cgw6-v4j6"]);
+  assert.deepEqual(at("1.11.3"), ["GHSA-6c3j-c64m-qhgq", "GHSA-jpcq-cgw6-v4j6"], "CVE-2020-11022 starts at 1.12.0");
+  assert.deepEqual(at("1.0.2"), [], "below every introduced version");
+  assert.deepEqual(at("3.5.0"), []);
 });
 
 test("proposal schema: strict keys, https sources only, no target identifiers, secrets or personal data", () => {
