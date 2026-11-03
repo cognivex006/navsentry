@@ -187,7 +187,9 @@ export function parseManifest(input: unknown): Manifest {
   }
   if (auth.allow_live_tokens !== undefined && typeof auth.allow_live_tokens !== "boolean") p.push("authorization.allow_live_tokens: boolean");
   if (profile === "production") {
-    const migrate = `(environment "${environment}" uses the production profile since 0.1.3; see CHANGELOG migration notes)`;
+    const migrate = envs.includes(input.environment as never)
+      ? `(environment "${environment}" uses the production profile since 0.1.3; see CHANGELOG migration notes)`
+      : "(an unrecognized environment is treated as production; use local or dev for the development profile)";
     if (typeof auth.reference !== "string") p.push(`authorization.reference: required for the production profile ${migrate}`);
     else if (/[./:]/.test(auth.reference)) p.push("authorization.reference: may not contain '.', '/' or ':' in the production profile (no hostnames or URLs)");
     if (auth.expires_at === undefined) p.push(`authorization.expires_at: required for the production profile ${migrate}`);

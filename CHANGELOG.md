@@ -4,6 +4,9 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 
 ## [Unreleased]
 
+### Fixed
+- An unrecognized `environment` (for example `development`) still fails safe to the production profile, but the authorization errors no longer claim the manifest said `"staging"`; they explain the fallback and name `local`/`dev`.
+
 ### Added
 - GATE-10 dependency-audit self-test (QA-AT-10): `npm audit --package-lock-only` must flag the known-vulnerable fixture lockfile `test/fixtures/sca/` (lockfile only, never installed); offline is INCOMPLETE.
 - Page-model analyzer, milestone 0.1.3-b (SPEC-0.1.3 §5; pure Node per owner decision D3, no Python):
