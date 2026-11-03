@@ -17,6 +17,8 @@ import { UI_ACTIONS, type FlowDoc } from "./flow/parse.js";
 import { groupKey, pathPattern, scanHtml, urlIdentity } from "./spider/html.js";
 import { classifyRobots, robotsAllows, type RobotsPolicy } from "./spider/robots.js";
 import { scanAssets } from "./assets/scan.js";
+import { buildPageModel, type PageModel } from "./analyzer/page-model.js";
+import type { ExtractorSpec } from "./analyzer/extractor.js";
 import { SNAPSHOT } from "./knowledge/advisories.js";
 import { evaluateKnowledge } from "./knowledge/evidence.js";
 import type { Snapshot } from "./knowledge/model.js";
@@ -178,6 +180,8 @@ export interface ExecuteOptions {
   spider?: boolean;
   /** `scan --mode page|spider`: static asset scan over fetched pages (SPEC-0.1.3 §6.4-B). */
   assets?: boolean;
+  /** `--analyze`: build redacted page models from fetched HTML (SPEC-0.1.3 §5). */
+  analyze?: { extractors: ExtractorSpec[] };
   /** Knowledge snapshot (default: the packaged one); tests inject synthetic records. */
   snapshot?: Snapshot;
   /** Run work directory (spool) and facts-cache directory, both under `.navsentry/`. */
@@ -190,7 +194,7 @@ export async function executeRun(m: Manifest, opts: ExecuteOptions = {}): Promis
 }
 
 /** Runs seeds and flows through one ScopeGate, Budget and Redactor. */
-export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promise<{ run: RunResult; flowRun?: FlowRunResult; clientFindings?: ClientFinding[]; proposals?: Proposal[] }> {
+export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promise<{ run: RunResult; flowRun?: FlowRunResult; clientFindings?: ClientFinding[]; proposals?: Proposal[]; pageModels?: PageModel[] }> {
   const env = opts.env ?? process.env;
   // Production guards run before any network activity, for every entry point (SPEC-0.1.3 §3.1, S2).
   assertAuthorizationWindow(m, opts.now?.() ?? new Date());
@@ -344,6 +348,25 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
   }
 
   budget.close();
+  // Page models: built in memory from retained HTML; raw bodies never leave this process (§5.1).
+  let pageModels: PageModel[] | undefined;
+  if (opts.analyze) {
+    pageModels = [];
+    const seenPages = new Set<string>();
+    for (const ex of exchanges) {
+      const raw = ex.raw;
+      if (!raw || ex.record.error || !raw.finalUrl || !/text\/html|application\/xhtml/i.test(raw.headers["content-type"]?.[0] ?? "") || raw.status < 200 || raw.status >= 300) continue;
+      if (ex.record.flow || ex.record.requestHeaders["origin"]) continue;
+      const key = `${ex.record.actor}\n${raw.finalUrl}`;
+      if (seenPages.has(key)) continue;
+      seenPages.add(key);
+      const c = ex.record.capture;
+      const partial = c && (c.status !== "complete" || c.retainedBytes < c.decodedBytes) ? `body ${c.status}, ${c.retainedBytes} of ${c.decodedBytes} bytes analysed` : undefined;
+      pageModels.push(buildPageModel(raw.body.toString("utf8"), raw.finalUrl, redactor, { includeText: m.analyzer.include_text, extractors: opts.analyze.extractors, deadline: Date.now() + m.analyzer.timeout_seconds * 1000, setCookies: raw.headers["set-cookie"] ?? [], ...(partial ? { partial } : {}) }));
+    }
+    const inc = pageModels.filter((p) => p.incomplete).length;
+    if (inc) incomplete.push(`analyzer: ${inc} page model(s) incomplete (partial body, node limit or timeout); partial output is never evidence of absence`);
+  }
   // Knowledge: offline snapshot identity, passive product evidence, applicability and gaps (§6.6-C).
   const kn = evaluateKnowledge(opts.snapshot ?? SNAPSHOT, exchanges, opts.now?.() ?? new Date());
   checks.push(...kn.checks.filter((c) => !disabled.has(c.ruleId)));
@@ -390,7 +413,7 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
     ...(assets ? { assets } : {}),
     knowledge: kn.knowledge,
   };
-  if (!opts.flows || !flowOutcome) return { run, proposals: kn.proposals, ...(clientFindings ? { clientFindings } : {}) };
+  if (!opts.flows || !flowOutcome) return { run, proposals: kn.proposals, ...(clientFindings ? { clientFindings } : {}), ...(pageModels ? { pageModels } : {}) };
   for (const f of flowOutcome.flows) {
     const ids = new Set(f.steps.flatMap((x) => x.requestIds));
     f.findings = findings.filter((x) => x.requestIds.some((id) => ids.has(id))).map((x) => x.fingerprint);

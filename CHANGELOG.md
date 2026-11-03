@@ -5,6 +5,16 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Added
+- Page-model analyzer, milestone 0.1.3-b (SPEC-0.1.3 §5; pure Node per owner decision D3, no Python):
+  - `scan --mode page|spider --analyze` (or `--engine analyzer`) builds one redacted page model per fetched HTML page in `page-models/` beside `run.json`: display URL, template (path pattern, shape hash), forms (action, method, field names, types, required flags), links, script counts and external origins, CSP meta, frames, cookie flags, mixed-content count and a whole-page text hash. Field values, cookie values, tokens, emails and body text are never included; secret-looking field names are withheld. Titles and headings appear only with `analyzer.include_text: true`, redacted and cut to 120 characters. Each model is capped at 64 KiB with omitted counts, bounded by `analyzer.timeout_seconds`, and passes an artifact leak scan before it is written.
+  - Declarative extractor specs (owner decision D5): JSON with a selector subset (tag, `tag[attr]`, `tag[attr=value]`, descendant, ≤ 8 levels), an attribute allowlist without `value` or text, five fixed predicates and no user regex. Owner-promoted specs live in `navsentry/analyzer/extractors/`; `--extractors <dir>` drafts are copied into the run's work directory and deleted with it. Non-JSON files (for example `.py`) are refused: NavSentry never executes model-generated code. `run.json → analyzer` records spec hashes.
+  - `flow analyze --from-run` reads the page models beside `run.json` and adds a *Templates and forms* section to ANALYSIS.md.
+  - REPORT.md gains an *Analyzer* section.
+
+### Changed
+- `--analyze` is no longer reported as NOT_TESTED: the analyzer runs.
+
+### Added
 - Development code inventory, milestone 0.1.3-d (SPEC-0.1.3 §4.1):
   - `navsentry flow import --openapi <spec.json> --config <manifest> --out <dir>`: a local OpenAPI 3.x or Swagger 2.0 JSON document becomes draft integration flows. GET operations without a body become steps; protected operations get an allowed step for an authenticated actor plus an anonymous `access: denied` step (NSC-AC-002). Path and required query parameters become `*_env` variables. Mutations, GETs with side-effect names, out-of-scope paths and non-plain templates are listed in IMPORT.md, not encoded. Step titles are generated; spec text never reaches the drafts. Existing drafts are never overwritten. YAML is not supported (ADR-0003).
   - `navsentry inventory --config <manifest> [--project <dir>] [--out <dir>]` (development profile only): a read-only, zero-network inventory of route declarations (Express-style, Next.js file routes, Python decorators, ASP.NET attributes, Spring mappings, Laravel routes), OpenAPI documents, test files and lockfile packages (`package-lock.json`, `composer.lock`). Links and junctions are never followed, dependency and build folders are skipped, and only validated route strings, relative paths, line numbers and package identities are kept. Lockfile packages are matched against the knowledge snapshot. Writes `code-inventory.json` and `CODE-INVENTORY.md`; the run is wrapped in the workspace check, so a change to the project exits 4.
