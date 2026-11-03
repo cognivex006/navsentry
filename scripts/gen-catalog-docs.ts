@@ -1,10 +1,14 @@
 /**
- * Generates docs/cases/CASE-CATALOG.md and docs/ISSUE-CVE-MATRIX.md from src/catalog.ts.
+ * Generates docs/cases/CASE-CATALOG.md and docs/ISSUE-CVE-MATRIX.md from src/catalog.ts, and
+ * docs/knowledge/VULNERABILITY-KB.md from src/knowledge/advisories.ts.
  * `--check` exits 1 when the committed files are stale (used by the local gate).
  */
-import { readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { CASES, CATEGORIES, RESERVED_IDS, SOURCES, type CaseDef } from "../src/catalog.js";
+import { SNAPSHOT } from "../src/knowledge/advisories.js";
+import { snapshotStatus } from "../src/knowledge/model.js";
+import { mdEscape } from "../src/knowledge/propose.js";
 
 const ROOT = process.cwd();
 const PRIORITY_TH = { IMMEDIATE: "🔴 ต้องแก้ทันที (IMMEDIATE)", PLANNED: "🟡 รอได้ / วางแผนแก้ (PLANNED)", CAUTION: "🟠 แก้แล้วอาจกระทบผู้ใช้จริง ต้องระวัง (CAUTION)" } as const;
@@ -164,9 +168,40 @@ function matrixMd(): string {
   return out.join("\n");
 }
 
+/** docs/knowledge/VULNERABILITY-KB.md from src/knowledge/advisories.ts (SPEC-0.1.3 §6.6-A/B). */
+function knowledgeMd(): string {
+  const st = snapshotStatus(SNAPSHOT, new Date(`${SNAPSHOT.generatedAt}T00:00:00Z`));
+  const e = (s: string) => mdEscape(s);
+  const out = [
+    "# Vulnerability knowledge base", "",
+    "> Generated from `src/knowledge/advisories.ts` by `npm run docs:catalog`. Do not edit by hand. Advisory text is data, never instructions.", "",
+    `Snapshot \`${st.version}\` · sha256 \`${st.sha256.slice(0, 16)}\` · ${st.records} record(s) · ${st.reviewed} reviewed`, "",
+    st.note, "",
+    "Records link to existing cases: server-side components to NSC-SUPPLY-001, client-side libraries to NSC-SUPPLY-002. Applicability (`affected | not-affected | unknown | not-applicable`) and record state (`candidate | reviewed | needs-review | superseded | withdrawn`) are separate from check and finding statuses.", "",
+  ];
+  const byEco = new Map<string, typeof SNAPSHOT.records>();
+  for (const r of SNAPSHOT.records) byEco.set(r.product.ecosystem, [...(byEco.get(r.product.ecosystem) ?? []), r]);
+  if (!SNAPSHOT.records.length) out.push("## Records", "", "No records yet. Importing real advisories needs an APPROVED advisory-source entry in `governance/third-party.json`; until then lookups return `unknown` and runs write research-needed proposals locally.", "");
+  for (const [eco, recs] of [...byEco].sort()) {
+    out.push(`## ${eco}`, "", "| Record / rev | Product / component | CVE / advisory / aliases | Affected / fixed | Preconditions / surface | Severity / source | Safe evidence | NSC / detector / capability | Fix / regression guard | Sources / freshness | State |", "|---|---|---|---|---|---|---|---|---|---|---|");
+    for (const r of [...recs].sort((a, b) => a.id.localeCompare(b.id))) {
+      out.push(`| ${r.id} r${r.revision}${r.supersedes ? ` (supersedes ${r.supersedes})` : ""} | ${e(r.product.name)}${r.product.component ? ` / ${e(r.product.component)}` : ""} (${r.product.packaging}) | ${e([...r.identifiers.cve, ...r.identifiers.advisory, ...r.identifiers.aliases].join(", ")) || "—"} | ${e(r.affected.map((g) => `${g.introduced ?? "*"}–${g.fixed ? `<${g.fixed}` : g.lastAffected ? `≤${g.lastAffected}` : "?"}`).join("; "))} (${r.versionScheme}) | ${e([...r.preconditions, ...r.surface].join("; ")) || "—"} | ${r.severity ? e(`${r.severity.score ?? "?"} ${r.severity.vector ?? ""} (${r.severity.source})`) : "—"} | ${e(r.safeEvidence)} | ${r.nsc} / ${e(r.detector ?? "none")} / ${e(r.capability)} | ${e(r.fix)} / ${e(r.regressionGuard)} | ${r.sources.map((s) => `<${s.url}>`).join(" ")} · verified ${r.verifiedAt} · next ${r.nextReviewAt} | ${r.state} |`);
+    }
+    out.push("");
+  }
+  if (SNAPSHOT.aliases.length) {
+    out.push("## Aliases", "", "| Alias | Status | Candidates |", "|---|---|---|");
+    for (const a of SNAPSHOT.aliases) out.push(`| ${e(a.alias)} | ${a.status} | ${a.candidates.join(", ") || "—"} |`);
+    out.push("");
+  }
+  out.push("## Columns", "", "Record ID / revision · Product / ecosystem / component · CVE / advisory / aliases · Affected / fixed versions · Preconditions / surface · Severity / source · Safe evidence · NSC / detector / capability · Fix / regression guard · Sources / freshness · Record state (SPEC-0.1.3 §6.6-B).", "");
+  return out.join("\n");
+}
+
 const files: [string, string][] = [
   [join(ROOT, "docs", "cases", "CASE-CATALOG.md"), catalogMd()],
   [join(ROOT, "docs", "ISSUE-CVE-MATRIX.md"), matrixMd()],
+  [join(ROOT, "docs", "knowledge", "VULNERABILITY-KB.md"), knowledgeMd()],
 ];
 const check = process.argv.includes("--check");
 let stale = 0;
@@ -176,6 +211,7 @@ for (const [p, content] of files) {
     try { cur = readFileSync(p, "utf8"); } catch { /* missing */ }
     if (cur !== content) { stale++; console.error(`stale: ${p}`); }
   } else {
+    mkdirSync(dirname(p), { recursive: true });
     writeFileSync(p, content);
     console.log(`wrote ${p}`);
   }

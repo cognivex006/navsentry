@@ -177,6 +177,7 @@ export interface RunResult {
   redirectChains?: RedirectChain[];
   spider?: SpiderResult;
   assets?: AssetScanResult;
+  knowledge?: KnowledgeResult;
 }
 
 /** A redirect chain followed hop by hop; every hop passed ScopeGate (SPEC-0.1.3 §4.2). */
@@ -224,6 +225,17 @@ export interface AssetScanResult {
   libraryAdvisories: string;
   /** Local work versus what is handed to an agent; NavSentry has no model API (§6.4-C, §6.5-E). */
   cost?: { bytesScannedLocally: number; agentVisibleBytes: number; cacheEligible: number; cacheHits: number; hitRatio: number | null };
+}
+
+/** Knowledge snapshot and applicability for one run (SPEC-0.1.3 §6.6-C). */
+export interface KnowledgeResult {
+  snapshot: { version: string; sha256: string; generatedAt: string; records: number; reviewed: number; stale: number; verifiedAt?: string; note: string };
+  /** Known vulnerability applicability (applicability is separate from check and finding statuses). */
+  applicability: { product: string; provenance: string; recordId?: string; identifiers?: string[]; applicability: "affected" | "not-affected" | "unknown" | "not-applicable"; caveats: string[]; case: string; fix?: string }[];
+  /** Knowledge gaps; names of unrecognised products are withheld. */
+  gaps: { kind: "unknown-product" | "stale-record" | "unresolved-alias" | "unmapped-evidence"; product?: string; detail: string }[];
+  /** Local proposals written for this run's gaps (IDs only). */
+  proposals: { id: string; status: "new" | "unchanged" | "revised" }[];
 }
 
 export interface WorkspaceResult {

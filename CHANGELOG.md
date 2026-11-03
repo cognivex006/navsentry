@@ -5,6 +5,16 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Added
+- Vulnerability knowledge base framework, milestone 0.1.3-v (SPEC-0.1.3 §6.6):
+  - Typed offline snapshot in `src/knowledge/advisories.ts` with records (identity, verified identifiers, affected/fixed ranges, preconditions, severity source, safe evidence, linked case, fix, regression guard, sources and freshness, record state) and aliases. It ships with **no real CVE records**: importing them needs an approved advisory source in governance.
+  - Generated `docs/knowledge/VULNERABILITY-KB.md` (`npm run docs:catalog`, checked by GATE-03).
+  - Explicit applicability (`affected | not-affected | unknown | not-applicable`) with semver precedence; unknown or partial versions, unsupported schemes and distribution packages (backports) give `unknown`, never an assumed range.
+  - `navsentry knowledge status | lookup | propose`, all offline. `lookup` accepts a product and version or a CVE, advisory ID or alias; an unresolved alias returns candidates and "research needed", never a guessed mapping.
+  - `knowledge propose --input <file.json>` validates a strict schema (https sources only, never fetched; no secrets, addresses, personal data or, with `--config`, target hosts), deduplicates by a stable ID, and writes `.navsentry/knowledge/proposals/<id>.md` plus `INDEX.md` atomically under a lock. Repeats are `unchanged`; corrections revise and keep history.
+  - Every run records the snapshot identity and freshness and evaluates passive banner evidence (Server, X-Powered-By). REPORT.md gains *Known vulnerability applicability* and *Knowledge gaps / proposed updates* tables. An affected match is NSC-SUPPLY-001 SUSPECTED; anything else is NOT_TESTED with its reason. Unrecognised banner names are withheld. `scan` writes research-needed proposals for its gaps.
+  - The consumer skill asks the agent to call `knowledge propose` after authorized research that touches a product, version or advisory.
+
+### Added
 - Static asset scan, milestone 0.1.3-s (SPEC-0.1.3 §6.4-B/C), on by default for `scan --mode page|spider`:
   - Inventory from fetched HTML (scripts, stylesheets, script/style preloads) and `/asset-manifest.json`; images, fonts and media are skipped. Each asset is fetched once per run and actor.
   - Bodies are streamed into an owned spool file in the run's work directory (bounded by `capture.max_work_bytes`) and scanned in chunks with an overlap, so values across chunk boundaries are found without buffering the body. Asset requests keep no body excerpt.

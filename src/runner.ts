@@ -17,6 +17,10 @@ import { UI_ACTIONS, type FlowDoc } from "./flow/parse.js";
 import { groupKey, pathPattern, scanHtml, urlIdentity } from "./spider/html.js";
 import { classifyRobots, robotsAllows, type RobotsPolicy } from "./spider/robots.js";
 import { scanAssets } from "./assets/scan.js";
+import { SNAPSHOT } from "./knowledge/advisories.js";
+import { evaluateKnowledge } from "./knowledge/evidence.js";
+import type { Snapshot } from "./knowledge/model.js";
+import type { Proposal } from "./knowledge/propose.js";
 import { TOOL_NAME, TOOL_VERSION, REPORT_SCHEMA_VERSION, FLOW_RESULT_SCHEMA_VERSION, type CheckResult, type CheckStatus, type CoverageRow, type Finding, type FlowRunResult, type ClientFinding, type FlowStatus, type RedirectChain, type RunResult, type ScanMode, type SpiderResult, type TestLevel } from "./types.js";
 
 /** Reserved, non-resolvable origin used to probe CORS reflection (RFC 2606 .invalid). */
@@ -174,6 +178,8 @@ export interface ExecuteOptions {
   spider?: boolean;
   /** `scan --mode page|spider`: static asset scan over fetched pages (SPEC-0.1.3 §6.4-B). */
   assets?: boolean;
+  /** Knowledge snapshot (default: the packaged one); tests inject synthetic records. */
+  snapshot?: Snapshot;
   /** Run work directory (spool) and facts-cache directory, both under `.navsentry/`. */
   workDir?: string;
   cacheDir?: string;
@@ -184,7 +190,7 @@ export async function executeRun(m: Manifest, opts: ExecuteOptions = {}): Promis
 }
 
 /** Runs seeds and flows through one ScopeGate, Budget and Redactor. */
-export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promise<{ run: RunResult; flowRun?: FlowRunResult; clientFindings?: ClientFinding[] }> {
+export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promise<{ run: RunResult; flowRun?: FlowRunResult; clientFindings?: ClientFinding[]; proposals?: Proposal[] }> {
   const env = opts.env ?? process.env;
   // Production guards run before any network activity, for every entry point (SPEC-0.1.3 §3.1, S2).
   assertAuthorizationWindow(m, opts.now?.() ?? new Date());
@@ -338,6 +344,9 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
   }
 
   budget.close();
+  // Knowledge: offline snapshot identity, passive product evidence, applicability and gaps (§6.6-C).
+  const kn = evaluateKnowledge(opts.snapshot ?? SNAPSHOT, exchanges, opts.now?.() ?? new Date());
+  checks.push(...kn.checks.filter((c) => !disabled.has(c.ruleId)));
   for (const ex of exchanges) if (!ex.record.redaction.safe) incomplete.push(`evidence withheld for request ${ex.record.id} (${ex.record.redaction.kinds.join(",")})`);
   const cap = { wireBytes: bytes.wireBytes, decodedBytes: bytes.decodedBytes, truncated: 0, aborted: 0, partialBodies: 0 };
   for (const ex of exchanges) {
@@ -379,8 +388,9 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
     ...(chains.length ? { redirectChains: chains } : {}),
     ...(spider ? { spider } : {}),
     ...(assets ? { assets } : {}),
+    knowledge: kn.knowledge,
   };
-  if (!opts.flows || !flowOutcome) return { run, ...(clientFindings ? { clientFindings } : {}) };
+  if (!opts.flows || !flowOutcome) return { run, proposals: kn.proposals, ...(clientFindings ? { clientFindings } : {}) };
   for (const f of flowOutcome.flows) {
     const ids = new Set(f.steps.flatMap((x) => x.requestIds));
     f.findings = findings.filter((x) => x.requestIds.some((id) => ids.has(id))).map((x) => x.fingerprint);
@@ -405,7 +415,7 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
     summary,
     flows: flowOutcome.flows,
   };
-  return { run, flowRun };
+  return { run, flowRun, proposals: kn.proposals };
 }
 
 function perExchange(ex: Exchange, actor: string, rawUrl: string): CheckResult[] {

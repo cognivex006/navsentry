@@ -51,6 +51,11 @@ Security testing stays primary. Every flow run is also a security run; summarize
 8. Manual replay of UI steps with a host browser only if the user asks and the target is authorized; record it in a separate MANUAL-REPLAY.md (template in `docs/reports/templates/`). It never changes flows.json and never becomes PASS.
 9. After a fix: rerun the same flows and `navsentry compare --before runs/<before> --after runs/<after>`. Report Fixed, Still failing, contract drift and functional regressions. A functional regression stops the fix until the owner decides.
 
+## Vulnerability knowledge
+- Use `navsentry knowledge lookup --product <name> --version <v>` or `--id <CVE|alias>` before searching the web; the snapshot is offline and zero matches never means no vulnerabilities.
+- After any authorized research that touches a product, version or advisory, call `navsentry knowledge propose --input <file.json> --config <manifest>` with the sourced facts, without waiting for the user: new advisories, verified aliases, changed ranges, mitigations, corrections, withdrawals, and conflicting or stale evidence. Use product and advisory identifiers only, never target URLs, secrets or personal data.
+- An informal name (for example a nickname for an exploit) stays an unresolved alias until verified against primary advisories. Never guess a CVE mapping, never download or run a PoC, and never activate a check because an advisory matched.
+
 ## Exit codes
 0 no findings in tested scope · 1 findings (or a failed flow) · 2 incomplete (including E2E flows with UI steps and requested analysis that is not available) · 3 usage/config/flow error · 4 workspace dirty. Precedence: 3 > 4 > 1 > 2 > 0.
 

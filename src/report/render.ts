@@ -80,6 +80,18 @@ export function renderMarkdown(r: RunResult, lang: "en" | "th" = "en"): string {
     if (a.skipped.length) out.push(`- Skipped: ${a.skipped.length} (${[...new Set(a.skipped.map((x) => x.reason.split(":")[0]))].join(", ")})`);
     out.push("");
   }
+  if (r.knowledge) {
+    const k = r.knowledge;
+    out.push("## Knowledge", "", `- Snapshot \`${k.snapshot.version}\` · sha256 \`${k.snapshot.sha256.slice(0, 16)}\` · ${k.snapshot.records} record(s), ${k.snapshot.reviewed} reviewed, ${k.snapshot.stale} stale${k.snapshot.verifiedAt ? ` · oldest verification ${k.snapshot.verifiedAt}` : ""}`, `- ${k.snapshot.note}`, "");
+    out.push("### Known vulnerability applicability", "", "| Product (evidence) | Record | Identifiers | Applicability | Case | Caveats |", "|---|---|---|---|---|---|");
+    for (const a of k.applicability) out.push(`| ${esc(a.product)} (${a.provenance}) | ${a.recordId ?? "—"} | ${esc((a.identifiers ?? []).join(", ")) || "—"} | **${a.applicability}** | ${a.case} | ${esc(a.caveats.join("; ")) || "—"} |`);
+    if (!k.applicability.length) out.push("| — no product version evidence observed | | | | | |");
+    out.push("", "### Knowledge gaps / proposed updates", "", "| Gap | Product | Detail |", "|---|---|---|");
+    for (const g of k.gaps) out.push(`| ${g.kind} | ${esc(g.product ?? "—")} | ${esc(g.detail)} |`);
+    if (!k.gaps.length) out.push("| — | | |");
+    if (k.proposals.length) out.push("", `Proposals written to \`.navsentry/knowledge/proposals/\`: ${k.proposals.map((p) => `${p.id} (${p.status})`).join(", ")}`);
+    out.push("");
+  }
   if (r.capture) {
     const c = r.capture;
     out.push(`## ${t.capture}`, "", "| Wire bytes | Decoded bytes | Truncated | Aborted | Partially inspected bodies |", "|---|---|---|---|---|", `| ${c.wireBytes} | ${c.decodedBytes} | ${c.truncated} | ${c.aborted} | ${c.partialBodies} |`, "");

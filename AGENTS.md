@@ -8,7 +8,8 @@ follows that application's own rules; see [skills/navsentry/SKILL.md](skills/nav
 - For consumer scan, report, fix-verification or Computer Use requests, read `skills/navsentry/SKILL.md` before execution even if it is missing from the host's skill list. For repository maintenance, use this file and docs/DEVELOPMENT.md; the consumer skill does not replace maintainer rules.
 - Resolve repository paths from the repository root, not the shell's current directory. On resume, inspect the working tree and existing evidence before repeating actions. Record pending checks and blockers; never infer a successful run from an earlier plan.
 - Behavior and taxonomy: `src/catalog.ts` (cases), `src/types.ts` (wire model), `src/scope.ts` (safety).
-- Generated docs: `docs/cases/CASE-CATALOG.md`, `docs/ISSUE-CVE-MATRIX.md` — regenerate with `npm run docs:catalog`; never hand-edit.
+- Generated docs: `docs/cases/CASE-CATALOG.md`, `docs/ISSUE-CVE-MATRIX.md`, `docs/knowledge/VULNERABILITY-KB.md` — regenerate with `npm run docs:catalog`; never hand-edit.
+- Knowledge: `src/knowledge/advisories.ts` is the advisory snapshot. Promote a proposal only after primary-source verification, fixture tests, the governance gate (approved advisory source) and independent review.
 - Architecture/decisions: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/adr/](docs/adr/). Process: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 - Third-party decisions: [governance/third-party.json](governance/third-party.json) + [docs/THIRD-PARTY-GOVERNANCE.md](docs/THIRD-PARTY-GOVERNANCE.md).
 
