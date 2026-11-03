@@ -10,7 +10,8 @@ import { ScopeGate } from "./scope.js";
 import { DirectHttpAdapter, ScopeDenied } from "./transports/direct-http.js";
 import { allAdapters } from "./transports/registry.js";
 import type { Exchange } from "./transports/types.js";
-import { functionalResult, runFlows, type FlowBrowser } from "./flow/execute.js";
+import { applyConsoleSilent, functionalResult, runFlows, type FlowBrowser } from "./flow/execute.js";
+import { ConsoleInspector } from "./console/detect.js";
 import { BrowserEngine, firstLine, probePlaywright, type BrowserRequest, type ConsoleEvent, type PlaywrightProbe } from "./transports/playwright.js";
 import { classify, flowSetHash } from "./flow/classify.js";
 import { fillPath, flowOrigin, VAR_SENTINEL } from "./flow/lint.js";
@@ -86,6 +87,8 @@ function resolveActors(m: Manifest, env: NodeJS.ProcessEnv): { usable: ActorRunt
   for (const [name, a] of Object.entries(m.actors)) {
     if (name === "anonymous") continue;
     for (const k of [a.username_env, a.password_env, a.authorization_header_env]) if (k && env[k]) secrets.push(env[k] as string);
+    const cred = a.authorization_header_env ? /^[A-Za-z][A-Za-z0-9-]*\s+(\S{8,})$/.exec(env[a.authorization_header_env] ?? "")?.[1] : undefined;
+    if (cred) secrets.push(cred);
     if (a.authorization_header_env) {
       const v = env[a.authorization_header_env];
       if (v) usable.push({ name, headers: { authorization: v } });
@@ -322,13 +325,19 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
   let flowOutcome: Awaited<ReturnType<typeof runFlows>> | undefined;
   let engine: BrowserEngine | undefined;
   let flowBrowser: FlowBrowser | undefined;
-  const consoleEvents: ConsoleEvent[] = [];
+  let inspector: ConsoleInspector | undefined;
+  let browserMissing: string | undefined;
   if (opts.flows && opts.browser) {
     const p = (opts.browser.probe ?? probePlaywright)();
-    if (!p.usable) incomplete.push(`playwright engine unavailable: ${p.reason}; UI steps NOT_TESTED`);
+    if (!p.usable) { incomplete.push(`playwright engine unavailable: ${p.reason}; UI steps NOT_TESTED`); browserMissing = p.reason; }
     else {
       // Per-step bookkeeping: request IDs, the final main document, and a budget stop seen inside the route handler.
       let cur: { flow: { id: string; step: string }; ids: string[]; doc?: Exchange; budget?: BudgetExceeded } | undefined;
+      // Console output can arrive just after a step returns; it belongs to the last step that ran.
+      let lastStep: { id: string; step: string } | undefined;
+      const insp = new ConsoleInspector(secrets, m.capture.max_console_messages, m.capture.max_console_bytes, (u) => redactor.url(u));
+      inspector = insp;
+      const onConsole = (e: ConsoleEvent) => insp.inspect({ ...e, ...(lastStep ? { flow: lastStep.id, step: lastStep.step } : {}) });
       const sendBrowser = async (q: BrowserRequest): Promise<Exchange | undefined> => {
         if (!cur || cur.budget) return undefined;
         try {
@@ -347,18 +356,20 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
         }
       };
       try {
-        engine = await BrowserEngine.open({ send: sendBrowser, onDenied: (url, method, reason) => denials.push({ url: redactor.url(url), method, reason }), onConsole: (e) => consoleEvents.push(e) }, new Map(usable.map((a) => [a.name, a.headers])));
+        engine = await BrowserEngine.open({ send: sendBrowser, onDenied: (url, method, reason) => denials.push({ url: redactor.url(url), method, reason }), onConsole }, new Map(usable.map((a) => [a.name, a.headers])));
         const eng = engine;
         const finish = () => { const c = cur!; cur = undefined; if (c.budget) throw c.budget; return c; };
         flowBrowser = {
           navigate: async (actor, url, flow) => {
             cur = { flow, ids: [] };
+            lastStep = flow;
             const r = await eng.navigate(actor, url);
             const c = finish();
             return { requestIds: c.ids, ...(c.doc ? { exchange: c.doc } : {}), ...(!c.doc && r.error && c.ids.length ? { error: r.error } : {}) };
           },
           act: async (actor, action, target, flow) => {
             cur = { flow, ids: [] };
+            lastStep = flow;
             const r = await eng.act(actor, action, target);
             const c = finish();
             return { ok: r.ok, observed: r.observed, requestIds: c.ids, ...(r.error ? { error: r.error } : {}) };
@@ -366,6 +377,8 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
         };
       } catch (e) {
         incomplete.push(`playwright engine failed to start: ${firstLine(e)}; UI steps NOT_TESTED`);
+        browserMissing = `engine failed to start: ${firstLine(e)}`;
+        inspector = undefined;
       }
     }
   }
@@ -402,6 +415,32 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
 
   await engine?.close();
   budget.close();
+  if (flowOutcome && opts.flows) applyConsoleSilent(flowOutcome.flows, opts.flows, inspector ? inspector.summary.perStep : undefined);
+  // Runtime console checks (SPEC-0.1.3 §6.4-A): only a browser engine has a JS runtime (S6).
+  let consoleResult: RunResult["console"];
+  if (!disabled.has("NSC-INFO-006")) {
+    const base = { ruleId: "NSC-INFO-006", target: "browser console", transport: "playwright-browser", requestIds: [] as string[] };
+    if (!inspector) {
+      const why = opts.browser ? `playwright engine unavailable: ${browserMissing ?? "not started"}` : "no JS runtime (http engine)";
+      checks.push({ ...base, transport: opts.browser ? "playwright-browser" : "direct-http", status: "NOT_TESTED", summary: "Console output not captured", observations: [], reason: why });
+    } else {
+      const s = inspector.summary;
+      const dev = m.profile === "development";
+      let observations = 0;
+      for (const f of s.facts) {
+        if (f.detector === "CON-DEBUG" && dev) { observations++; continue; }
+        if (disabled.has(f.caseId)) continue;
+        checks.push({ ...base, ruleId: f.caseId, target: `console ${f.source}`, status: "FAIL", summary: `${getCase(f.caseId).titleEn} (browser console)`, observations: [`${f.level} ${f.preview} template ${f.template}`, ...(f.flow ? [`flow ${f.flow} step ${f.step}`] : []), f.exact ? "exact match with a known in-scope value (value withheld)" : "pattern match (value withheld)"], lifecycle: f.exact ? "VALIDATED" : "SUSPECTED" });
+      }
+      if (!s.facts.some((f) => f.caseId === "NSC-INFO-006")) {
+        checks.push(s.dropped
+          ? { ...base, status: "INCONCLUSIVE", summary: "Console capture incomplete", observations: [`${s.messages} message(s) inspected, ${s.dropped} dropped at the capture limit`], reason: "console capture limit reached" }
+          : { ...base, status: "PASS", summary: "No sensitive data seen in console output", observations: [`${s.messages} message(s) inspected`] });
+      }
+      consoleResult = { engine: "playwright-browser", messages: s.messages, bytes: s.bytes, dropped: s.dropped, observations, facts: s.facts.map((f) => ({ caseId: f.caseId, detector: f.detector, exact: f.exact, level: f.level, source: f.source, preview: f.preview, template: f.template, ...(f.flow ? { flow: f.flow, step: f.step } : {}) })) };
+      if (s.dropped) incomplete.push(`console: ${s.dropped} message(s) not inspected (capture limit)`);
+    }
+  }
   // Page models: built in memory from retained HTML; raw bodies never leave this process (§5.1).
   let pageModels: PageModel[] | undefined;
   if (opts.analyze) {
@@ -465,6 +504,7 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
     ...(chains.length ? { redirectChains: chains } : {}),
     ...(spider ? { spider } : {}),
     ...(assets ? { assets } : {}),
+    ...(consoleResult ? { console: consoleResult } : {}),
     knowledge: kn.knowledge,
   };
   if (!opts.flows || !flowOutcome) return { run, proposals: kn.proposals, ...(clientFindings ? { clientFindings } : {}), ...(pageModels ? { pageModels } : {}) };

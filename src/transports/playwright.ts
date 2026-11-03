@@ -19,7 +19,7 @@ interface PwRequest { url(): string; method(): string; headers(): Record<string,
 interface PwRoute { request(): PwRequest; fulfill(o: { status: number; headers: Record<string, string>; body: Buffer }): Promise<void>; abort(code?: string): Promise<void> }
 interface PwWebSocketRoute { url(): string; close(o?: { code?: number; reason?: string }): Promise<void> }
 interface PwLocator { first(): PwLocator; click(o: { timeout: number }): Promise<void>; waitFor(o: { state: "visible"; timeout: number }): Promise<void>; isVisible(): Promise<boolean> }
-interface PwConsoleMessage { type(): string; text(): string; location(): { url: string } }
+interface PwConsoleMessage { type(): string; text(): string; location(): { url: string; lineNumber: number } }
 interface PwPage {
   goto(url: string, o: { timeout: number; waitUntil: "load" }): Promise<{ status(): number } | null>;
   waitForLoadState(s: "load", o: { timeout: number }): Promise<void>;
@@ -29,6 +29,7 @@ interface PwPage {
   getByTestId(t: string): PwLocator;
   on(ev: "console", fn: (m: PwConsoleMessage) => void): void;
   on(ev: "popup", fn: (p: PwPage) => void): void;
+  on(ev: "pageerror", fn: (e: Error) => void): void;
   close(): Promise<void>;
 }
 interface PwContext {
@@ -75,7 +76,7 @@ export interface BrowserRequest {
 
 const OBSERVE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
-export interface ConsoleEvent { actor: string; type: string; text: string; sourceUrl: string }
+export interface ConsoleEvent { actor: string; type: string; text: string; sourceUrl: string; line?: number }
 
 export interface BrowserEngineOptions {
   /** Sends through ScopeGate → Budget → direct-http. Returns undefined when scope denied it. */
@@ -148,7 +149,10 @@ export class BrowserEngine {
     });
     await ctx.route("**", (r) => this.handle(r, actor));
     const page = await ctx.newPage();
-    const watch = (p: PwPage) => p.on("console", (m) => this.opts.onConsole?.({ actor, type: m.type(), text: m.text(), sourceUrl: m.location().url }));
+    const watch = (p: PwPage) => {
+      p.on("console", (m) => { const l = m.location(); this.opts.onConsole?.({ actor, type: m.type(), text: m.text(), sourceUrl: l.url, ...(l.lineNumber ? { line: l.lineNumber } : {}) }); });
+      p.on("pageerror", (e) => this.opts.onConsole?.({ actor, type: "pageerror", text: String(e.stack ?? e.message), sourceUrl: "" }));
+    };
     watch(page);
     page.on("popup", watch);
     const s = { ctx, page };

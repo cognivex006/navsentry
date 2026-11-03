@@ -80,6 +80,15 @@ export function renderMarkdown(r: RunResult, lang: "en" | "th" = "en"): string {
     if (a.skipped.length) out.push(`- Skipped: ${a.skipped.length} (${[...new Set(a.skipped.map((x) => x.reason.split(":")[0]))].join(", ")})`);
     out.push("");
   }
+  if (r.console) {
+    const c = r.console;
+    out.push("## Browser console", "", `Engine: \`${c.engine}\`. ${c.messages} message(s) inspected (${c.bytes} bytes)${c.dropped ? `, ${c.dropped} not inspected at the capture limit (incomplete)` : ""}. Message text is never kept; previews are masked and templates hash a value-free shape.`, "");
+    out.push("| Case | Detector | Level | Source | Preview | Template | Flow step | Basis |", "|---|---|---|---|---|---|---|---|");
+    for (const f of c.facts) out.push(`| ${f.caseId} | ${f.detector} | ${esc(f.level)} | \`${esc(f.source)}\` | \`${f.preview}\` | \`${f.template}\` | ${f.flow ? `${esc(f.flow)}/${esc(f.step ?? "")}` : "—"} | ${f.exact ? "exact known value" : "pattern"} |`);
+    if (!c.facts.length) out.push("| — | | | | | | | |");
+    if (c.observations) out.push("", `- Observations only (development profile): ${c.observations}`);
+    out.push("");
+  }
   if (r.analyzer) {
     const a = r.analyzer;
     out.push("## Analyzer", "", `- Engine \`${a.engine}\` · page models ${a.pages} (in \`page-models/\`) · incomplete ${a.incomplete} · withheld by the leak scan ${a.withheld}`, `- Free text: ${a.includeText ? "included (titles and headings, redacted, 120 characters; pattern redaction cannot prove free text free of personal data)" : "omitted (default)"}`);

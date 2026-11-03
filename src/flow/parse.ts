@@ -95,6 +95,8 @@ export interface FlowHeader {
   actors: string[];
   tags: string[];
   login_path?: string;
+  /** 0.1.3-k: "silent" makes any console output during the flow a functional FAIL (`console_silent`). */
+  console?: "silent";
   vars: Record<string, VarSource>;
   /** 0.1.3 chains (SPEC-0.1.3 §5.5): flow IDs this flow depends on, resolved within the flow root. */
   requires: string[];
@@ -194,7 +196,7 @@ function intList(c: Ctx, v: unknown, ptr: string, min: number, max: number): num
 }
 
 function parseHeader(c: Ctx, o: Obj): FlowHeader | undefined {
-  keys(c, o, ["flow", "id", "title", "story", "level", "origin", "actors", "tags", "login_path", "vars", "requires", "imports", "review", "provenance"], "");
+  keys(c, o, ["flow", "id", "title", "story", "level", "origin", "actors", "tags", "login_path", "console", "vars", "requires", "imports", "review", "provenance"], "");
   if (o.flow !== "1") err(c, "/flow", 'must be "1"');
   const id = str(c, o.id, "/id", 63, true, FLOW_ID);
   const title = str(c, o.title, "/title", 120, true);
@@ -206,6 +208,7 @@ function parseHeader(c: Ctx, o: Obj): FlowHeader | undefined {
   if (o.actors === undefined) err(c, "/actors", "required");
   const tags = strList(c, o.tags, "/tags", 10, 32, /^[a-z0-9-]{1,32}$/) ?? [];
   const login_path = str(c, o.login_path, "/login_path", 300);
+  if (o.console !== undefined && o.console !== "silent") err(c, "/console", 'only "silent" is supported');
   const vars: Record<string, VarSource> = {};
   if (o.vars !== undefined) {
     if (!isObj(o.vars) || Object.keys(o.vars).length > MAX_VARS) err(c, "/vars", `must be an object with at most ${MAX_VARS} entries`);
@@ -282,7 +285,7 @@ function parseHeader(c: Ctx, o: Obj): FlowHeader | undefined {
   if (!id || !title || !story || !actors) return undefined;
   return {
     flow: "1", id, title, story, level: level as FlowHeader["level"], actors, tags, vars, requires, imports, review, raw: o, line: c.line,
-    ...(origin ? { origin } : {}), ...(login_path ? { login_path } : {}), ...(provenance ? { provenance } : {}),
+    ...(origin ? { origin } : {}), ...(login_path ? { login_path } : {}), ...(o.console === "silent" ? { console: "silent" as const } : {}), ...(provenance ? { provenance } : {}),
   };
 }
 
