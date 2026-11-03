@@ -4,6 +4,9 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 
 ## [Unreleased]
 
+### Fixed
+- An unrecognized `environment` (for example `development`) still fails safe to the production profile, but the authorization errors no longer claim the manifest said `"staging"`; they explain the fallback and name `local`/`dev`.
+
 ### Added
 - Knowledge base: first real records from the GitHub Advisory Database (CC-BY 4.0): GHSA-gxr4-xjj5-5px2 (CVE-2020-11022), GHSA-jpcq-cgw6-v4j6 (CVE-2020-11023) and GHSA-6c3j-c64m-qhgq (CVE-2019-11358) for npm `jquery`, state `candidate` until independent review. STA-LIBVULN is not implemented yet, so they apply through `knowledge lookup` and owner-provided versions only. The generated KB carries the CC-BY attribution.
 - 0.1.3-k runtime console checks (playwright engine): every console message and uncaught page error is inspected in memory on arrival and never written. New case NSC-INFO-006 (CWE-532): VALIDATED on an exact match with a known in-scope value, otherwise SUSPECTED; PII, stack traces and internal addresses map to NSC-INFO-004, NSC-PRIV-001, NSC-ERR-001 and NSC-INFO-003; dev-runtime markers are observations in development. REPORT.md gains a Browser console section; run.json gains `console`. With the http engine the checks are NOT_TESTED ("no JS runtime").

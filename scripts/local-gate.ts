@@ -41,13 +41,16 @@ const d = run(process.execPath, ["dist/scripts/gen-catalog-docs.js", "--check"])
 add("GATE-03", "Generated case catalog / matrix up to date", d.status === 0 ? "PASS" : "FAIL", (d.stderr || "in sync").trim(), "Run `npm run docs:catalog` and commit the result.");
 
 // G4 — dependency advisories (npm audit). Network failure is INCOMPLETE, not PASS.
-const a = runNpm(["audit", "--json"]);
-try {
-  const j = JSON.parse(a.stdout) as { metadata?: { vulnerabilities?: Record<string, number> } };
+const audit = (extra: string[]) => {
+  const j = JSON.parse(runNpm(["audit", "--json", ...extra]).stdout) as { metadata?: { vulnerabilities?: Record<string, number> } };
   const v = j.metadata?.vulnerabilities;
   if (!v) throw new Error("no metadata");
-  const blocking = (v.high ?? 0) + (v.critical ?? 0);
-  add("GATE-04", "Dependency advisories (npm audit, full tree)", blocking ? "FAIL" : "PASS", `critical=${v.critical ?? 0} high=${v.high ?? 0} moderate=${v.moderate ?? 0} low=${v.low ?? 0} (checked ${new Date().toISOString()}; one database only — not proof of absence)`, "Upgrade or replace the affected package, or record a dated risk acceptance in governance/third-party.json.");
+  return { v, blocking: (v.high ?? 0) + (v.critical ?? 0) };
+};
+const counts = (v: Record<string, number>) => `critical=${v.critical ?? 0} high=${v.high ?? 0} moderate=${v.moderate ?? 0} low=${v.low ?? 0}`;
+try {
+  const { v, blocking } = audit([]);
+  add("GATE-04", "Dependency advisories (npm audit, full tree)", blocking ? "FAIL" : "PASS", `${counts(v)} (checked ${new Date().toISOString()}; one database only — not proof of absence)`, "Upgrade or replace the affected package, or record a dated risk acceptance in governance/third-party.json.");
 } catch {
   add("GATE-04", "Dependency advisories (npm audit, full tree)", "INCOMPLETE", "npm audit unavailable (offline or registry error)", "Re-run online; until then the release is blocked.");
 }
@@ -127,6 +130,14 @@ add("GATE-08", "Publication safety (secrets, customer identifiers)", hits.length
   add("GATE-09", "Workspace hygiene (no leftovers, no changes during tests)", problems.length ? "FAIL" : incomplete ? "INCOMPLETE" : "PASS",
     problems.length ? problems.join("; ") : incomplete || `${fsAfter.entries.size} entries unchanged; no untracked helper scripts`,
     "Move helper scripts to the OS temp directory or the agent scratchpad; make tests write only under os.tmpdir().");
+}
+
+// G10 — QA-AT-10 self-test: the audit must flag a known-vulnerable fixture lockfile (never installed).
+try {
+  const { v, blocking } = audit(["--package-lock-only", "--prefix", join("test", "fixtures", "sca")]);
+  add("GATE-10", "Dependency audit self-test (fixture lockfile must be flagged)", blocking ? "PASS" : "FAIL", blocking ? `fixture flagged: ${counts(v)}` : `fixture not flagged: ${counts(v)}`, "The audit no longer detects the pinned advisory; check npm audit behaviour or update test/fixtures/sca to a version with a current high advisory.");
+} catch {
+  add("GATE-10", "Dependency audit self-test (fixture lockfile must be flagged)", "INCOMPLETE", "npm audit unavailable (offline or registry error)", "Re-run online; until then the release is blocked.");
 }
 
 // Report
