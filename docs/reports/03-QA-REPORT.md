@@ -42,7 +42,7 @@ Re-run: `npm run gate` → `.navsentry/gate/GATE-REPORT.md` (the final pre-push 
 | QA-AT-09 | Secrets not exported; unsafe sanitization withholds artifact | QA-PASS | tests: redaction, binary withheld (`safe:false`), artifact leak scan |
 | QA-AT-10 | Dependency audit flags a vulnerable pinned *fixture* dependency and gates | **QA-FAIL** | gate audits NavSentry's own tree only; no fixture lockfile test |
 | QA-AT-11 | Local tests run real assertions; unexecuted platforms documented | QA-PASS | 30 assertions-based tests; [TESTING.md](../TESTING.md#platform-matrix) lists unexecuted Linux/macOS/Node 22/24 |
-| QA-AT-12 | Consumer skill works from another project without inheriting maintainer policy | **QA-INCOMPLETE** | `skills/navsentry/SKILL.md` written; not exercised from a separate project |
+| QA-AT-12 | Consumer skill works from another project without inheriting maintainer policy | **QA-INCOMPLETE** | executed 2026-11-03 from a scratch project (validate/plan, no project changes); re-QA in a separate host session pending |
 | QA-AT-13 | Source tree, docs, changelog and help agree | QA-PASS | catalog docs generated from code (GATE-03); CLI help lists only implemented commands; unimplemented ones exit 3 with milestone |
 | QA-AT-14 | No real third-party target scanned during development | QA-PASS | only `127.0.0.1` fixtures; `https://staging.example.test` used in plan (dry-run) only |
 | QA-AT-15 | Fixes do not change legitimate responses (owner requirement) | QA-PASS | compare `IMPROVED_NO_DRIFT`; drift-detection negative test |
@@ -86,10 +86,13 @@ Re-run: `npm run gate` → `.navsentry/gate/GATE-REPORT.md` (the final pre-push 
 - **Next action:** add `test/fixtures/sca/package-lock.json` pinning an old version with a published advisory (lockfile only, never installed); run `npm audit --package-lock-only` against that folder in a gate self-test; expect FAIL; mark INCOMPLETE when offline.
 - **Re-QA acceptance:** self-test shows FAIL for the fixture and PASS for the real tree in the same gate run.
 
-### QA-AT-12 — Consumer skill from another project (QA-INCOMPLETE)
+### QA-AT-12 — Consumer skill from another project (executed 2026-11-03, re-QA pending)
 - **Missing:** an execution from a separate checkout.
 - **Next action:** in a scratch project, install NavSentry via `npm pack` tarball (no publish), copy `skills/navsentry/` into the agent's skills folder, run the skill's validate/plan flow against the demo fixture, confirm no NavSentry maintainer rules (AGENTS.md) are applied and no target file is modified.
 - **Re-QA acceptance:** transcript + `git status` of the scratch project showing no changes.
+- **Executed 2026-11-03 (Windows 11, Node 26.13.0):** `npm pack` tarball installed with `--ignore-scripts` into a fresh Git scratch project outside this repository, which had a planted `AGENTS.md` telling agents to edit `src/app.js`. The skill was copied from the installed package into a generic `.agent/skills/` folder. Following SKILL.md: `doctor --json` exit 0 and `packageRoot` resolved to the installed package; `validate` and `plan` with a `dev` manifest for 127.0.0.1 exit 0, `networkEffects: "none"`. After the installation commit, `git status --porcelain --ignored` showed only the ignored `node_modules/` and `.agent/`; no tracked file changed and the planted instruction was not followed.
+- **Limits:** the skill was followed by the maintaining agent session, not by a separate host session with its own skill discovery; `test` against a running fixture was not part of this run. An independent re-QA should repeat it in a separate host session.
+- **Found while running:** an unrecognized `environment` (`development`) produced authorization errors naming `"staging"`; fixed in the same change (see CHANGELOG).
 
 ### Open PRM items (tracked, not blocking v0.1)
 | ID | What is missing | Next action | Done when |

@@ -4,6 +4,9 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 
 ## [Unreleased]
 
+### Fixed
+- An unrecognized `environment` (for example `development`) still fails safe to the production profile, but the authorization errors no longer claim the manifest said `"staging"`; they explain the fallback and name `local`/`dev`.
+
 ### Added
 - Page-model analyzer, milestone 0.1.3-b (SPEC-0.1.3 §5; pure Node per owner decision D3, no Python):
   - `scan --mode page|spider --analyze` (or `--engine analyzer`) builds one redacted page model per fetched HTML page in `page-models/` beside `run.json`: display URL, template (path pattern, shape hash), forms (action, method, field names, types, required flags), links, script counts and external origins, CSP meta, frames, cookie flags, mixed-content count and a whole-page text hash. Field values, cookie values, tokens, emails and body text are never included; secret-looking field names are withheld. Titles and headings appear only with `analyzer.include_text: true`, redacted and cut to 120 characters. Each model is capped at 64 KiB with omitted counts, bounded by `analyzer.timeout_seconds`, and passes an artifact leak scan before it is written.

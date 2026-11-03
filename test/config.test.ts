@@ -52,3 +52,10 @@ test("unsafe modes, methods and origins are refused", () => {
 test("private network approval requires approver and reason", () => {
   assert.ok(problems({ ...base(), network: { allow_private: [{ host: "x" }] } }).length);
 });
+
+test("an unrecognized environment fails safe without naming an environment the user never wrote", () => {
+  const p = problems({ ...base(), environment: "development", authorization: { acknowledged: true, owner: "o" } });
+  assert.ok(p.some((x) => x.startsWith("environment: one of")));
+  assert.ok(p.some((x) => x.includes("authorization.reference") && x.includes("unrecognized environment is treated as production")));
+  assert.ok(!p.join(" ").includes('"staging"'));
+});
