@@ -7,6 +7,9 @@
  * When several apply, precedence is 3 > 4 > 1 > 2 > 0.
  */
 import { randomUUID } from "node:crypto";
+import { SNAPSHOT } from "./knowledge/advisories.js";
+import { lookup, snapshotStatus } from "./knowledge/model.js";
+import { ProposalError, parseProposal, propose } from "./knowledge/propose.js";
 import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { CASES, CATEGORIES } from "./catalog.js";
@@ -46,6 +49,9 @@ Usage:
                  page without --url scans the seed paths, like test; flow equals test --flows <path> --flows-only.
                  spider crawls from the seed paths, grouping pages by template; computer-use is deferred beyond 0.1.3.
   navsentry workspace status|clean [--project <dir>] [--dry-run] [--cache-max-age-days <n>]
+  navsentry knowledge status [--json]
+  navsentry knowledge lookup --product <name> [--version <v>] | --id <CVE|advisory|alias> [--json]
+  navsentry knowledge propose --input <file.json> [--config <manifest.json>] [--project <dir>]   (offline)
   navsentry report --input <run.json|flows.json> --format markdown|json|sarif|junit [--lang en|th]
   navsentry compare --before <dir|run.json> --after <dir|run.json>   (reads flows.json beside run.json)
   navsentry catalog [--category <CODE>]
@@ -126,6 +132,8 @@ export async function main(argv: string[]): Promise<number> {
         return await scan(rest);
       case "workspace":
         return workspaceCommand(rest);
+      case "knowledge":
+        return knowledgeCommand(rest);
       case "report": {
         const input = JSON.parse(readFileSync(need(rest, "--input"), "utf8")) as { kind?: string };
         const fmt = arg(rest, "--format") ?? "markdown";
@@ -166,7 +174,7 @@ export async function main(argv: string[]): Promise<number> {
         throw new UsageError(`unknown command ${cmd}`);
     }
   } catch (e) {
-    if (e instanceof ConfigError || e instanceof UsageError || e instanceof DoctorError || e instanceof FlowError || e instanceof WorkspaceError) {
+    if (e instanceof ConfigError || e instanceof UsageError || e instanceof DoctorError || e instanceof FlowError || e instanceof WorkspaceError || e instanceof ProposalError) {
       process.stderr.write(`${e.message}\n`);
       return 3;
     }
@@ -212,7 +220,18 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
     try { releaseWorkDir(ws.work); } catch { /* reported by the next run's sweep */ }
     throw e;
   }
-  const { run: r, flowRun, clientFindings } = res;
+  const { run: r, flowRun, clientFindings, proposals } = res;
+  // §6.6-D trigger 1: every scan turns its own knowledge gaps into local research-needed proposals.
+  if (o.scanMode && proposals?.length && r.knowledge) {
+    for (const p of proposals) {
+      try {
+        const out = propose(ws.root, p, SNAPSHOT);
+        r.knowledge.proposals.push({ id: out.id, status: out.status });
+      } catch (e) {
+        r.incompleteReasons.push(`knowledge proposal not written: ${(e as Error).message.split("\n")[0]}`);
+      }
+    }
+  }
   if (o.notTested?.length) { r.incompleteReasons.push(...o.notTested); if (r.executionStatus === "COMPLETE") r.executionStatus = "PARTIAL"; }
   for (const p of ws.sweep.preserved) r.incompleteReasons.push(`work directory preserved during sweep: ${p.reason}`);
   const outArg = arg(argv, "--out");
@@ -293,6 +312,46 @@ async function scan(argv: string[]): Promise<number> {
   }
   const notTested = analyze ? ["analysis NOT_TESTED: the page-model analyzer is not available yet (milestone 0.1.3-b)"] : [];
   return await runAndReport(m, argv, { scanMode: mode, engine: eng, notTested, assets: true, ...(urls ? { urls } : {}), ...(mode === "spider" ? { spider: true } : {}) });
+}
+
+/** `knowledge status | lookup | propose` (SPEC-0.1.3 §6.6-D). Offline: zero network actions (S12). */
+function knowledgeCommand(argv: string[]): number {
+  const [sub, ...rest] = argv;
+  if (sub === "status") {
+    const s = snapshotStatus(SNAPSHOT);
+    if (rest.includes("--json")) { print(JSON.stringify(s, null, 2)); return 0; }
+    print(`snapshot ${s.version} · sha256 ${s.sha256.slice(0, 16)} · generated ${s.generatedAt}`);
+    print(`records ${s.records} · reviewed ${s.reviewed} · stale ${s.stale}${s.verifiedAt ? ` · oldest verification ${s.verifiedAt}` : ""}`);
+    print(s.note);
+    if (!s.records) print("No advisory records yet: importing real records needs an approved advisory source (governance/third-party.json).");
+    return 0;
+  }
+  if (sub === "lookup") {
+    const product = arg(rest, "--product"), version = arg(rest, "--version"), id = arg(rest, "--id");
+    if (!product && !id) throw new UsageError("knowledge lookup needs --product <name> or --id <CVE, advisory ID or alias>");
+    const r = lookup(SNAPSHOT, { ...(product ? { product } : {}), ...(version ? { version } : {}), ...(id ? { id } : {}) });
+    if (rest.includes("--json")) { print(JSON.stringify({ matches: r.matches.map((x) => ({ id: x.record.id, applicability: x.applicability, caveats: x.caveats })), ...(r.research ? { research: r.research } : {}) }, null, 2)); return 0; }
+    if (r.research) print(`research needed: ${r.research.reason}${r.research.candidates.length ? ` (candidates: ${r.research.candidates.join(", ")})` : ""}`);
+    for (const x of r.matches) print(`${x.record.id.padEnd(24)} ${x.applicability.padEnd(14)} ${[...x.record.identifiers.cve, ...x.record.identifiers.advisory].join(",")}  ${x.caveats.join("; ")}`);
+    if (!r.matches.length && !r.research) print("no records in the local snapshot (not proof of absence)");
+    return 0;
+  }
+  if (sub === "propose") {
+    const input = JSON.parse(readFileSync(need(rest, "--input"), "utf8")) as unknown;
+    const cfg = arg(rest, "--config");
+    const forbidden = cfg ? loadManifest(cfg).targets.origins.map((o) => new RegExp(new URL(o).hostname.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i")) : [];
+    const items = Array.isArray(input) ? input : [input];
+    if (items.length > 50) throw new UsageError("at most 50 proposals per call");
+    const parsed = items.map((x) => parseProposal(x, forbidden));
+    const root = projectRoot(arg(rest, "--project") ?? process.cwd());
+    for (const p of parsed) {
+      const out = propose(root, p, SNAPSHOT);
+      print(`${out.status.padEnd(9)} ${out.id} rev ${out.revision}  ${out.file}`);
+    }
+    print("Proposals are local and unreviewed. NavSentry fetched nothing; promotion into the snapshot is a reviewed maintainer change.");
+    return 0;
+  }
+  throw new UsageError("knowledge needs a subcommand: status | lookup | propose");
 }
 
 function workspaceCommand(argv: string[]): number {
