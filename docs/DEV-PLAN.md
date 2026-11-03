@@ -11,7 +11,7 @@ Principle: each milestone ships working, tested behavior — never empty interfa
 | **0.1.3-a2** Spider | `scan --mode spider` (template grouping, shape hash, 2N spread), RFC 9309 robots.txt, `page --url`, redirect-chain records, NSC-AC-008 | ✅ done | a2 acceptance tests; gate PASS |
 | **0.1.3-f** Chained flows | `requires`/`imports`, graph lint, dependency-ordered replay, closure hashes for approval | ✅ done | chain tests; gate PASS |
 | **0.1.3-s** Static asset scan | Inventory, spool-backed streamed detectors, exposure probes, source maps, facts cache, `client-findings.json`, NSC-INFO-007/008, NSC-CONF-009 | ✅ done | asset tests; gate PASS |
-| **0.1.3-v** Knowledge base framework | Typed snapshot, generated KB Markdown, applicability matching, `knowledge status\|lookup\|propose`, run tables and research-needed proposals | ✅ done (no real records: advisory source not approved) | knowledge tests; gate PASS |
+| **0.1.3-v** Knowledge base framework | Typed snapshot, generated KB Markdown, applicability matching, `knowledge status\|lookup\|propose`, run tables and research-needed proposals | ✅ done; first real records (3 jQuery GHSA advisories, `candidate`) added 2026-11-03 after the GitHub Advisory Database was approved | knowledge tests; gate PASS |
 | **0.1.3-d** Code inventory | `flow import --openapi` (local JSON → drafts), read-only `inventory` of routes, OpenAPI files, tests and lockfiles | ✅ done | inventory tests; gate PASS |
 | **0.1.3-b** Page analyzer | Pure-Node page models (`--analyze`), declarative extractor specs, page models in `flow analyze` | ✅ done | analyzer tests; gate PASS |
 | **M1b (0.1.3)** Playwright engine | `scan --mode flow --engine playwright` (development): `navigate`/`click`/`see`/`wait_for` in the Chromium headless shell; every request fulfilled through direct-http (ScopeGate + Budget); WebSocket and service workers disabled; dead-proxy launch ([ADR-0008](adr/0008-playwright-engine-s1.md)) | ✅ done | browser tests; gate PASS |
@@ -25,7 +25,7 @@ Principle: each milestone ships working, tested behavior — never empty interfa
 ## Immediate next steps (ordered)
 1. Owner: remove `workflow` scope from the GitHub CLI token; enable private vulnerability reporting in repository settings.
 2. Run `npm test` on Linux and Node 22/24; update [TESTING.md](TESTING.md#platform-matrix).
-3. Real advisory records from the GitHub Advisory Database (source approved 2026-11-03), then STA-LIBVULN.
+3. Independent review of the 3 candidate advisory records (promote to `reviewed`), then STA-LIBVULN (client library banners → NSC-SUPPLY-002).
 4. QA-AT-10 SCA fixture self-test (small, independent).
 5. M2 scenario schema design review before code.
 
