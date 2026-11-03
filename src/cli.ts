@@ -214,7 +214,7 @@ export function exitCode(r: RunResult, flowRun?: FlowRunResult): number {
   return 0;
 }
 
-interface RunOpts { analyze?: { extractors: string[]; draftsDir?: string }; assets?: boolean; urls?: string[]; spider?: boolean; flows?: FlowDoc[]; flowsOnly?: boolean; warnings?: string[]; scanMode?: ScanMode; engine?: RunResult["engine"]; notTested?: string[] }
+interface RunOpts { analyze?: { extractors: string[]; draftsDir?: string }; assets?: boolean; urls?: string[]; spider?: boolean; flows?: FlowDoc[]; flowsOnly?: boolean; warnings?: string[]; scanMode?: ScanMode; engine?: RunResult["engine"]; notTested?: string[]; browser?: boolean }
 
 /** Executes a run inside a managed workspace (SPEC-0.1.3 §7.2), writes the reports and returns the exit code. */
 async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<number> {
@@ -226,7 +226,7 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
   let specs: ExtractorSpec[] = [];
   if (o.analyze && analyzer) specs = loadExtractors(ws.root, ws.work.path, o.analyze.draftsDir, analyzer);
   try {
-    res = await executeTest(m, { ...(o.analyze ? { analyze: { extractors: specs } } : {}), runId, ...(o.flows ? { flows: o.flows, flowsOnly: !!o.flowsOnly } : {}), ...(o.scanMode ? { scanMode: o.scanMode } : {}), ...(o.engine ? { engine: o.engine } : {}), ...(o.urls ? { urls: o.urls } : {}), ...(o.spider ? { spider: true } : {}),
+    res = await executeTest(m, { ...(o.analyze ? { analyze: { extractors: specs } } : {}), runId, ...(o.flows ? { flows: o.flows, flowsOnly: !!o.flowsOnly } : {}), ...(o.scanMode ? { scanMode: o.scanMode } : {}), ...(o.engine ? { engine: o.engine } : {}), ...(o.urls ? { urls: o.urls } : {}), ...(o.spider ? { spider: true } : {}), ...(o.browser ? { browser: {} } : {}),
       ...(o.assets ? { assets: true, workDir: ws.work.path, cacheDir: join(ws.root, ".navsentry", "cache", "assets") } : {}) });
   } catch (e) {
     ws.dispose();
@@ -334,12 +334,7 @@ async function scan(argv: string[]): Promise<number> {
   const eng: NonNullable<RunResult["engine"]> = { requested: rawEngine, used: engine, analyze };
   if (mode === "flow") {
     const sel = selectFlows(m, argv);
-    if (engine === "playwright") {
-      // BLOCKED engine: nothing runs on it and nothing falls back to http (S6).
-      process.stderr.write(`${sel.docs.length} flow(s) NOT_TESTED: engine playwright is blocked (governance entry PENDING_REVIEW, S1 enforcement not demonstrated; milestone M1b)\n`);
-      return 2;
-    }
-    return await runAndReport(m, argv, { flows: sel.docs, flowsOnly: true, warnings: sel.warnings, scanMode: "flow", engine: eng });
+    return await runAndReport(m, argv, { flows: sel.docs, flowsOnly: true, warnings: sel.warnings, scanMode: "flow", engine: eng, ...(engine === "playwright" ? { browser: true } : {}) });
   }
   const drafts = arg(argv, "--extractors");
   return await runAndReport(m, argv, { scanMode: mode, engine: eng, assets: true, ...(analyze ? { analyze: { extractors: [], ...(drafts ? { draftsDir: resolve(need(argv, "--extractors")) } : {}) } } : {}), ...(urls ? { urls } : {}), ...(mode === "spider" ? { spider: true } : {}) });

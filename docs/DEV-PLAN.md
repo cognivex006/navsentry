@@ -14,8 +14,9 @@ Principle: each milestone ships working, tested behavior — never empty interfa
 | **0.1.3-v** Knowledge base framework | Typed snapshot, generated KB Markdown, applicability matching, `knowledge status\|lookup\|propose`, run tables and research-needed proposals | ✅ done (no real records: advisory source not approved) | knowledge tests; gate PASS |
 | **0.1.3-d** Code inventory | `flow import --openapi` (local JSON → drafts), read-only `inventory` of routes, OpenAPI files, tests and lockfiles | ✅ done | inventory tests; gate PASS |
 | **0.1.3-b** Page analyzer | Pure-Node page models (`--analyze`), declarative extractor specs, page models in `flow analyze` | ✅ done | analyzer tests; gate PASS |
-| **0.1.3-k / M1b** Console checks, Playwright | blocked: Playwright governance `PENDING_REVIEW`, S1 enforcement not demonstrated | See [SPEC-0.1.3 §11](specs/SPEC-0.1.3-SCAN-MODES-AND-WORKSPACE.md#11-milestones). Live discovery moves here from M1b. Computer Use is deferred beyond 0.1.3. | ⏳ next | per-milestone acceptance in SPEC-0.1.3 §10 |
-| **M1b** Browser + discovery | Playwright adapter (headless/headful), deny-by-default routing via ScopeGate, `serviceWorkers:'block'`, popup/WebSocket checks, DOM checks (CSP violations, cookie visibility, framing), bounded same-origin discovery (`discover`), YAML manifests (governed dependency) | ⏳ next | QA-AT-04 passes on Linux headless; out-of-scope subresource blocked test |
+| **M1b (0.1.3)** Playwright engine | `scan --mode flow --engine playwright` (development): `navigate`/`click`/`see`/`wait_for` in the Chromium headless shell; every request fulfilled through direct-http (ScopeGate + Budget); WebSocket and service workers disabled; dead-proxy launch ([ADR-0008](adr/0008-playwright-engine-s1.md)) | ✅ done | browser tests; gate PASS |
+| **0.1.3-k** Console checks | Runtime console capture, NSC-INFO-006, `console: silent` | ⏳ next | SPEC-0.1.3 §10 test 13 |
+| **M1b+** Browser follow-ups | Headful mode, DOM checks (CSP violations, cookie visibility, framing), YAML manifests (governed dependency); live discovery moved to 0.1.3-a2 | ⏳ | QA-AT-04 passes on Linux headless; out-of-scope subresource blocked test |
 | **M2** Authenticated validation | Login flows from env credentials, per-actor isolated contexts, scenarios as flow-format extensions (login actions, safe-validate mutation steps with cleanup, `session-lifecycle`, `csrf`, `reflected-marker`), fixtures with positive/negative controls, cleanup | ⏳ | NSC-AC-002/003/006, NSC-AUTH-002, NSC-INJ-004 automated; QA-AT-07 passes |
 | **M3** CLI transports | curl and PowerShell execution (7 and 5.1), parity tests vs direct-http, Windows + Linux runs, visual provider interface contract (still unavailable by default) | ⏳ | identical findings across transports on the fixture; PRM-SAFE-001 closed |
 | **M4** Reporting & interop | HTML report, resumable large runs with integrity manifest, ASVS 5.0 requirement IDs verified, DevSift correlation adapter (versioned, read-only) | ⏳ | schema v1 stable; correlation sample |
@@ -24,7 +25,7 @@ Principle: each milestone ships working, tested behavior — never empty interfa
 ## Immediate next steps (ordered)
 1. Owner: remove `workflow` scope from the GitHub CLI token; enable private vulnerability reporting in repository settings.
 2. Run `npm test` on Linux and Node 22/24; update [TESTING.md](TESTING.md#platform-matrix).
-3. Complete the Playwright browser-binary terms review → add the optional dependency → M1b.
+3. 0.1.3-k console checks on the M1b engine; then real advisory records from the GitHub Advisory Database.
 4. QA-AT-10 SCA fixture self-test (small, independent).
 5. M2 scenario schema design review before code.
 

@@ -15,4 +15,4 @@ Automated in v0.1: NSC-CONF-001/002/003/004/006/007, NSC-INFO-001/003/004, NSC-E
 
 Per-OWASP-2025 coverage is generated in [ISSUE-CVE-MATRIX.md §7](ISSUE-CVE-MATRIX.md#7-owasp-top-102025-coverage).
 
-Not covered at all yet (honest gaps): DOM-based XSS, CSRF, session lifecycle, business logic, SSRF, file handling, rate-limiting behavior, write access in IDOR, any UI-driven journey step (browser transport, M1b). Cross-role read access is covered only where flows declare it.
+Not covered at all yet (honest gaps): DOM-based XSS, CSRF, session lifecycle, business logic, SSRF, file handling, rate-limiting behavior, write access in IDOR, UI journey steps other than `navigate`/`click`/`see`/`wait_for` (those need `--engine playwright`, development only). Cross-role read access is covered only where flows declare it.

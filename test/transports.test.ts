@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { CASES, CATEGORIES } from "../src/catalog.js";
 import { buildCurlArgv, buildPwshArgv, PlaywrightBrowserAdapter, scrubbedEnv, VisualComputerUseAdapter } from "../src/transports/optional.js";
 import { allAdapters, route } from "../src/transports/registry.js";
+import { probePlaywright } from "../src/transports/playwright.js";
 
 test("curl argv: -q first, no redirects, no shell metacharacter interpretation", () => {
   const argv = buildCurlArgv("GET", "https://a.test/x?y=1;rm -rf /", { accept: "*/*" });
@@ -31,7 +32,9 @@ test("child environment is scrubbed", () => {
 
 test("optional adapters are honest about availability", async () => {
   const pw = await new PlaywrightBrowserAdapter().probe();
-  assert.equal(pw.usable, false, "browser execution is not claimed in this release");
+  // Usable exactly when the approved playwright-core and its headless shell are installed (M1b).
+  assert.equal(pw.usable, probePlaywright().usable);
+  if (!pw.usable) assert.ok(pw.reason.length > 0);
   const vis = await new VisualComputerUseAdapter().probe();
   assert.equal(vis.available, false);
   assert.equal(vis.usable, false);
@@ -42,7 +45,7 @@ test("router picks the lowest-cost usable transport and never substitutes unavai
   const api = route({ allowedTransports: ["direct-http", "playwright-browser"] }, adapters);
   assert.equal(api.selected, "direct-http");
   const dom = route({ needsDOM: true, allowedTransports: ["direct-http", "playwright-browser", "visual-computer-use"] }, adapters);
-  assert.equal(dom.selected, undefined, "DOM checks become NOT_TESTED instead of silently using HTTP");
+  assert.equal(dom.selected, probePlaywright().usable ? "playwright-browser" : undefined, "DOM checks never silently use HTTP");
   assert.ok(dom.rejected.some((r) => r.id === "direct-http" && r.reason === "no DOM support"));
 });
 

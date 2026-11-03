@@ -19,7 +19,8 @@ Release-blocking policy. Machine-readable decisions: [governance/third-party.jso
 |---|---|---|
 | GitHub ToS / AUP / malware policy | Dual-use security research allowed; prohibited: using GitHub to deliver attacks or gain unauthorized access, automated excessive bulk activity, inauthentic automated accounts, posting others' personal information; suspension at GitHub's discretion | Repo hosts code/docs only; no automation; no customer data; SECURITY.md + disclaimer present |
 | npm Terms / Open-Source Terms (2022-03-10) | Install without account; no unreasonable request volume; no website crawling | Normal installs/audit only |
-| Playwright (Apache-2.0) | Default browsers are open-source builds; branded Chrome/Edge under vendor terms | Optional, not installed; browser licenses to be reviewed before M1b |
+| Playwright (Apache-2.0), read 2026-11-03 | Default browsers are open-source Chromium builds (BSD-style) from Microsoft's CDN, no separate EULA stated; branded Chrome/Edge under vendor terms | Owner approved: playwright-core 1.64.1 + Chromium headless shell only, installed by the user; branded channels, Firefox and WebKit not approved |
+| GitHub Advisory Database, read 2026-11-03 | CC-BY 4.0; attribution with a link per advisory | Owner approved as the advisory source; records copied manually after verification, no API or bulk automation. OSV.dev not adopted (no stated data license or terms) |
 | OWASP Top 10 / ASVS / WSTG | CC BY-SA content | IDs/names + links only |
 
 ## Boundary

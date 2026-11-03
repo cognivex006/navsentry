@@ -5,7 +5,7 @@ Assets: target availability and data; credentials for test actors; evidence/repo
 | ID | Threat | Control (implemented) | Residual / planned |
 |---|---|---|---|
 | TM-01 | Scanning an unauthorized host (typo, redirect, link) | Origin allowlist, authorization acknowledgement, redirect re-check per hop, no crawling | Live discovery (M1b) must reuse the gate |
-| TM-02 | DNS rebinding / SSRF into internal or cloud metadata | Connect-time `lookup` validation of every address; metadata always blocked; named private approvals | Browser transport must enforce the same (M1b) |
+| TM-02 | DNS rebinding / SSRF into internal or cloud metadata | Connect-time `lookup` validation of every address; metadata always blocked; named private approvals | The playwright engine fulfils every request through direct-http, so the same connect-time check applies; the browser itself has no network path ([ADR-0008](adr/0008-playwright-engine-s1.md)) |
 | TM-03 | Causing damage (state change, DoS) | Safe methods only; `allow_mutations` refused; budgets; production observe-only; no payload code | `safe-validate` fixtures (M2) need cleanup/rollback |
 | TM-04 | Leaking secrets/PII into reports | Redaction before persistence; set-cookie values dropped; binary withheld; tests scan artifacts | Redaction is defensive, not proof; unknown formats may pass |
 | TM-05 | Prompt injection from target content | Target data never interpreted as instructions; agent skill states it; checks are deterministic code | LLM planner (future) must keep this boundary |

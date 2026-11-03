@@ -50,6 +50,24 @@
       "reviewed": "2026-10-31",
       "review_due": "2027-04-30",
       "decision": "APPROVED"
+    },
+    {
+      "ecosystem": "npm",
+      "name": "playwright-core",
+      "version": "1.64.1",
+      "scope": "dev + optional peer (M1b browser engine; never installed automatically for consumers)",
+      "license": "Apache-2.0",
+      "source": "https://registry.npmjs.org/playwright-core (publisher: Microsoft, repo github.com/microsoft/playwright); published 2026-10-14, 20 days before review; zero dependencies; no install scripts",
+      "why": "Owner-approved M1b browser engine (2026-11-03). playwright-core is chosen over playwright because it has no postinstall browser download; browsers are installed only by an explicit user command.",
+      "terms": [
+        "https://github.com/microsoft/playwright/blob/main/LICENSE",
+        "https://github.com/microsoft/playwright/blob/main/NOTICE",
+        "https://playwright.dev/docs/browsers"
+      ],
+      "advisories_checked": "npm audit 2026-11-03 (full tree with playwright-core): 0 vulnerabilities",
+      "reviewed": "2026-11-03",
+      "review_due": "2027-05-03",
+      "decision": "APPROVED"
     }
   ],
   "services_and_tools": [
@@ -113,16 +131,17 @@
       "decision": "APPROVED"
     },
     {
-      "name": "Playwright (optional, NOT installed)",
-      "usage": "Future M1b browser transport; NavSentry never installs it automatically.",
+      "name": "Playwright browser binaries (Chromium headless shell only)",
+      "usage": "M1b `--engine playwright` (development profile only). The user installs the browser explicitly with `npx playwright-core install --only-shell chromium`; NavSentry never downloads it. Every page request is fulfilled by NavSentry's own direct-http transport (ScopeGate + Budget); the browser itself gets no usable network path (see docs/adr/0008-playwright-engine-s1.md).",
       "terms": [
-        "https://github.com/microsoft/playwright/blob/main/LICENSE",
-        "https://playwright.dev/docs/browsers"
+        "https://playwright.dev/docs/browsers",
+        "https://chromium.googlesource.com/chromium/src/+/main/LICENSE",
+        "https://github.com/microsoft/playwright/blob/main/NOTICE"
       ],
-      "findings": "Apache-2.0. `playwright install` downloads open-source Chromium builds by default; branded Chrome/Edge channels are governed by Google/Microsoft terms and must not be used without separate review. Browser binary licenses (Chromium/Firefox/WebKit) not yet reviewed in detail.",
-      "reviewed": "2026-10-31",
-      "review_due": "before M1b dependency is added",
-      "decision": "PENDING_REVIEW"
+      "findings": "Owner approved 2026-11-03. Default browsers are open-source Chromium builds downloaded from Microsoft's CDN (host overridable with PLAYWRIGHT_DOWNLOAD_HOST); Chromium is BSD-3-Clause-style licensed. The browsers page states no separate EULA or CDN terms for these downloads. Branded `chrome`/`msedge` channels fall under Google/Microsoft terms and are NOT approved; Firefox and WebKit builds are not reviewed and NOT approved. NavSentry does not redistribute browser binaries; NOTICE attribution applies only if NavSentry ever bundles Playwright code. The install command also fetched Playwright's helper builds ffmpeg (shipped with COPYING.LGPLv2.1; used by Playwright only for video recording, which NavSentry never enables) and winldd (Windows dependency check). They are not redistributed by NavSentry.",
+      "reviewed": "2026-11-03",
+      "review_due": "2027-05-03",
+      "decision": "APPROVED_WITH_CONDITIONS"
     },
     {
       "name": "curl / PowerShell (optional OS executables)",
@@ -163,6 +182,19 @@
       "reviewed": "2026-10-31",
       "review_due": "before any integration",
       "decision": "NOT_ADOPTED"
+    },
+    {
+      "name": "GitHub Advisory Database (advisory source for the knowledge base)",
+      "usage": "Primary source for real records in src/knowledge/advisories.ts. A maintainer reads individual reviewed advisories (github.com/advisories/GHSA-… pages or the matching OSV-format file in github/advisory-database) and copies only facts (IDs, package, affected/fixed ranges, severity, dates, URL) after verification. No GitHub API, no scheduled or bulk automated download, no scan-time network access (S12).",
+      "terms": [
+        "https://github.com/github/advisory-database",
+        "https://docs.github.com/en/site-policy/github-terms/github-terms-for-additional-products-and-features#12-advisory-database",
+        "https://creativecommons.org/licenses/by/4.0/"
+      ],
+      "findings": "Owner approved 2026-11-03. Data is CC-BY 4.0: attribution to the GitHub Advisory Database with a link to each advisory is required and is carried in every record's source URL and in the generated KB header. Manual per-record reading stays far below any automated-use concern in the GitHub AUP. OSV.dev was considered and NOT adopted: its FAQ and site state no data license or terms of use (missing evidence = blocked).",
+      "reviewed": "2026-11-03",
+      "review_due": "2027-05-03",
+      "decision": "APPROVED_WITH_CONDITIONS"
     }
   ]
 }

@@ -33,8 +33,8 @@ const fsBefore = snapshot(ROOT, HYGIENE_IGNORE);
 
 // G2 — tests.
 const t = run(process.execPath, ["--test", "--test-concurrency=1", "dist/test/"]);
-const pass = /ℹ pass (\d+)/.exec(t.stdout)?.[1], fail = /ℹ fail (\d+)/.exec(t.stdout)?.[1];
-add("GATE-02", "Unit + fixture E2E tests", t.status === 0 ? "PASS" : "FAIL", `pass=${pass ?? "?"} fail=${fail ?? "?"} exit=${t.status}`, "Run `npm test` and fix failing assertions; never skip a test to pass the gate.");
+const pass = /ℹ pass (\d+)/.exec(t.stdout)?.[1], fail = /ℹ fail (\d+)/.exec(t.stdout)?.[1], skipped = /ℹ skipped (\d+)/.exec(t.stdout)?.[1] ?? "0";
+add("GATE-02", "Unit + fixture E2E tests", t.status === 0 ? "PASS" : "FAIL", `pass=${pass ?? "?"} fail=${fail ?? "?"} skipped=${skipped}${skipped !== "0" ? " (skipped tests did not run; see TESTING.md)" : ""} exit=${t.status}`, "Run `npm test` and fix failing assertions; never skip a test to pass the gate.");
 
 // G3 — generated docs in sync with the catalog.
 const d = run(process.execPath, ["dist/scripts/gen-catalog-docs.js", "--check"]);

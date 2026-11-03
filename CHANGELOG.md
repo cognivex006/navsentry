@@ -5,6 +5,14 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Added
+- M1b Playwright engine: `scan --mode flow --engine playwright` (development profile) runs `navigate`, `click`, `see` and `wait_for` in the Chromium headless shell. Every browser request is fulfilled through direct-http (ScopeGate before the request and at connect time, Budget, redaction); non-observe methods are refused, WebSocket is closed, service workers are blocked, and Chromium launches against a dead proxy ([ADR-0008](docs/adr/0008-playwright-engine-s1.md)). `fill`, `select` and `submit` stay NOT_TESTED until M2. Without the browser, UI steps are NOT_TESTED with no http fallback.
+- `playwright-core` 1.64.1 as a dev and optional peer dependency (owner approved 2026-11-03). Install the browser yourself with `npx playwright-core install --only-shell chromium`; NavSentry never downloads it.
+- GATE-02 reports how many tests were skipped.
+
+### Changed
+- Governance: Playwright moves from PENDING_REVIEW to approved (Chromium headless shell only); the GitHub Advisory Database is approved as the advisory source; OSV.dev is recorded as not adopted.
+
+### Added
 - Page-model analyzer, milestone 0.1.3-b (SPEC-0.1.3 §5; pure Node per owner decision D3, no Python):
   - `scan --mode page|spider --analyze` (or `--engine analyzer`) builds one redacted page model per fetched HTML page in `page-models/` beside `run.json`: display URL, template (path pattern, shape hash), forms (action, method, field names, types, required flags), links, script counts and external origins, CSP meta, frames, cookie flags, mixed-content count and a whole-page text hash. Field values, cookie values, tokens, emails and body text are never included; secret-looking field names are withheld. Titles and headings appear only with `analyzer.include_text: true`, redacted and cut to 120 characters. Each model is capped at 64 KiB with omitted counts, bounded by `analyzer.timeout_seconds`, and passes an artifact leak scan before it is written.
   - Declarative extractor specs (owner decision D5): JSON with a selector subset (tag, `tag[attr]`, `tag[attr=value]`, descendant, ≤ 8 levels), an attribute allowlist without `value` or text, five fixed predicates and no user regex. Owner-promoted specs live in `navsentry/analyzer/extractors/`; `--extractors <dir>` drafts are copied into the run's work directory and deleted with it. Non-JSON files (for example `.py`) are refused: NavSentry never executes model-generated code. `run.json → analyzer` records spec hashes.

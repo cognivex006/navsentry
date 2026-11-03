@@ -22,7 +22,7 @@ You are helping a user test **their own or explicitly authorized** web applicati
 - `manual-active` is NOT_TESTED in this release, even with authorization. Active testing requires a future separately designed mode; do not execute catalog payload suggestions.
 
 ## Computer Use and browser evidence
-- Read the available host Computer Use skill/tool documentation before operating its browser. Tool presence does not make NavSentry's `visual-computer-use` or `playwright-browser` adapters usable: both are unimplemented in this release.
+- Read the available host Computer Use skill/tool documentation before operating its browser. Tool presence does not make NavSentry's `visual-computer-use` adapter usable: it is unimplemented in this release.
 - Never substitute an external browser for an unavailable transport. Browser navigation, redirects, subresources and background requests cannot currently be enforced by NavSentry's ScopeGate and Budget. Leave automated DOM/visual checks NOT_TESTED with the reason.
 - User-supplied or separately authorized manual browser evidence may be described separately with its case, environment, timestamp and limitations. Screenshots alone do not prove response headers, cookie flags or network enforcement. Do not rewrite run.json or claim that manual evidence was a CLI PASS.
 - Maintainer verification uses only synthetic `test/fixtures` on 127.0.0.1. No provider integration or browser binary may be added without the repository's governance approval and enforceable network controls.
@@ -47,7 +47,7 @@ Security testing stays primary. Every flow run is also a security run; summarize
 4. `navsentry flow lint` then `navsentry plan --config <m> --flows <flows-dir> [--include-drafts]`. Show the user each flow's level (Integration/E2E with reasons), steps that will be NOT_TESTED and why, warnings and the request estimate.
 5. Never set `review.status` or run `navsentry flow approve` yourself, unless the user explicitly tells you to in this conversation and names the approver.
 6. With the user's go-ahead: `navsentry test --config <m> --flows <flows-dir> --out runs/<label>`. Drafts only with `--include-drafts` on non-production targets; their findings are SUSPECTED.
-7. Report: give direct links to REPORT.md and TEST-REPORT.md. Security first (findings by priority, gaps), then functional results by level. E2E flows with UI steps are INCOMPLETE until the browser transport exists (M1b): say so; never call them passed.
+7. Report: give direct links to REPORT.md and TEST-REPORT.md. Security first (findings by priority, gaps), then functional results by level. E2E flows with UI steps run only with `scan --mode flow --engine playwright` in the development profile, after the user has installed the Chromium headless shell (`navsentry doctor` shows whether `playwright-browser` is usable; never install it yourself). Otherwise they are INCOMPLETE: say so; never call them passed.
 8. Manual replay of UI steps with a host browser only if the user asks and the target is authorized; record it in a separate MANUAL-REPLAY.md (template in `docs/reports/templates/`). It never changes flows.json and never becomes PASS.
 9. After a fix: rerun the same flows and `navsentry compare --before runs/<before> --after runs/<after>`. Report Fixed, Still failing, contract drift and functional regressions. A functional regression stops the fix until the owner decides.
 
