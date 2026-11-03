@@ -8,6 +8,10 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 - An unrecognized `environment` (for example `development`) still fails safe to the production profile, but the authorization errors no longer claim the manifest said `"staging"`; they explain the fallback and name `local`/`dev`.
 
 ### Added
+- 0.1.3-k runtime console checks (playwright engine): every console message and uncaught page error is inspected in memory on arrival and never written. New case NSC-INFO-006 (CWE-532): VALIDATED on an exact match with a known in-scope value, otherwise SUSPECTED; PII, stack traces and internal addresses map to NSC-INFO-004, NSC-PRIV-001, NSC-ERR-001 and NSC-INFO-003; dev-runtime markers are observations in development. REPORT.md gains a Browser console section; run.json gains `console`. With the http engine the checks are NOT_TESTED ("no JS runtime").
+- Flow header `console: "silent"` and the functional assertion `console_silent`.
+- Static detector STA-HIDDENLOG: `console.*` overrides and `?debug`/localStorage toggles in bundles are observations (NSC-INFO-006 NOT_TESTED); toggles are never set (S9). Detector version 2 invalidates cached asset facts.
+- Authorization header credentials are also known without their scheme, so an exact match works on the bare token.
 - M1b Playwright engine: `scan --mode flow --engine playwright` (development profile) runs `navigate`, `click`, `see` and `wait_for` in the Chromium headless shell. Every browser request is fulfilled through direct-http (ScopeGate before the request and at connect time, Budget, redaction); non-observe methods are refused, WebSocket is closed, service workers are blocked, and Chromium launches against a dead proxy ([ADR-0008](docs/adr/0008-playwright-engine-s1.md)). `fill`, `select` and `submit` stay NOT_TESTED until M2. Without the browser, UI steps are NOT_TESTED with no http fallback.
 - `playwright-core` 1.64.1 as a dev and optional peer dependency (owner approved 2026-11-03). Install the browser yourself with `npx playwright-core install --only-shell chromium`; NavSentry never downloads it.
 - GATE-02 reports how many tests were skipped.

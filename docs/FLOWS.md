@@ -40,6 +40,7 @@ Examples: [examples/flows/](../examples/flows/) (Integration with access control
 | `actors` | ✓ | Manifest actor names. `anonymous` is always available. Every step actor must be listed here. |
 | `tags` | – | ≤ 10 items, `[a-z0-9-]` |
 | `login_path` | – | A redirect to this path counts as "access denied". |
+| `console` | – | `"silent"`: any console output during a step fails the functional assertion `console_silent` with the count (needs `--engine playwright`; NOT_TESTED otherwise). A security finding needs sensitive content (NSC-INFO-006). |
 | `vars` | – | `name → {"value": "<safe literal>"}` or `{"env": "UPPER_SNAKE"}`. Environment values are treated as secrets. |
 | `review` | – | `{"status": "draft"}` (default). Approval is written by `flow approve`. |
 | `provenance` | – | `{kind: analyzer\|agent\|human, from_run?, sources?, created_at?}` (information only) |

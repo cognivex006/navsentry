@@ -15,7 +15,7 @@ Principle: each milestone ships working, tested behavior — never empty interfa
 | **0.1.3-d** Code inventory | `flow import --openapi` (local JSON → drafts), read-only `inventory` of routes, OpenAPI files, tests and lockfiles | ✅ done | inventory tests; gate PASS |
 | **0.1.3-b** Page analyzer | Pure-Node page models (`--analyze`), declarative extractor specs, page models in `flow analyze` | ✅ done | analyzer tests; gate PASS |
 | **M1b (0.1.3)** Playwright engine | `scan --mode flow --engine playwright` (development): `navigate`/`click`/`see`/`wait_for` in the Chromium headless shell; every request fulfilled through direct-http (ScopeGate + Budget); WebSocket and service workers disabled; dead-proxy launch ([ADR-0008](adr/0008-playwright-engine-s1.md)) | ✅ done | browser tests; gate PASS |
-| **0.1.3-k** Console checks | Runtime console capture, NSC-INFO-006, `console: silent` | ⏳ next | SPEC-0.1.3 §10 test 13 |
+| **0.1.3-k** Console checks | Runtime console capture on the playwright engine, NSC-INFO-006 (CON-SECRET/ECHO), CON-PII/TRACE/DEBUG mapped to existing cases, `console: "silent"`, static hidden-logging observations (STA-HIDDENLOG) | ✅ done | console tests; gate PASS |
 | **M1b+** Browser follow-ups | Headful mode, DOM checks (CSP violations, cookie visibility, framing), YAML manifests (governed dependency); live discovery moved to 0.1.3-a2 | ⏳ | QA-AT-04 passes on Linux headless; out-of-scope subresource blocked test |
 | **M2** Authenticated validation | Login flows from env credentials, per-actor isolated contexts, scenarios as flow-format extensions (login actions, safe-validate mutation steps with cleanup, `session-lifecycle`, `csrf`, `reflected-marker`), fixtures with positive/negative controls, cleanup | ⏳ | NSC-AC-002/003/006, NSC-AUTH-002, NSC-INJ-004 automated; QA-AT-07 passes |
 | **M3** CLI transports | curl and PowerShell execution (7 and 5.1), parity tests vs direct-http, Windows + Linux runs, visual provider interface contract (still unavailable by default) | ⏳ | identical findings across transports on the fixture; PRM-SAFE-001 closed |
@@ -25,7 +25,7 @@ Principle: each milestone ships working, tested behavior — never empty interfa
 ## Immediate next steps (ordered)
 1. Owner: remove `workflow` scope from the GitHub CLI token; enable private vulnerability reporting in repository settings.
 2. Run `npm test` on Linux and Node 22/24; update [TESTING.md](TESTING.md#platform-matrix).
-3. 0.1.3-k console checks on the M1b engine; then real advisory records from the GitHub Advisory Database.
+3. Real advisory records from the GitHub Advisory Database (source approved 2026-11-03), then STA-LIBVULN.
 4. QA-AT-10 SCA fixture self-test (small, independent).
 5. M2 scenario schema design review before code.
 

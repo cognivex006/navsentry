@@ -177,8 +177,21 @@ export interface RunResult {
   redirectChains?: RedirectChain[];
   spider?: SpiderResult;
   assets?: AssetScanResult;
+  /** Runtime console capture (SPEC-0.1.3 §6.4-A); facts only, never message text. */
+  console?: ConsoleResult;
   knowledge?: KnowledgeResult;
   analyzer?: AnalyzerResult;
+}
+
+/** Console capture summary (0.1.3-k). Previews are `[kind,len=n]`; templates hash a value-free shape. */
+export interface ConsoleResult {
+  engine: "playwright-browser";
+  messages: number;
+  bytes: number;
+  dropped: number;
+  facts: { caseId: string; detector: string; exact: boolean; level: string; source: string; preview: string; template: string; flow?: string; step?: string }[];
+  /** Facts that are observations only in this profile (CON-DEBUG in development). */
+  observations: number;
 }
 
 /** A redirect chain followed hop by hop; every hop passed ScopeGate (SPEC-0.1.3 §4.2). */
@@ -294,7 +307,7 @@ export type FlowStatus = "PASS" | "FAIL" | "INCOMPLETE" | "ERROR" | "NOT_TESTED"
 export type FunctionalResult = "PASS" | "FAIL" | "INCOMPLETE";
 
 export interface AssertionResult {
-  kind: "status" | "content_type" | "header_present" | "header_absent" | "json" | "shape" | "text_present" | "text_absent" | "redirect_to" | "access" | "ui";
+  kind: "status" | "content_type" | "header_present" | "header_absent" | "json" | "shape" | "text_present" | "text_absent" | "redirect_to" | "access" | "ui" | "console_silent";
   status: CheckStatus;
   /** From the linted flow file. */
   expected: string;
