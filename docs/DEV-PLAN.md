@@ -19,14 +19,13 @@ Principle: each milestone ships working, tested behavior — never empty interfa
 | **M2** Authenticated validation | Login flows from env credentials, per-actor isolated contexts, scenarios as flow-format extensions (login actions, safe-validate mutation steps with cleanup, `session-lifecycle`, `csrf`, `reflected-marker`), fixtures with positive/negative controls, cleanup | ⏳ | NSC-AC-002/003/006, NSC-AUTH-002, NSC-INJ-004 automated; QA-AT-07 passes |
 | **M3** CLI transports | curl and PowerShell execution (7 and 5.1), parity tests vs direct-http, Windows + Linux runs, visual provider interface contract (still unavailable by default) | ⏳ | identical findings across transports on the fixture; PRM-SAFE-001 closed |
 | **M4** Reporting & interop | HTML report, resumable large runs with integrity manifest, ASVS 5.0 requirement IDs verified, DevSift correlation adapter (versioned, read-only) | ⏳ | schema v1 stable; correlation sample |
-| **M5** Hardening & imports | SCA fixture self-test (QA-AT-10), OpenAPI/Postman import → reviewed manifests (no script execution; Newman only after terms review), optional ZAP passive (self-hosted, terms reviewed), `active-approved` design document (not implementation) | ⏳ | gate self-test FAIL on fixture lockfile |
+| **M5** Hardening & imports | SCA fixture self-test (QA-AT-10, ✅ done as GATE-10), OpenAPI/Postman import → reviewed manifests (no script execution; Newman only after terms review), optional ZAP passive (self-hosted, terms reviewed), `active-approved` design document (not implementation) | ⏳ | gate self-test FAIL on fixture lockfile |
 
 ## Immediate next steps (ordered)
 1. Owner: remove `workflow` scope from the GitHub CLI token; enable private vulnerability reporting in repository settings.
 2. Run `npm test` on Linux and Node 22/24; update [TESTING.md](TESTING.md#platform-matrix).
 3. Complete the Playwright browser-binary terms review → add the optional dependency → M1b.
-4. QA-AT-10 SCA fixture self-test (small, independent).
-5. M2 scenario schema design review before code.
+4. M2 scenario schema design review before code.
 
 ## Risks
 | Risk | Mitigation |

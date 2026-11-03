@@ -1,0 +1,7 @@
+{
+  "name": "navsentry-sca-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "description": "QA-AT-10 self-test: lockfile only, never installed. Pins a version with a published advisory.",
+  "dependencies": { "lodash": "4.17.15" }
+}
