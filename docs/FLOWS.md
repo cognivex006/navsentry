@@ -10,7 +10,7 @@ Flows also add access-control checks for the paths and actors you declare.
 
 Design and rationale: [ADR-0006](adr/0006-flow-files-and-test-levels.md) and the [0.1.2 spec](specs/SPEC-0.1.2-FLOW-TEST-CASES.md).
 
-## What 0.1.2 can and cannot replay
+## What 0.1.2 and 0.1.3 can and cannot replay
 | Step action | Replayed? |
 |---|---|
 | `http`: API request (`GET`, `HEAD` or `OPTIONS`) | Yes |
@@ -104,6 +104,23 @@ Reports and `run.json` record flow URLs in template form (`/api/orders/{{orderA}
 | Variables per flow / `json` items per step / text markers per step | 20 / 20 / 10 |
 
 There are no loops and no retries. The manifest request budget is shared with the seed requests.
+
+## Chained flows (0.1.3)
+A flow can depend on other flows in the same flow root and reuse values they extracted. This replaces the 0.1.2 rule that variables never cross flows, under the rules below ([SPEC-0.1.3 §5.5](specs/SPEC-0.1.3-SCAN-MODES-AND-WORKSPACE.md)).
+
+```json
+{ "flow": "1", "id": "order-detail", "title": "Open my first order", "story": "…", "actors": ["reader_a"],
+  "requires": ["list-orders"],
+  "imports": { "orderId": "list-orders.orderId" } }
+```
+
+- `requires`: up to 10 flow IDs, resolved only within the `--flows` root. Missing flows, cycles and a flow that requires itself are lint errors.
+- `imports`: local name → `"<flowId>.<variable>"`. The flow must be in `requires` and must extract that variable. A name may not collide with a local variable or extract.
+- Only a value extracted in a step that ended `PASS` is imported. Values stay in memory and never appear in reports.
+- A value may not cross an actor or origin boundary unless the reviewed flow says so: `{"from": "list-orders.orderId", "allow_cross_actor": true}` (or `allow_cross_origin`). Use this only for a deliberate case, such as an access-control test.
+- Flows run in dependency order. A shared dependency runs once per run. If a required flow is not `PASS`, the dependent flow is `NOT_TESTED` with "dependency <id> is <status>", never `FAIL` or `PASS`.
+- `--only` and `--level` pull in required flows that are eligible. A draft dependency is not selected without `--include-drafts`, so in production its dependents are `NOT_TESTED`.
+- Approval covers the dependency closure: a dependent flow's hash includes the hashes of everything it requires, so editing a required flow invalidates every flow that depends on it. `flow approve` loads the whole flow root (`--root`, default: the file's directory). Flows without `requires` keep their 0.1.2 hash.
 
 ## Classification
 1. Any UI action → **E2E**.

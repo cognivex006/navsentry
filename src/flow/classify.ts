@@ -63,10 +63,22 @@ export function stepHash(s: FlowStep): string {
   return sha(canonical(s.raw));
 }
 
-/** Content hash pinned by approval: header without `review`, then the steps in order. */
-export function flowHash(doc: FlowDoc): string {
+/**
+ * Content hash pinned by approval: header without `review`, then the steps in order. A flow with
+ * `requires` also covers the sorted (flowId, recursive hash) pairs of its dependencies, so editing a
+ * required flow invalidates every dependent approval (SPEC-0.1.3 §5.5). Flows without dependencies
+ * keep their 0.1.2 hash. A missing or cyclic dependency hashes to a marker; lint reports it.
+ */
+export function flowHash(doc: FlowDoc, seen: ReadonlySet<string> = new Set()): string {
   const { review: _review, ...rest } = doc.header.raw;
-  return sha([canonical(rest), ...doc.steps.map((s) => canonical(s.raw))].join("\n"));
+  const own = sha([canonical(rest), ...doc.steps.map((s) => canonical(s.raw))].join("\n"));
+  if (!doc.header.requires.length) return own;
+  const next = new Set([...seen, doc.header.id]);
+  const deps = doc.header.requires.map((id) => {
+    const d = doc.deps?.find((x) => x.header.id === id);
+    return `${id}:${!d ? "missing" : next.has(id) ? "cycle" : flowHash(d, next)}`;
+  }).sort();
+  return sha([own, ...deps].join("\n"));
 }
 
 export function flowSetHash(docs: FlowDoc[]): string {

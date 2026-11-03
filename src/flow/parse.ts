@@ -96,11 +96,25 @@ export interface FlowHeader {
   tags: string[];
   login_path?: string;
   vars: Record<string, VarSource>;
+  /** 0.1.3 chains (SPEC-0.1.3 §5.5): flow IDs this flow depends on, resolved within the flow root. */
+  requires: string[];
+  /** Imported variables: local name → a variable the required flow extracted in a PASS step. */
+  imports: Record<string, FlowImport>;
   review: FlowReview;
-  provenance?: { kind: "analyzer" | "agent" | "human"; from_run?: string; sources?: string[]; created_at?: string };
+  provenance?: { kind: "analyzer" | "agent" | "human"; from_run?: string; sources?: string[]; created_at?: string; template?: string };
   raw: Record<string, unknown>;
   line: number;
 }
+
+export interface FlowImport {
+  flow: string;
+  var: string;
+  /** The reviewed flow contract allows the value to cross an actor or origin boundary. */
+  allowCrossActor: boolean;
+  allowCrossOrigin: boolean;
+}
+
+export const MAX_REQUIRES = 10;
 
 export interface FlowDoc {
   /** Path relative to the flows root (forward slashes). */
@@ -110,6 +124,8 @@ export interface FlowDoc {
   /** Original text, kept for `flow approve` (which rewrites only the header block). */
   text: string;
   headerBlock: { start: number; end: number };
+  /** Resolved `requires` (set by loadFlowFiles; missing IDs are lint errors). */
+  deps?: FlowDoc[];
 }
 
 export class FlowError extends Error {
@@ -178,7 +194,7 @@ function intList(c: Ctx, v: unknown, ptr: string, min: number, max: number): num
 }
 
 function parseHeader(c: Ctx, o: Obj): FlowHeader | undefined {
-  keys(c, o, ["flow", "id", "title", "story", "level", "origin", "actors", "tags", "login_path", "vars", "review", "provenance"], "");
+  keys(c, o, ["flow", "id", "title", "story", "level", "origin", "actors", "tags", "login_path", "vars", "requires", "imports", "review", "provenance"], "");
   if (o.flow !== "1") err(c, "/flow", 'must be "1"');
   const id = str(c, o.id, "/id", 63, true, FLOW_ID);
   const title = str(c, o.title, "/title", 120, true);
@@ -228,11 +244,28 @@ function parseHeader(c: Ctx, o: Obj): FlowHeader | undefined {
       if (review.status === "approved" && (!by || !at || !h)) err(c, "/review", "approved flows need approved_by, approved_at and content_sha256 (use `navsentry flow approve`)");
     }
   }
+  const requires = strList(c, o.requires, "/requires", MAX_REQUIRES, 63, FLOW_ID) ?? [];
+  if (new Set(requires).size !== requires.length) err(c, "/requires", "duplicate flow id");
+  const imports: Record<string, FlowImport> = {};
+  if (o.imports !== undefined) {
+    if (!isObj(o.imports) || Object.keys(o.imports).length > MAX_VARS) err(c, "/imports", `must be an object with at most ${MAX_VARS} entries`);
+    else
+      for (const [name, v] of Object.entries(o.imports)) {
+        const ptr = `/imports/${name}`;
+        if (!VAR_NAME.test(name)) { err(c, ptr, "invalid variable name"); continue; }
+        let from: unknown = v, cross: Obj = {};
+        if (isObj(v)) { keys(c, v, ["from", "allow_cross_actor", "allow_cross_origin"], ptr); from = v.from; cross = v; }
+        const m = typeof from === "string" ? /^([a-z0-9][a-z0-9-]{1,62})\.([a-z][a-zA-Z0-9_]{0,31})$/.exec(from) : null;
+        if (!m) { err(c, ptr, 'must be "<flowId>.<variable>" or {"from": "<flowId>.<variable>", ...}'); continue; }
+        for (const k of ["allow_cross_actor", "allow_cross_origin"]) if (cross[k] !== undefined && typeof cross[k] !== "boolean") err(c, `${ptr}/${k}`, "boolean");
+        imports[name] = { flow: m[1]!, var: m[2]!, allowCrossActor: cross.allow_cross_actor === true, allowCrossOrigin: cross.allow_cross_origin === true };
+      }
+  }
   let provenance: FlowHeader["provenance"];
   if (o.provenance !== undefined) {
     if (!isObj(o.provenance)) err(c, "/provenance", "must be an object");
     else {
-      keys(c, o.provenance, ["kind", "from_run", "sources", "created_at"], "/provenance");
+      keys(c, o.provenance, ["kind", "from_run", "sources", "created_at", "template"], "/provenance");
       const kind = o.provenance.kind;
       if (!["analyzer", "agent", "human"].includes(kind as string)) err(c, "/provenance/kind", "analyzer | agent | human");
       provenance = { kind: kind as "analyzer" };
@@ -242,11 +275,13 @@ function parseHeader(c: Ctx, o: Obj): FlowHeader | undefined {
       if (fr) provenance.from_run = fr;
       if (src) provenance.sources = src;
       if (ca) provenance.created_at = ca;
+      const tp = str(c, o.provenance.template, "/provenance/template", 300);
+      if (tp) provenance.template = tp;
     }
   }
   if (!id || !title || !story || !actors) return undefined;
   return {
-    flow: "1", id, title, story, level: level as FlowHeader["level"], actors, tags, vars, review, raw: o, line: c.line,
+    flow: "1", id, title, story, level: level as FlowHeader["level"], actors, tags, vars, requires, imports, review, raw: o, line: c.line,
     ...(origin ? { origin } : {}), ...(login_path ? { login_path } : {}), ...(provenance ? { provenance } : {}),
   };
 }
@@ -528,5 +563,12 @@ export function loadFlowFiles(path: string): { docs: FlowDoc[]; problems: string
     ids.set(d.header.id, d.file);
   }
   docs.sort((a, b) => a.header.id.localeCompare(b.header.id));
+  resolveDeps(docs);
   return { docs, problems };
+}
+
+/** Resolves `requires` within one flow root (IDs never resolve outside the selected root). */
+export function resolveDeps(docs: FlowDoc[]): void {
+  const byId = new Map(docs.map((d) => [d.header.id, d]));
+  for (const d of docs) d.deps = d.header.requires.map((id) => byId.get(id)).filter((x): x is FlowDoc => !!x);
 }

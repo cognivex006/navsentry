@@ -5,6 +5,11 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Added
+- Chained flows, milestone 0.1.3-f (SPEC-0.1.3 §5.5, docs/FLOWS.md): flow headers gain `requires` and `imports`. Lint rejects missing flows, cycles, undeclared imports, missing exports, name collisions and undeclared actor or origin transfers before any request. Flows run in dependency order and a shared dependency runs once. A dependent of a flow that is not PASS is NOT_TESTED with the dependency reason. Only values extracted in PASS steps are imported. A dependent's content hash covers its dependency closure, so editing a required flow invalidates dependent approvals; unchained flows keep their 0.1.2 hash.
+- `flow approve --root <dir>` (default: the file's directory) so approval hashes include dependencies. `provenance.template` is accepted in flow headers.
+- `--only` and `--level` selections pull in eligible required flows.
+
+### Added
 - Milestone 0.1.3-a2 (SPEC-0.1.3 §6.2, §4.2):
   - `navsentry scan --mode spider`: a template-aware crawl from the seed paths up to `safety.max_depth`. Pages are grouped by (origin, actor, path pattern, query-key set); `safety.representatives_per_pattern` pages per group are fetched and the rest are recorded as `sampled-out` (NOT_TESTED, never an inherited PASS). A shape hash of the tag skeleton marks `mixed-shape` groups. A finding or a mixed shape leads to more pages of that group, never more than 2N. Links pass the static ScopeGate before they are queued; `javascript:`, `mailto:`, `data:`, off-scope and denied links are recorded, never followed. Frontier, page, depth and request limits are hard limits; no forms are submitted and no parameters changed.
   - `robots.txt` per RFC 9309, fetched once per origin through ScopeGate and the run Budget: the `NavSentry` group or `*`, longest match, `allow` wins ties, `*` and `$`. Production enforces the policy and blocks an origin whose policy is unreachable (401/403, 5xx, errors); development records it. A 2xx HTML body (SPA fallback) means no policy (D10).

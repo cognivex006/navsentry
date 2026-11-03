@@ -54,7 +54,7 @@ Story flows (Markdown test cases; zero network):
   navsentry flow init --id <id> --title <title> [--story <text>] [--level auto|integration|e2e] --out <dir>
   navsentry flow analyze --config <manifest.json> --from-run <run.json> --out <dir> [--lang en|th]
   navsentry flow lint --config <manifest.json> --flows <path>
-  navsentry flow approve --flows <file> --by <name> [--reference <ref>]   (owner action)
+  navsentry flow approve --flows <file> --by <name> [--reference <ref>] [--root <flows-dir>]   (owner action)
   navsentry flow show --flows <file>
 
 Exit: 0 no findings · 1 findings · 2 incomplete · 3 usage/config error · 4 workspace dirty
@@ -329,7 +329,10 @@ function selectFlows(m: Manifest, argv: string[]): { docs: FlowDoc[]; warnings: 
   const only = arg(argv, "--only")?.split(",").map((x) => x.trim()).filter(Boolean);
   const level = arg(argv, "--level");
   if (level && level !== "integration" && level !== "e2e") throw new UsageError("--level must be integration or e2e");
-  const picked = docs.filter((d) => (drafts || d.header.review.status === "approved") && (!only || only.includes(d.header.id)) && (!level || classify(d).level === level));
+  const eligible = (d: FlowDoc) => drafts || d.header.review.status === "approved";
+  const picked = docs.filter((d) => eligible(d) && (!only || only.includes(d.header.id)) && (!level || classify(d).level === level));
+  // Required flows join the selection when they are eligible; otherwise the dependent is NOT_TESTED.
+  for (let i = 0; i < picked.length; i++) for (const dep of picked[i]!.deps ?? []) if (eligible(dep) && !picked.includes(dep)) picked.push(dep);
   const skippedDrafts = docs.filter((d) => d.header.review.status !== "approved" && !drafts).length;
   if (skippedDrafts) warnings.push(`${skippedDrafts} draft flow(s) skipped; approve them or pass --include-drafts (non-production only)`);
   if (!picked.length) throw new UsageError("no flows selected (drafts need --include-drafts; check --only / --level)");
@@ -387,10 +390,15 @@ async function flowCommand(argv: string[]): Promise<number> {
       const path = resolve(need(rest, "--flows"));
       const by = need(rest, "--by").trim();
       if (!by || by.length > 100) throw new UsageError("--by needs the approver's name (1-100 characters)");
-      const { docs, problems } = loadFlowFiles(path);
+      if (statSync(path).isDirectory()) throw new UsageError("--flows must name exactly one .flow.md file");
+      // Load the whole flow root so the approval hash covers the dependency closure.
+      const root = resolve(arg(rest, "--root") ?? dirname(path));
+      const { docs, problems } = loadFlowFiles(root);
       if (problems.length) throw new FlowError(problems);
-      if (docs.length !== 1 || statSync(path).isDirectory()) throw new UsageError("--flows must name exactly one .flow.md file");
-      const doc = docs[0]!;
+      const doc = docs.find((d) => resolve(root, d.file) === path);
+      if (!doc) throw new UsageError("--flows must be inside --root (default: its own directory)");
+      const missing = doc.header.requires.filter((id) => !doc.deps?.some((x) => x.header.id === id));
+      if (missing.length) throw new UsageError(`cannot approve: required flow(s) ${missing.join(", ")} not found in ${root}`);
       const ref = arg(rest, "--reference");
       writeFileSync(path, approveText(doc, by, new Date().toISOString().slice(0, 10), ref));
       print(`approved ${doc.header.id} by ${by}; editing the flow invalidates this approval`);
