@@ -8,6 +8,7 @@ import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import type { HttpMethod, TransportStatus } from "../types.js";
 import type { ExecutionAdapter, TransportCapabilities } from "./types.js";
+import { probePlaywright } from "./playwright.js";
 
 const base = (id: string, mode: TransportCapabilities["mode"], cost: number, extra: Partial<TransportCapabilities>): TransportCapabilities => ({
   id,
@@ -121,16 +122,11 @@ export class PlaywrightBrowserAdapter implements ExecutionAdapter {
     supportsCookies: true,
     trustLevel: "in-process",
     evidenceFormats: ["dom-snapshot", "console", "network-log", "screenshot"],
-    unenforceableChannels: ["WebSocket frames after upgrade", "service workers (must be blocked)", "browser-internal requests (safe browsing, updates)"],
+    // Every routed request is fulfilled through ScopeGate/Budget; these channels are disabled, not enforced (ADR-0008).
+    unenforceableChannels: ["WebSocket (disabled: closed before connecting)", "service workers (disabled: blocked per context)", "browser-internal traffic (disabled by launch flags and a dead proxy, not by ScopeGate)"],
   });
   async probe(): Promise<TransportStatus> {
-    try {
-      const req = createRequire(import.meta.url);
-      const pkg = req("playwright/package.json") as { version: string };
-      return { id: this.capabilities.id, available: true, usable: false, reason: "package found; browser execution is scheduled for milestone M1b (see docs/DEV-PLAN.md)", version: pkg.version };
-    } catch {
-      return { id: this.capabilities.id, available: false, usable: false, reason: "optional package 'playwright' is not installed (NavSentry never installs it automatically)" };
-    }
+    return { id: this.capabilities.id, ...probePlaywright() };
   }
 }
 

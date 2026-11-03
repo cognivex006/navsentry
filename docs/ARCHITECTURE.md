@@ -7,7 +7,7 @@
 3. **Authorization & Scope Gate** (`scope.ts`) — `checkRequest` (scheme, credentials, origin, method, encoded traversal, deny/allow globs, literal IP class) before any I/O; `checkResolvedAddress` inside the socket `lookup` for every resolved address (DNS rebinding, metadata, private networks need named approval).
 4. **Budget** (`budget.ts`) — max requests, requests/second, duration; exhaustion makes the run `PARTIAL`.
 5. **Transport router** (`transports/registry.ts`) — chooses the lowest-cost *usable* adapter whose declared capabilities satisfy the check; if none, the check is `NOT_TESTED` (never silently downgraded, e.g. a DOM check is never "proven" by HTTP).
-6. **Transports** — `direct-http` (usable), `tls-probe` (usable), `playwright-browser` / `curl-cli` / `powershell-http` (probe only), `visual-computer-use` / `zap-passive` (unavailable).
+6. **Transports** — `direct-http` (usable), `tls-probe` (usable), `playwright-browser` (usable for development flows when the Chromium headless shell is installed, [ADR-0008](adr/0008-playwright-engine-s1.md)), `curl-cli` / `powershell-http` (probe only), `visual-computer-use` / `zap-passive` (unavailable).
 7. **Checks** (`checks/`) — deterministic functions over in-memory raw responses that emit redacted, value-free observations.
 8. **Redaction** (`redact.ts`) — applied to URLs, headers and body excerpts before anything is stored; binary/undecodable bodies are withheld (`safe:false` → run lists the gap).
 9. **Model & reports** — `RunResult` (schema v1) → JSON, Markdown (en/th), SARIF 2.1.0; `compare` for before/after.
@@ -19,7 +19,7 @@
 |---|---|---|---|---|---|---|---|
 | direct-http | http | – | – | ✓ | in-process | usable | none |
 | tls-probe | tls | – | – | – | in-process | usable | none |
-| playwright-browser | browser | ✓ | ✓ | ✓ | in-process | probe (M1b) | WebSocket frames after upgrade, service workers (must be blocked), browser-internal requests |
+| playwright-browser | browser | ✓ | ✓ | ✓ | in-process | usable (M1b; every request fulfilled through direct-http) | WebSocket (disabled), service workers (disabled), browser-internal traffic (disabled by launch flags, not by ScopeGate) |
 | curl-cli | cli-http | – | – | ✓ | vetted executable | probe (M3) | — |
 | powershell-http | cli-http | – | – | ✓ | vetted executable | probe (M3) | — |
 | visual-computer-use | visual | – | – | – | external provider | unavailable | everything inside the provider |

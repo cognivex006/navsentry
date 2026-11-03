@@ -15,7 +15,8 @@ Design and rationale: [ADR-0006](adr/0006-flow-files-and-test-levels.md) and the
 |---|---|
 | `http`: API request (`GET`, `HEAD` or `OPTIONS`) | Yes |
 | `navigate`: page load (`GET`) | Yes, at HTTP level only: status, headers, redirects and text in the HTML the server returns. No rendering or JavaScript. |
-| `click`, `select`, `see`, `wait_for` | No. The step is checked and classified, then reported `NOT_TESTED` because it needs the browser transport (M1b). |
+| `click`, `see`, `wait_for` | With `scan --mode flow --engine playwright` (development profile, Chromium headless shell installed): yes, in the browser, after a `navigate` step for the same actor. Otherwise `NOT_TESTED` with the reason. |
+| `select` | No. It may change state, so it stays `NOT_TESTED` until safe-validate (M2), even with the browser. |
 | `fill`, `submit` | No. Same as above; these steps may also change data, which needs safe-validate mode (M2). |
 
 If any step of a flow did not run, the flow is `INCOMPLETE`, never `PASS`. `TEST-REPORT.md` lists those steps as a manual replay checklist. Record a manual replay in a separate file based on [templates/MANUAL-REPLAY.md](reports/templates/MANUAL-REPLAY.md).

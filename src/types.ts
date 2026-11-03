@@ -294,7 +294,7 @@ export type FlowStatus = "PASS" | "FAIL" | "INCOMPLETE" | "ERROR" | "NOT_TESTED"
 export type FunctionalResult = "PASS" | "FAIL" | "INCOMPLETE";
 
 export interface AssertionResult {
-  kind: "status" | "content_type" | "header_present" | "header_absent" | "json" | "shape" | "text_present" | "text_absent" | "redirect_to" | "access";
+  kind: "status" | "content_type" | "header_present" | "header_absent" | "json" | "shape" | "text_present" | "text_absent" | "redirect_to" | "access" | "ui";
   status: CheckStatus;
   /** From the linted flow file. */
   expected: string;

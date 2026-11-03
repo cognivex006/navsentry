@@ -10,7 +10,8 @@ import { ScopeGate } from "./scope.js";
 import { DirectHttpAdapter, ScopeDenied } from "./transports/direct-http.js";
 import { allAdapters } from "./transports/registry.js";
 import type { Exchange } from "./transports/types.js";
-import { functionalResult, runFlows } from "./flow/execute.js";
+import { functionalResult, runFlows, type FlowBrowser } from "./flow/execute.js";
+import { BrowserEngine, firstLine, probePlaywright, type BrowserRequest, type ConsoleEvent, type PlaywrightProbe } from "./transports/playwright.js";
 import { classify, flowSetHash } from "./flow/classify.js";
 import { fillPath, flowOrigin, VAR_SENTINEL } from "./flow/lint.js";
 import { UI_ACTIONS, type FlowDoc } from "./flow/parse.js";
@@ -187,6 +188,8 @@ export interface ExecuteOptions {
   /** Run work directory (spool) and facts-cache directory, both under `.navsentry/`. */
   workDir?: string;
   cacheDir?: string;
+  /** `--engine playwright` (M1b): UI steps run in the browser engine; never a silent fallback (S6). */
+  browser?: { probe?: () => PlaywrightProbe };
 }
 
 export async function executeRun(m: Manifest, opts: ExecuteOptions = {}): Promise<RunResult> {
@@ -317,6 +320,55 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
   }
 
   let flowOutcome: Awaited<ReturnType<typeof runFlows>> | undefined;
+  let engine: BrowserEngine | undefined;
+  let flowBrowser: FlowBrowser | undefined;
+  const consoleEvents: ConsoleEvent[] = [];
+  if (opts.flows && opts.browser) {
+    const p = (opts.browser.probe ?? probePlaywright)();
+    if (!p.usable) incomplete.push(`playwright engine unavailable: ${p.reason}; UI steps NOT_TESTED`);
+    else {
+      // Per-step bookkeeping: request IDs, the final main document, and a budget stop seen inside the route handler.
+      let cur: { flow: { id: string; step: string }; ids: string[]; doc?: Exchange; budget?: BudgetExceeded } | undefined;
+      const sendBrowser = async (q: BrowserRequest): Promise<Exchange | undefined> => {
+        if (!cur || cur.budget) return undefined;
+        try {
+          const ex = await http.send({ method: q.method as "GET", url: q.url, displayUrl: redactor.url(q.url), actor: q.actor, flow: cur.flow, retainBytes: m.capture.max_response_bytes, headers: { ...q.headers, "x-navsentry-run": runId } });
+          exchanges.push(ex);
+          cur.ids.push(ex.record.id);
+          if (q.mainDocument && !ex.record.error) {
+            cur.doc = ex;
+            checks.push(...perExchange(ex, q.actor, q.url).filter((c) => !disabled.has(c.ruleId)));
+          }
+          return ex;
+        } catch (e) {
+          if (e instanceof ScopeDenied) return undefined;
+          if (e instanceof BudgetExceeded) { cur.budget = e; return undefined; }
+          throw e;
+        }
+      };
+      try {
+        engine = await BrowserEngine.open({ send: sendBrowser, onDenied: (url, method, reason) => denials.push({ url: redactor.url(url), method, reason }), onConsole: (e) => consoleEvents.push(e) }, new Map(usable.map((a) => [a.name, a.headers])));
+        const eng = engine;
+        const finish = () => { const c = cur!; cur = undefined; if (c.budget) throw c.budget; return c; };
+        flowBrowser = {
+          navigate: async (actor, url, flow) => {
+            cur = { flow, ids: [] };
+            const r = await eng.navigate(actor, url);
+            const c = finish();
+            return { requestIds: c.ids, ...(c.doc ? { exchange: c.doc } : {}), ...(!c.doc && r.error && c.ids.length ? { error: r.error } : {}) };
+          },
+          act: async (actor, action, target, flow) => {
+            cur = { flow, ids: [] };
+            const r = await eng.act(actor, action, target);
+            const c = finish();
+            return { ok: r.ok, observed: r.observed, requestIds: c.ids, ...(r.error ? { error: r.error } : {}) };
+          },
+        };
+      } catch (e) {
+        incomplete.push(`playwright engine failed to start: ${firstLine(e)}; UI steps NOT_TESTED`);
+      }
+    }
+  }
   if (opts.flows) {
     const actorSkipReasons = new Map(skipped.map((x) => [x.actor, x.reason]));
     try {
@@ -329,6 +381,7 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
         onDenied: (url, method, reason) => denials.push({ url, method, reason }),
         displayUrl: (u) => redactor.url(u),
         securityChecks: (ex, actor, url) => perExchange(ex, actor, url).filter((c) => !disabled.has(c.ruleId)),
+        ...(flowBrowser ? { browser: flowBrowser } : {}),
         send: async (q) => {
           try {
             const ex = await http.send({ method: q.method, url: q.url, displayUrl: q.displayUrl, actor: q.actor, flow: q.flow, headers: { ...q.headers, "x-navsentry-run": runId } });
@@ -347,6 +400,7 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
     }
   }
 
+  await engine?.close();
   budget.close();
   // Page models: built in memory from retained HTML; raw bodies never leave this process (§5.1).
   let pageModels: PageModel[] | undefined;

@@ -12,7 +12,7 @@ import type { AssertionResult, CheckResult, CheckStatus, FlowResult, FlowStatus,
 import { evaluate, resolvePointer, worst } from "./assert.js";
 import { classify, flowHash, requestTemplate, stepHash, stepTransport } from "./classify.js";
 import { fillPath, flowOrigin, placeholders, topoOrder } from "./lint.js";
-import { UI_ACTIONS, type FlowDoc, type FlowStep } from "./parse.js";
+import { UI_ACTIONS, type FlowDoc, type FlowStep, type UiTarget } from "./parse.js";
 
 export const MAX_FLOW_REDIRECTS = 5;
 const SAFE_VALUE = /^[A-Za-z0-9._~-]{1,128}$/;
@@ -39,7 +39,19 @@ export interface FlowContext {
   securityChecks(ex: Exchange, actor: string, url: string): CheckResult[];
   onDenied(url: string, method: string, reason: string): void;
   displayUrl(url: string): string;
+  /** Present when the run uses the playwright engine (M1b); UI steps are NOT_TESTED without it. */
+  browser?: FlowBrowser;
 }
+
+/** Browser steps as the flow runner sees them; every request inside goes through `send`'s ScopeGate/Budget path. */
+export interface FlowBrowser {
+  /** Loads a page; `exchange` is the final main-document exchange (after redirects). */
+  navigate(actor: string, url: string, flow: { id: string; step: string }): Promise<{ exchange?: Exchange; requestIds: string[]; error?: string }>;
+  act(actor: string, action: "click" | "see" | "wait_for", target: UiTarget, flow: { id: string; step: string }): Promise<{ ok: boolean; observed: string; requestIds: string[]; error?: string }>;
+}
+
+/** UI actions the observe-mode browser runs; the others may change state and wait for M2. */
+export const BROWSER_ACTIONS: ReadonlySet<string> = new Set(["click", "see", "wait_for"]);
 
 export interface FlowsOutcome {
   flows: FlowResult[];
@@ -120,12 +132,26 @@ async function runDoc(doc: FlowDoc, ctx: FlowContext, budget: { exhausted?: stri
     const skip = (reason: string) => { res.reason = reason; };
 
     if (chain.blocked) { skip(chain.blocked); continue; }
-    if (UI_ACTIONS.has(s.action)) { skip(uiReason(s)); continue; }
+    if (UI_ACTIONS.has(s.action) && !(ctx.browser && BROWSER_ACTIONS.has(s.action))) { skip(ctx.browser ? `${s.action} may change state — requires safe-validate (M2)` : uiReason(s)); continue; }
     if (budget.exhausted) { skip("budget exhausted"); continue; }
     const actorHeaders = ctx.actors.get(s.actor);
     if (!actorHeaders) { skip(`actor ${s.actor} not tested: ${ctx.actorSkipReasons.get(s.actor) ?? "not usable"}`); continue; }
     const dep = (s.depends_on ?? []).find((d) => byId.get(d)?.result.status !== "PASS");
     if (dep) { skip(`dependency ${dep} did not pass`); continue; }
+    if (ctx.browser && UI_ACTIONS.has(s.action)) {
+      try {
+        const a = await ctx.browser.act(s.actor, s.action as "click" | "see" | "wait_for", s.target!, { id: doc.header.id, step: s.id });
+        res.requestIds.push(...a.requestIds);
+        const expected = s.action === "click" ? "element clicked" : "element visible";
+        res.assertions = [{ kind: "ui", status: a.error ? "ERROR" : a.ok ? "PASS" : "FAIL", expected, observed: a.observed }];
+        res.status = res.assertions[0]!.status;
+        if (a.error) res.reason = a.error;
+      } catch (e) {
+        if (e instanceof BudgetExceeded) { budget.exhausted = e.message; skip("budget exhausted"); continue; }
+        throw e;
+      }
+      continue;
+    }
     const missing = placeholders(s).find((v) => !vars.has(v));
     if (missing) {
       const producer = runs.find((r) => r.step.extract && missing in r.step.extract);
@@ -142,6 +168,21 @@ async function runDoc(doc: FlowDoc, ctx: FlowContext, budget: { exhausted?: stri
       const ph = v.match(/^\{\{(\w+)\}\}$/);
       u.searchParams.set(k, ph ? vars.get(ph[1] as string)! : v);
       du.searchParams.set(k, v);
+    }
+    if (ctx.browser && s.action === "navigate") {
+      try {
+        const nav = await ctx.browser.navigate(s.actor, u.toString(), { id: doc.header.id, step: s.id });
+        res.requestIds.push(...nav.requestIds);
+        if (!nav.exchange) { if (nav.error) { res.status = "ERROR"; res.reason = nav.error; } else skip("denied by scope (see run.json denials)"); continue; }
+        run.exchange = nav.exchange;
+        res.assertions = evaluate(s.expect ?? {}, nav.exchange, origin);
+        run.pendingDenied = s.expect?.access === "denied";
+        res.status = run.pendingDenied ? "PASS" : worst(res.assertions.map((a) => a.status));
+      } catch (e) {
+        if (e instanceof BudgetExceeded) { budget.exhausted = e.message; skip("budget exhausted"); continue; }
+        throw e;
+      }
+      continue;
     }
     const accept = s.action === "navigate" ? ACCEPT.html : ACCEPT[(r.accept as keyof typeof ACCEPT) ?? "any"] ?? ACCEPT.any;
     let ex: Exchange | undefined;
