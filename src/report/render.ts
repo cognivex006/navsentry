@@ -80,6 +80,13 @@ export function renderMarkdown(r: RunResult, lang: "en" | "th" = "en"): string {
     if (a.skipped.length) out.push(`- Skipped: ${a.skipped.length} (${[...new Set(a.skipped.map((x) => x.reason.split(":")[0]))].join(", ")})`);
     out.push("");
   }
+  if (r.analyzer) {
+    const a = r.analyzer;
+    out.push("## Analyzer", "", `- Engine \`${a.engine}\` · page models ${a.pages} (in \`page-models/\`) · incomplete ${a.incomplete} · withheld by the leak scan ${a.withheld}`, `- Free text: ${a.includeText ? "included (titles and headings, redacted, 120 characters; pattern redaction cannot prove free text free of personal data)" : "omitted (default)"}`);
+    for (const e of a.extractors) out.push(`- Extractor \`${e.id}\` (${e.source}) sha256 \`${e.sha256.slice(0, 16)}\` — ${e.status}`);
+    for (const x of a.refused) out.push(`- Refused \`${esc(x.file)}\`: ${esc(x.reason)}`);
+    out.push("");
+  }
   if (r.knowledge) {
     const k = r.knowledge;
     out.push("## Knowledge", "", `- Snapshot \`${k.snapshot.version}\` · sha256 \`${k.snapshot.sha256.slice(0, 16)}\` · ${k.snapshot.records} record(s), ${k.snapshot.reviewed} reviewed, ${k.snapshot.stale} stale${k.snapshot.verifiedAt ? ` · oldest verification ${k.snapshot.verifiedAt}` : ""}`, `- ${k.snapshot.note}`, "");

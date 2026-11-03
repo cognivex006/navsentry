@@ -179,16 +179,17 @@ test("scan --mode page equals the seed scan; run.json keeps mode and scanMode ap
   }
 });
 
-test("requested analysis that is unavailable is NOT_TESTED, never silently dropped (exit 2)", async () => {
+test("--engine analyzer is shorthand for --engine http --analyze and produces page models (0.1.3-b)", async () => {
   const demo = await startDemo("secure");
   const dir = tmp("analyze");
   try {
     const m = writeManifest(dir, demo.origin);
     const out = join(dir, "out");
-    assert.equal(await main(["scan", "--config", m, "--mode", "page", "--engine", "analyzer", "--project", dir, "--out", out]), 2);
+    const code = await main(["scan", "--config", m, "--mode", "page", "--engine", "analyzer", "--project", dir, "--out", out]);
     const r = JSON.parse(readFileSync(join(out, "run.json"), "utf8")) as RunResult;
-    assert.equal(r.executionStatus, "PARTIAL");
-    assert.ok(r.incompleteReasons.some((x) => x.startsWith("analysis NOT_TESTED")));
+    assert.ok(code === 0 || code === 1, `exit ${code}: ${r.incompleteReasons.join("; ")}`);
+    assert.equal(r.analyzer?.engine, "node-page-model");
+    assert.ok(!r.incompleteReasons.some((x) => x.startsWith("analysis NOT_TESTED")));
     assert.deepEqual(r.engine, { requested: "analyzer", used: "http", analyze: true });
   } finally {
     await demo.close();

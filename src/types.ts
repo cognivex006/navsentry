@@ -178,6 +178,7 @@ export interface RunResult {
   spider?: SpiderResult;
   assets?: AssetScanResult;
   knowledge?: KnowledgeResult;
+  analyzer?: AnalyzerResult;
 }
 
 /** A redirect chain followed hop by hop; every hop passed ScopeGate (SPEC-0.1.3 §4.2). */
@@ -252,6 +253,18 @@ export interface CodeInventory {
   /** Lockfile packages that have records in the knowledge snapshot. */
   knowledge?: KnowledgeResult["applicability"];
   snapshot?: { version: string; sha256: string };
+}
+
+/** Page-model analyzer summary (SPEC-0.1.3 §5); models themselves are in `page-models/`. */
+export interface AnalyzerResult {
+  engine: "node-page-model";
+  pages: number;
+  /** Models withheld by the artifact leak scan. */
+  withheld: number;
+  incomplete: number;
+  includeText: boolean;
+  extractors: { id: string; sha256: string; source: "draft" | "promoted"; status: "deleted with the run" | "kept (owner-promoted)" }[];
+  refused: { file: string; reason: string }[];
 }
 
 export interface WorkspaceResult {

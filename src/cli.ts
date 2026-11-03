@@ -13,7 +13,10 @@ import { ProposalError, parseProposal, propose } from "./knowledge/propose.js";
 import { evaluateEvidence } from "./knowledge/evidence.js";
 import { MAX_SPEC_BYTES, OpenApiError, importOpenApi, parseOpenApiText } from "./inventory/openapi.js";
 import { inventoryTree } from "./inventory/tree.js";
-import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
+import { parseExtractor, type ExtractorSpec } from "./analyzer/extractor.js";
+import { validatePageModel } from "./analyzer/page-model.js";
+import { Redactor } from "./redact.js";
+import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { CASES, CATEGORIES } from "./catalog.js";
 import { compareRuns, renderCompareMarkdown } from "./compare.js";
@@ -29,7 +32,7 @@ import { lintFlows } from "./flow/lint.js";
 import { FLOW_ID, FlowError, loadFlowFiles, type FlowDoc } from "./flow/parse.js";
 import { renderFlowSection, renderJunit, renderTestMarkdown, validateFlowRunResult } from "./report/flow-render.js";
 import type { Manifest } from "./config.js";
-import type { CodeInventory, Engine, FlowRunResult, RunResult, ScanMode } from "./types.js";
+import type { AnalyzerResult, CodeInventory, Engine, FlowRunResult, RunResult, ScanMode } from "./types.js";
 import { WorkspaceError, authorize, cleanCache, beginRun, endRun, projectRoot, releaseWorkDir, sweepStale, workspaceStatus } from "./workspace.js";
 import { allAdapters } from "./transports/registry.js";
 import { ScopeGate } from "./scope.js";
@@ -47,7 +50,7 @@ Usage:
   navsentry discover --config <manifest.json> --dry-run
   navsentry test --config <manifest.json> [--out <dir>] [--profile safe] [--env development|production] [--project <dir>]
                  [--flows <path>] [--flows-only] [--include-drafts] [--only <id,...>] [--level integration|e2e] [--junit]
-  navsentry scan --config <manifest.json> --mode page|spider|flow [--engine http|playwright|analyzer] [--analyze]
+  navsentry scan --config <manifest.json> --mode page|spider|flow [--engine http|playwright|analyzer] [--analyze [--extractors <dir>]]
                  [--env development|production] [--url <in-scope URL>] [--flows <path>] [--out <dir>] [--project <dir>]
                  page without --url scans the seed paths, like test; flow equals test --flows <path> --flows-only.
                  spider crawls from the seed paths, grouping pages by template; computer-use is deferred beyond 0.1.3.
@@ -211,7 +214,7 @@ export function exitCode(r: RunResult, flowRun?: FlowRunResult): number {
   return 0;
 }
 
-interface RunOpts { assets?: boolean; urls?: string[]; spider?: boolean; flows?: FlowDoc[]; flowsOnly?: boolean; warnings?: string[]; scanMode?: ScanMode; engine?: RunResult["engine"]; notTested?: string[] }
+interface RunOpts { analyze?: { extractors: string[]; draftsDir?: string }; assets?: boolean; urls?: string[]; spider?: boolean; flows?: FlowDoc[]; flowsOnly?: boolean; warnings?: string[]; scanMode?: ScanMode; engine?: RunResult["engine"]; notTested?: string[] }
 
 /** Executes a run inside a managed workspace (SPEC-0.1.3 §7.2), writes the reports and returns the exit code. */
 async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<number> {
@@ -219,15 +222,33 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
   const runId = randomUUID();
   const ws = beginRun(arg(argv, "--project") ?? process.cwd(), runId, m.workspace.ignore);
   let res: Awaited<ReturnType<typeof executeTest>>;
+  const analyzer: AnalyzerResult | undefined = o.analyze ? { engine: "node-page-model", pages: 0, withheld: 0, incomplete: 0, includeText: m.analyzer.include_text, extractors: [], refused: [] } : undefined;
+  let specs: ExtractorSpec[] = [];
+  if (o.analyze && analyzer) specs = loadExtractors(ws.root, ws.work.path, o.analyze.draftsDir, analyzer);
   try {
-    res = await executeTest(m, { runId, ...(o.flows ? { flows: o.flows, flowsOnly: !!o.flowsOnly } : {}), ...(o.scanMode ? { scanMode: o.scanMode } : {}), ...(o.engine ? { engine: o.engine } : {}), ...(o.urls ? { urls: o.urls } : {}), ...(o.spider ? { spider: true } : {}),
+    res = await executeTest(m, { ...(o.analyze ? { analyze: { extractors: specs } } : {}), runId, ...(o.flows ? { flows: o.flows, flowsOnly: !!o.flowsOnly } : {}), ...(o.scanMode ? { scanMode: o.scanMode } : {}), ...(o.engine ? { engine: o.engine } : {}), ...(o.urls ? { urls: o.urls } : {}), ...(o.spider ? { spider: true } : {}),
       ...(o.assets ? { assets: true, workDir: ws.work.path, cacheDir: join(ws.root, ".navsentry", "cache", "assets") } : {}) });
   } catch (e) {
     ws.dispose();
     try { releaseWorkDir(ws.work); } catch { /* reported by the next run's sweep */ }
     throw e;
   }
-  const { run: r, flowRun, clientFindings, proposals } = res;
+  const { run: r, flowRun, clientFindings, proposals, pageModels } = res;
+  // Page models are promoted only after the Redactor and the artifact leak scan (§7.2 step 5).
+  const models: [string, string][] = [];
+  if (analyzer && pageModels) {
+    const leak = new Redactor(Object.values(process.env).filter((v): v is string => typeof v === "string" && v.length >= 12 && Object.values(m.actors).some((a) => [a.authorization_header_env, a.password_env, a.username_env].some((k) => k && process.env[k] === v))));
+    pageModels.forEach((pm, i) => {
+      const json = JSON.stringify(pm, null, 2) + "\n";
+      if (leak.text(json).outcome.kinds.includes("known-secret")) { analyzer.withheld++; return; }
+      models.push([`page-models/${String(i + 1).padStart(3, "0")}.json`, json]);
+    });
+    analyzer.pages = models.length;
+    analyzer.incomplete = pageModels.filter((p) => p.incomplete).length;
+    if (analyzer.withheld) r.incompleteReasons.push(`analyzer: ${analyzer.withheld} page model(s) withheld by the leak scan`);
+    r.analyzer = analyzer;
+    if (r.assets?.cost) r.assets.cost.agentVisibleBytes += models.reduce((a, [, c]) => a + Buffer.byteLength(c), 0);
+  }
   // §6.6-D trigger 1: every scan turns its own knowledge gaps into local research-needed proposals.
   if (o.scanMode && proposals?.length && r.knowledge) {
     for (const p of proposals) {
@@ -251,6 +272,7 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
     if (cf && r.assets?.cost) r.assets.cost.agentVisibleBytes = Buffer.byteLength(cf);
     const files: [string, string][] = [["run.json", renderJson(r)]];
     if (cf) files.push(["client-findings.json", cf]);
+    files.push(...models);
     if (m.report.formats.includes("markdown")) files.push(["REPORT.md", renderMarkdown(r, lang) + (flowRun ? "\n" + renderFlowSection(flowRun, r, lang) : "")]);
     if (m.report.formats.includes("sarif")) files.push(["report.sarif", JSON.stringify(renderSarif(r), null, 2)]);
     if (flowRun) {
@@ -258,6 +280,7 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
       files.push(["TEST-REPORT.md", renderTestMarkdown(flowRun, r, lang)]);
       if (argv.includes("--junit")) files.push(["junit.xml", renderJunit(flowRun)]);
     }
+    if (models.length) mkdirSync(join(out, "page-models"), { recursive: true });
     for (const [n, c] of files) { authorize(ws, join(out, n)); writeFileSync(join(out, n), c); }
     return files.length;
   };
@@ -293,6 +316,7 @@ async function scan(argv: string[]): Promise<number> {
   if (arg(argv, "--flows") !== undefined && mode !== "flow") throw new UsageError("--flows applies only to --mode flow");
   if (mode === "flow" && !arg(argv, "--flows")) throw new UsageError("--mode flow needs --flows <path>");
   if (analyze && mode === "flow") throw new UsageError("--analyze applies only to --mode page and spider");
+  if (arg(argv, "--extractors") !== undefined && !analyze) throw new UsageError("--extractors needs --analyze");
   if (engine === "playwright" && mode !== "flow") throw new UsageError(`--engine playwright is not offered for --mode ${mode} (SPEC-0.1.3 §2, owner decision D7)`);
   const m = loadManifest(need(argv, "--config"));
   assertEnv(m, argv);
@@ -317,8 +341,8 @@ async function scan(argv: string[]): Promise<number> {
     }
     return await runAndReport(m, argv, { flows: sel.docs, flowsOnly: true, warnings: sel.warnings, scanMode: "flow", engine: eng });
   }
-  const notTested = analyze ? ["analysis NOT_TESTED: the page-model analyzer is not available yet (milestone 0.1.3-b)"] : [];
-  return await runAndReport(m, argv, { scanMode: mode, engine: eng, notTested, assets: true, ...(urls ? { urls } : {}), ...(mode === "spider" ? { spider: true } : {}) });
+  const drafts = arg(argv, "--extractors");
+  return await runAndReport(m, argv, { scanMode: mode, engine: eng, assets: true, ...(analyze ? { analyze: { extractors: [], ...(drafts ? { draftsDir: resolve(need(argv, "--extractors")) } : {}) } } : {}), ...(urls ? { urls } : {}), ...(mode === "spider" ? { spider: true } : {}) });
 }
 
 /**
@@ -366,6 +390,39 @@ function inventoryCommand(argv: string[]): number {
   print(`INVENTORY: ${join(out, "CODE-INVENTORY.md")}`);
   if (w.status === "FAIL") { process.stderr.write(`WORKSPACE_DIRTY: created=${w.created.length} modified=${w.modified.length} deleted=${w.deleted.length}\n`); return 4; }
   return inv.complete && w.status === "PASS" ? 0 : 2;
+}
+
+/**
+ * Extractor specs (§5.4): owner-promoted specs from `<project>/navsentry/analyzer/extractors/` and
+ * draft specs copied into the run's work directory (deleted with it). Only `.json` data files are
+ * accepted; NavSentry never executes code from either place.
+ */
+function loadExtractors(root: string, work: string, draftsDir: string | undefined, out: AnalyzerResult): ExtractorSpec[] {
+  const specs: ExtractorSpec[] = [];
+  const read = (dir: string, source: "draft" | "promoted") => {
+    let names: string[];
+    try { names = readdirSync(dir).sort(); } catch { return; }
+    const dest = join(work, "extractors");
+    if (source === "draft") mkdirSync(dest, { recursive: true });
+    for (const n of names.slice(0, 50)) {
+      const p = join(dir, n);
+      const st = lstatSync(p);
+      if (st.isSymbolicLink() || !st.isFile()) { out.refused.push({ file: n, reason: "not a regular file" }); continue; }
+      if (!n.endsWith(".json")) { out.refused.push({ file: n, reason: "refused: extractors are JSON data; NavSentry never executes code" }); continue; }
+      try {
+        let text = readFileSync(p, "utf8");
+        if (source === "draft") { writeFileSync(join(dest, n), text, { flag: "wx", mode: 0o600 }); text = readFileSync(join(dest, n), "utf8"); }
+        const s = parseExtractor(text);
+        specs.push(s);
+        out.extractors.push({ id: s.id, sha256: s.sha256, source, status: source === "draft" ? "deleted with the run" : "kept (owner-promoted)" });
+      } catch (e) {
+        out.refused.push({ file: n, reason: (e as Error).message.split("\n").slice(0, 3).join(" ") });
+      }
+    }
+  };
+  read(join(root, "navsentry", "analyzer", "extractors"), "promoted");
+  if (draftsDir) read(draftsDir, "draft");
+  return specs;
 }
 
 /** `knowledge status | lookup | propose` (SPEC-0.1.3 §6.6-D). Offline: zero network actions (S12). */
@@ -499,6 +556,16 @@ async function flowCommand(argv: string[]): Promise<number> {
       const existing = existsSync(dir) ? loadFlowFiles(dir).docs.map((d) => d.header.id) : [];
       const lang = (arg(rest, "--lang") ?? m.report.language) as "en" | "th";
       const outp = analyzeRun(run, m, new Set(existing), lang);
+      // Page models beside run.json (redacted, structural) add a templates-and-forms section.
+      const pmDir = join(dirname(resolve(need(rest, "--from-run"))), "page-models");
+      if (existsSync(pmDir)) {
+        const pms = readdirSync(pmDir).filter((n) => /^\d{3}\.json$/.test(n)).sort().map((n) => validatePageModel(JSON.parse(readFileSync(join(pmDir, n), "utf8"))));
+        const md = outp.files.get("ANALYSIS.md") ?? "";
+        const tpl = new Map<string, { pages: number; forms: number }>();
+        for (const p of pms) { const t = tpl.get(p.template.path_pattern) ?? { pages: 0, forms: 0 }; t.pages++; t.forms += p.forms.length; tpl.set(p.template.path_pattern, t); }
+        const forms = pms.flatMap((p) => p.forms.map((f) => `| \`${p.template.path_pattern.replace(/[`|]/g, "")}\` | ${f.method} | ${f.fields.map((x) => `${x.name.replace(/[`|]/g, "")}:${x.type}${x.required ? "*" : ""}`).join(", ") || "—"} |`));
+        outp.files.set("ANALYSIS.md", `${md}\n## Templates and forms (page models)\n\nStructure only; field values and page text are never recorded. Forms need the browser transport (M1b) and, for submissions, safe-validate (M2).\n\n| Template | Pages | Forms |\n|---|---|---|\n${[...tpl].map(([k, v]) => `| \`${k.replace(/[`|]/g, "")}\` | ${v.pages} | ${v.forms} |`).join("\n") || "| — | | |"}\n\n| Template | Method | Fields (* required) |\n|---|---|---|\n${forms.join("\n") || "| — | | |"}\n`);
+      }
       let written = 0;
       for (const [name, content] of outp.files) {
         const f = join(dir, name);
