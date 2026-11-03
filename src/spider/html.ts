@@ -15,6 +15,8 @@ export interface PageScan {
   shapeHash: string;
   /** Raw href values of <a>/<area>, in document order (never fetched here). */
   hrefs: string[];
+  /** Script src and stylesheet / script-preload href values, for the static asset scan. */
+  assets: string[];
   base?: string;
   tags: number;
   /** true when MAX_TAGS stopped the scan; the skeleton and links are then partial. */
@@ -34,6 +36,7 @@ export function decodeEntities(s: string): string {
 export function scanHtml(html: string): PageScan {
   const hash = createHash("sha256");
   const hrefs: string[] = [];
+  const assets: string[] = [];
   let base: string | undefined;
   let tags = 0;
   let i = 0;
@@ -56,7 +59,7 @@ export function scanHtml(html: string): PageScan {
     const name = m[0].toLowerCase();
     const end = findTagEnd(html, lt + 1);
     if (end < 0) break;
-    if (++tags > MAX_TAGS) return { shapeHash: hash.digest("hex"), hrefs, ...(base ? { base } : {}), tags: MAX_TAGS, truncated: true };
+    if (++tags > MAX_TAGS) return { shapeHash: hash.digest("hex"), hrefs, assets, ...(base ? { base } : {}), tags: MAX_TAGS, truncated: true };
     hash.update(closing ? `</${name}>` : VOID.has(name) ? `<${name}/>` : `<${name}>`);
     i = end + 1;
     if (closing) continue;
@@ -68,13 +71,22 @@ export function scanHtml(html: string): PageScan {
         else hrefs.push(href);
       }
     }
+    if (name === "script") {
+      const src = attr(inner, "src");
+      if (src) assets.push(src);
+    } else if (name === "link") {
+      const rel = (attr(inner, "rel") ?? "").toLowerCase().split(/\s+/);
+      const as = (attr(inner, "as") ?? "").toLowerCase();
+      const href = attr(inner, "href");
+      if (href && (rel.includes("stylesheet") || rel.includes("modulepreload") || (rel.includes("preload") && (as === "script" || as === "style")))) assets.push(href);
+    }
     if (RAW_TEXT.has(name)) {
       // Skip the raw-text body without tokenizing it; the closing tag is hashed on the next pass.
       const close = html.toLowerCase().indexOf(`</${name}`, i);
       i = close < 0 ? html.length : close;
     }
   }
-  return { shapeHash: hash.digest("hex"), hrefs, ...(base ? { base } : {}), tags, truncated: false };
+  return { shapeHash: hash.digest("hex"), hrefs, assets, ...(base ? { base } : {}), tags, truncated: false };
 }
 
 /** Finds the `>` that ends a tag, ignoring `>` inside quoted attribute values. */

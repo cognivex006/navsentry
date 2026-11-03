@@ -347,3 +347,25 @@ export function workspaceStatus(projectDir: string): WorkspaceStatus {
     : [];
   return { root, stateDir: existsSync(join(root, STATE_DIR)), categories: cats, work };
 }
+
+/**
+ * Removes expired facts-cache entries (`.navsentry/cache/assets/*.json` older than `maxAgeDays`).
+ * Only regular files with the cache naming are touched; links and anything else are preserved.
+ */
+export function cleanCache(root: string, maxAgeDays: number, opts: { dryRun?: boolean; now?: Date } = {}): { removed: number; preserved: number } {
+  const dir = join(root, STATE_DIR, "cache", "assets");
+  const out = { removed: 0, preserved: 0 };
+  const st = lstatSync(dir, { throwIfNoEntry: false });
+  if (!st || !st.isDirectory() || st.isSymbolicLink()) return out;
+  assertNoLinkedAncestors(root, dir);
+  const limit = (opts.now ?? new Date()).getTime() - maxAgeDays * 86_400_000;
+  for (const name of readdirSync(dir)) {
+    const p = join(dir, name);
+    const fs = lstatSync(p);
+    if (!/^[0-9a-f]{64}\.json$/.test(name) || !fs.isFile() || fs.isSymbolicLink()) { out.preserved++; continue; }
+    if (fs.mtimeMs >= limit) continue;
+    if (!opts.dryRun) unlinkSync(p);
+    out.removed++;
+  }
+  return out;
+}

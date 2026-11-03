@@ -5,6 +5,8 @@
 import type { RedactionOutcome } from "./types.js";
 
 export const MAX_EXCERPT_CHARS = 2048;
+/** Bump when redaction rules change; it invalidates cached asset facts (SPEC-0.1.3 §6.4-C). */
+export const REDACTION_POLICY_VERSION = "1";
 
 const SENSITIVE_HEADERS = new Set(["authorization", "proxy-authorization", "cookie", "set-cookie", "x-api-key", "x-auth-token", "x-csrf-token", "x-xsrf-token"]);
 
@@ -36,7 +38,25 @@ export function luhn(raw: string): boolean {
   return sum % 10 === 0;
 }
 
+/**
+ * Secret shapes shared by the Redactor and the static asset detectors (SPEC-0.1.3 §6.4: one
+ * definition of each secret shape). `marker` is a fixed public provider label, never value data.
+ */
+export const SECRET_SHAPES: { kind: string; marker?: string; re: RegExp }[] = [
+  { kind: "jwt", marker: "jwt", re: /\beyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]*/g },
+  { kind: "private-key", marker: "private-key", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----/g },
+  { kind: "provider-key", marker: "aws-access-key", re: /\b(?:AKIA|ASIA)[0-9A-Z]{16}\b/g },
+  { kind: "provider-key", marker: "stripe-live-key", re: /\b[sr]k_live_[0-9A-Za-z]{16,}\b/g },
+  { kind: "provider-key", marker: "stripe-test-key", re: /\b[sr]k_test_[0-9A-Za-z]{16,}\b/g },
+  { kind: "provider-key", marker: "github-token", re: /\b(?:gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{40,})\b/g },
+  { kind: "provider-key", marker: "slack-token", re: /\bxox[abposr]-[A-Za-z0-9-]{10,}\b/g },
+  { kind: "provider-key", marker: "google-api-key", re: /\bAIza[0-9A-Za-z_-]{35}\b/g },
+];
+
+const PROVIDER_PATTERNS: Pattern[] = SECRET_SHAPES.filter((x) => x.kind === "provider-key").map((x) => ({ kind: `provider-key`, re: x.re, replace: () => `[REDACTED:${x.marker}]` }));
+
 const PATTERNS: Pattern[] = [
+  ...PROVIDER_PATTERNS,
   { kind: "jwt", re: /\beyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]*/g, replace: () => "[REDACTED:jwt]" },
   { kind: "bearer", re: /\b(Bearer|Basic)\s+[A-Za-z0-9._~+/=-]{8,}/gi, replace: (_m, s) => `${s} [REDACTED]` },
   { kind: "private-key", re: /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g, replace: () => "[REDACTED:private-key]" },

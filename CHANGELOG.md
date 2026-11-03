@@ -5,6 +5,17 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Added
+- Static asset scan, milestone 0.1.3-s (SPEC-0.1.3 §6.4-B/C), on by default for `scan --mode page|spider`:
+  - Inventory from fetched HTML (scripts, stylesheets, script/style preloads) and `/asset-manifest.json`; images, fonts and media are skipped. Each asset is fetched once per run and actor.
+  - Bodies are streamed into an owned spool file in the run's work directory (bounded by `capture.max_work_bytes`) and scanned in chunks with an overlap, so values across chunk boundaries are found without buffering the body. Asset requests keep no body excerpt.
+  - Fixed exposure probes once per origin as anonymous: `/.env`, `/.git/HEAD`, `/config.js`, `/env.js`, `/__ENV.js` (HEAD, then GET on 2xx/405); `/asset-manifest.json` for inventory. `checks.disabled: ["NSC-CONF-009"]` turns the probes off. A 200 SPA fallback page is not a finding: the file format must match.
+  - Source maps from `sourceMappingURL`, the `SourceMap`/`X-SourceMap` headers or one `<bundle>.map` probe.
+  - New cases **NSC-INFO-007** Secrets in client-side assets (exact known-token match VALIDATED, format match SUSPECTED), **NSC-INFO-008** Source maps with source content (anonymous in production VALIDATED, authenticated-only SUSPECTED, development observation only), **NSC-CONF-009** Configuration or VCS files publicly reachable, and **NSC-SUPPLY-002** Client-side library with known vulnerabilities (planned; needs an approved advisory source). Internal hosts in assets add evidence to NSC-INFO-003; development-server client code in a production bundle to NSC-CONF-005.
+  - Facts-only cache in `.navsentry/cache/assets/`, keyed by content hash, detector version and redaction-policy version; it never stores values, verdicts or known-token matches, which are recomputed each run. `capture.cache_max_age_days: 0` disables reuse; `workspace clean --cache-max-age-days <n>` removes expired entries.
+  - `client-findings.json` beside `run.json`: the agent-facing summary (case, asset display URL, line:col, masked `[kind,len=n]` preview, count, content-hash prefix), capped at 200 entries. `run.json → assets.cost` records bytes scanned locally, agent-visible bytes and the cache hit ratio. REPORT.md gains a *Client assets* section.
+  - Provider key shapes (AWS, Stripe, GitHub, Slack, Google API) are shared by the Redactor and the detectors.
+
+### Added
 - Chained flows, milestone 0.1.3-f (SPEC-0.1.3 §5.5, docs/FLOWS.md): flow headers gain `requires` and `imports`. Lint rejects missing flows, cycles, undeclared imports, missing exports, name collisions and undeclared actor or origin transfers before any request. Flows run in dependency order and a shared dependency runs once. A dependent of a flow that is not PASS is NOT_TESTED with the dependency reason. Only values extracted in PASS steps are imported. A dependent's content hash covers its dependency closure, so editing a required flow invalidates dependent approvals; unchained flows keep their 0.1.2 hash.
 - `flow approve --root <dir>` (default: the file's directory) so approval hashes include dependencies. `provenance.template` is accepted in flow headers.
 - `--only` and `--level` selections pull in eligible required flows.

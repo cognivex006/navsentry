@@ -98,6 +98,8 @@ export interface CheckResult {
   reason?: string;
   /** "draft-flow": evidence rests on an unapproved flow expectation; findings stay SUSPECTED. */
   basis?: "draft-flow";
+  /** Finding lifecycle decided by the check's evidence (0.1.3): an exact assertion VALIDATED, a pattern SUSPECTED. */
+  lifecycle?: "VALIDATED" | "SUSPECTED";
 }
 
 export interface Finding {
@@ -174,6 +176,7 @@ export interface RunResult {
   workspace?: WorkspaceResult;
   redirectChains?: RedirectChain[];
   spider?: SpiderResult;
+  assets?: AssetScanResult;
 }
 
 /** A redirect chain followed hop by hop; every hop passed ScopeGate (SPEC-0.1.3 §4.2). */
@@ -193,6 +196,34 @@ export interface SpiderResult {
   robots: { origin: string; status: "policy" | "no-policy" | "unreachable"; group?: string; rules?: number; reason?: string; enforced: boolean }[];
   frontierOverflow: boolean;
   pagesFetched: number;
+}
+
+/** Agent-facing summary entry (`client-findings.json`): masked, fixed schema, no values. */
+export interface ClientFinding {
+  caseId: string;
+  /** Display URL (query values masked). */
+  asset: string;
+  /** "line:col" or "-". */
+  position: string;
+  /** `[<kind>,len=<n>]` or another value-free label. */
+  preview: string;
+  count: number;
+  /** First 12 hex of the asset content hash (identifies the build, not a value). */
+  contentHash: string;
+}
+
+/** Static asset scan coverage (SPEC-0.1.3 §6.4-B). */
+export interface AssetScanResult {
+  engine: "node-detector";
+  detectorVersion: string;
+  assets: { url: string; actor: string; kind: string; status: number; bytes: number; complete: boolean; cached: boolean; facts: number; reason?: string }[];
+  maps: AssetScanResult["assets"];
+  probes: { origin: string; path: string; result: "PASS" | "FAIL" | "ERROR" | "NOT_TESTED" | "INVENTORY"; detail: string }[];
+  skipped: { url: string; reason: string }[];
+  clientFindings: { entries: number; truncated: number };
+  libraryAdvisories: string;
+  /** Local work versus what is handed to an agent; NavSentry has no model API (§6.4-C, §6.5-E). */
+  cost?: { bytesScannedLocally: number; agentVisibleBytes: number; cacheEligible: number; cacheHits: number; hitRatio: number | null };
 }
 
 export interface WorkspaceResult {

@@ -20,7 +20,7 @@ const SECURE = {
   "referrer-policy": "no-referrer",
   "cache-control": "no-store",
 };
-const DISABLED = ["NSC-CRYPT-006", "NSC-AC-004", "NSC-CONF-006"];
+const DISABLED = ["NSC-CRYPT-006", "NSC-AC-004", "NSC-CONF-006", "NSC-CONF-009"];
 
 interface SiteOpts {
   items?: number;

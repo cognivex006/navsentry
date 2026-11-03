@@ -34,6 +34,15 @@ export interface HttpRequestSpec {
   displayUrl?: string;
   /** Flow step that issued the request. */
   flow?: { id: string; step: string; deniedProbe?: true };
+  /** Record no body excerpt (static assets: raw content never reaches artifacts, S8). */
+  noExcerpt?: true;
+  /** Bytes kept in memory for checks; defaults to capture.memory_buffer_bytes. */
+  retainBytes?: number;
+  /**
+   * Streams every captured body byte into this file (created exclusively, mode 0600) inside the
+   * run's work directory. `budget` is the shared on-disk spool budget (capture.max_work_bytes).
+   */
+  spool?: { path: string; budget: { used: number; max: number } };
 }
 
 /** In-memory raw response. Never persisted; only the redacted ObservedRequest is. */
@@ -43,6 +52,8 @@ export interface RawResponse {
   /** The retained prefix of the body (≤ capture.memory_buffer_bytes); see `capture`. */
   body: Buffer;
   capture?: CaptureInfo;
+  /** The URL this exchange requested (raw, in memory only). */
+  finalUrl?: string;
   /** Location of a redirect that was NOT followed (scope re-check happens in the runner). */
   redirectLocation?: string;
 }

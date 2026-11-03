@@ -66,6 +66,20 @@ export function renderMarkdown(r: RunResult, lang: "en" | "th" = "en"): string {
     }
     out.push("");
   }
+  if (r.assets) {
+    const a = r.assets;
+    out.push("## Client assets", "", `Engine: \`${a.engine}\` (detector version ${a.detectorVersion}). Only masked previews are kept; bundles and maps never leave the machine.`, "");
+    out.push("| Asset | Actor | Kind | Status | Bytes | Complete | Cached | Facts |", "|---|---|---|---|---|---|---|---|");
+    for (const x of [...a.assets, ...a.maps]) out.push(`| \`${esc(x.url)}\` | ${x.actor} | ${x.kind} | ${x.status || "—"} | ${x.bytes} | ${x.complete ? "yes" : `no${x.reason ? ` (${esc(x.reason)})` : ""}`} | ${x.cached ? "yes" : "no"} | ${x.facts} |`);
+    if (!a.assets.length && !a.maps.length) out.push("| — | | | | | | | |");
+    out.push("", "| Exposure probe | Origin | Result | Detail |", "|---|---|---|---|");
+    for (const p of a.probes) out.push(`| \`${p.path}\` | ${esc(p.origin)} | ${p.result} | ${esc(p.detail)} |`);
+    if (!a.probes.length) out.push("| — (disabled with checks.disabled NSC-CONF-009) | | | |");
+    if (a.cost) out.push("", `Cost: ${a.cost.bytesScannedLocally} bytes scanned locally · ${a.cost.agentVisibleBytes} bytes agent-visible (client-findings.json) · cache hits ${a.cost.cacheHits}/${a.cost.cacheEligible}${a.cost.hitRatio === null ? " (ratio undefined)" : ""}`);
+    out.push(`- Client findings: ${a.clientFindings.entries}${a.clientFindings.truncated ? ` (+${a.clientFindings.truncated} not listed)` : ""}`, `- Client libraries: ${a.libraryAdvisories}`);
+    if (a.skipped.length) out.push(`- Skipped: ${a.skipped.length} (${[...new Set(a.skipped.map((x) => x.reason.split(":")[0]))].join(", ")})`);
+    out.push("");
+  }
   if (r.capture) {
     const c = r.capture;
     out.push(`## ${t.capture}`, "", "| Wire bytes | Decoded bytes | Truncated | Aborted | Partially inspected bodies |", "|---|---|---|---|---|", `| ${c.wireBytes} | ${c.decodedBytes} | ${c.truncated} | ${c.aborted} | ${c.partialBodies} |`, "");
