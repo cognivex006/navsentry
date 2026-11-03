@@ -194,6 +194,9 @@ The previous copy is backed up outside the skills folder. Plugins are owned by t
 | `navsentry test --config <m> [--out <dir>] [--env <profile>] [--project <dir>]` | Run observe-mode checks and write reports |
 | `navsentry scan --config <m> --mode page\|spider\|flow [--url <URL>] [--engine http] [--env <profile>]` | Scan one page, crawl by template (spider), or replay flows |
 | `navsentry workspace status\|clean [--project <dir>] [--dry-run]` | Show or remove NavSentry leftovers in a project |
+| `navsentry inventory --config <m> [--project <dir>]` | Read-only code inventory of a development project (routes, OpenAPI, tests, lockfiles) |
+| `navsentry flow import --openapi <spec.json> --config <m> --out <dir>` | Draft flows from a local OpenAPI JSON document |
+| `navsentry knowledge status\|lookup\|propose` | Offline vulnerability knowledge base and update proposals |
 | `navsentry report --input <run.json> --format markdown\|json\|sarif [--lang en\|th]` | Render a saved run |
 | `navsentry compare --before <run.json> --after <run.json>` | Before/after verdict and contract drift |
 | `navsentry catalog [--category <CODE>]` | List catalog cases |

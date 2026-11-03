@@ -105,6 +105,9 @@ Reports and `run.json` record flow URLs in template form (`/api/orders/{{orderA}
 
 There are no loops and no retries. The manifest request budget is shared with the seed requests.
 
+## Drafts from an OpenAPI document (0.1.3)
+`navsentry flow import --openapi openapi.json --config <manifest> --out navsentry/flows/drafts` turns documented GET operations into draft integration flows. A protected operation (`security` set) becomes a pair: an authenticated actor `access: allowed` and anonymous `access: denied`. Path and required query parameters become variables with `env` references such as `NAVSENTRY_VAR_ORDER_ID`: set them to test values before running. The document is a contract claim, not observed behaviour, so review every step. IMPORT.md lists every operation that was not encoded and why.
+
 ## Chained flows (0.1.3)
 A flow can depend on other flows in the same flow root and reuse values they extracted. This replaces the 0.1.2 rule that variables never cross flows, under the rules below ([SPEC-0.1.3 §5.5](specs/SPEC-0.1.3-SCAN-MODES-AND-WORKSPACE.md)).
 

@@ -5,6 +5,11 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Added
+- Development code inventory, milestone 0.1.3-d (SPEC-0.1.3 §4.1):
+  - `navsentry flow import --openapi <spec.json> --config <manifest> --out <dir>`: a local OpenAPI 3.x or Swagger 2.0 JSON document becomes draft integration flows. GET operations without a body become steps; protected operations get an allowed step for an authenticated actor plus an anonymous `access: denied` step (NSC-AC-002). Path and required query parameters become `*_env` variables. Mutations, GETs with side-effect names, out-of-scope paths and non-plain templates are listed in IMPORT.md, not encoded. Step titles are generated; spec text never reaches the drafts. Existing drafts are never overwritten. YAML is not supported (ADR-0003).
+  - `navsentry inventory --config <manifest> [--project <dir>] [--out <dir>]` (development profile only): a read-only, zero-network inventory of route declarations (Express-style, Next.js file routes, Python decorators, ASP.NET attributes, Spring mappings, Laravel routes), OpenAPI documents, test files and lockfile packages (`package-lock.json`, `composer.lock`). Links and junctions are never followed, dependency and build folders are skipped, and only validated route strings, relative paths, line numbers and package identities are kept. Lockfile packages are matched against the knowledge snapshot. Writes `code-inventory.json` and `CODE-INVENTORY.md`; the run is wrapped in the workspace check, so a change to the project exits 4.
+
+### Added
 - Vulnerability knowledge base framework, milestone 0.1.3-v (SPEC-0.1.3 §6.6):
   - Typed offline snapshot in `src/knowledge/advisories.ts` with records (identity, verified identifiers, affected/fixed ranges, preconditions, severity source, safe evidence, linked case, fix, regression guard, sources and freshness, record state) and aliases. It ships with **no real CVE records**: importing them needs an approved advisory source in governance.
   - Generated `docs/knowledge/VULNERABILITY-KB.md` (`npm run docs:catalog`, checked by GATE-03).
