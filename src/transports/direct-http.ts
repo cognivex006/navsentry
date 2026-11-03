@@ -11,6 +11,7 @@ import { lookup as dnsLookup, type LookupAddress } from "node:dns";
 import http from "node:http";
 import https from "node:https";
 import { createHash, randomUUID } from "node:crypto";
+import { closeSync, openSync, writeSync } from "node:fs";
 import { buildContract } from "../contract.js";
 import { CAPTURE_DEFAULTS } from "../config.js";
 import type { Budget, ByteBudget } from "../budget.js";
@@ -117,7 +118,14 @@ export class DirectHttpAdapter implements ExecutionAdapter {
             // Nothing here trusts Content-Length; limits apply to observed bytes.
             const chunks: Buffer[] = [];
             const hash = createHash("sha256");
+            const keepMax = Math.min(spec.retainBytes ?? lim.memoryBufferBytes, lim.memoryBufferBytes);
             let decoded = 0, retained = 0;
+            let fd: number | undefined;
+            try {
+              if (spec.spool) fd = openSync(spec.spool.path, "wx", 0o600);
+            } catch {
+              fd = undefined;
+            }
             let stop: { status: "truncated" | "aborted"; reason: string } | undefined;
             const halt = (s: NonNullable<typeof stop>) => { stop ??= s; res.destroy(); };
             res.on("data", (c: Buffer) => {
@@ -126,10 +134,20 @@ export class DirectHttpAdapter implements ExecutionAdapter {
               const part = c.length > room ? c.subarray(0, Math.max(0, room)) : c;
               decoded += part.length;
               hash.update(part);
-              if (retained < lim.memoryBufferBytes) {
-                const keep = part.subarray(0, lim.memoryBufferBytes - retained);
+              if (retained < keepMax) {
+                const keep = part.subarray(0, keepMax - retained);
                 chunks.push(keep);
                 retained += keep.length;
+              }
+              if (spec.spool) {
+                spec.spool.budget.used += part.length;
+                if (spec.spool.budget.used > spec.spool.budget.max) return halt({ status: "truncated", reason: `spool exceeded capture.max_work_bytes (${spec.spool.budget.max})` });
+                try {
+                  if (fd === undefined) throw new Error("spool unavailable");
+                  writeSync(fd, part);
+                } catch (e) {
+                  return halt({ status: "aborted", reason: `spool write failed (${(e as NodeJS.ErrnoException).code ?? "error"})` });
+                }
               }
               if (lim.bytes && !lim.bytes.take(c.length, part.length)) return halt({ status: "truncated", reason: "run byte budget exhausted" });
               if (c.length > room) halt({ status: "truncated", reason: `response exceeded capture.max_response_bytes (${lim.maxResponseBytes})` });
@@ -139,6 +157,7 @@ export class DirectHttpAdapter implements ExecutionAdapter {
               if (settled) return;
               settled = true;
               signal.removeEventListener("abort", onAbort);
+              if (fd !== undefined) { try { closeSync(fd); } catch { /* reported by the reader */ } fd = undefined; }
               const hdrs: Record<string, string[]> = {};
               for (let i = 0; i < res.rawHeaders.length; i += 2) {
                 const k = (res.rawHeaders[i] as string).toLowerCase();
@@ -169,7 +188,7 @@ export class DirectHttpAdapter implements ExecutionAdapter {
         req.end();
       });
       const ct = raw.headers["content-type"]?.[0] ?? "";
-      const body = this.redactor.body(raw.body, ct);
+      const body = spec.noExcerpt ? { outcome: { applied: false, count: 0, kinds: ["withheld:asset"], safe: true } } as ReturnType<Redactor["body"]> : this.redactor.body(raw.body, ct);
       const responseHeaders = Object.fromEntries(Object.entries(raw.headers).map(([k, vs]) => [k, vs.map((v) => this.redactor.headerValue(k, v))]));
       const loc = raw.headers["location"]?.[0];
       return {
@@ -184,7 +203,7 @@ export class DirectHttpAdapter implements ExecutionAdapter {
           redaction: body.outcome,
           capture: raw.capture,
         },
-        raw: { ...raw, ...(loc ? { redirectLocation: new URL(loc, u).toString() } : {}) },
+        raw: { ...raw, finalUrl: spec.url, ...(loc ? { redirectLocation: new URL(loc, u).toString() } : {}) },
       };
     } catch (e) {
       if (e instanceof ScopeDenied) this.onDenied(base.url, spec.method, e.message);

@@ -16,7 +16,8 @@ import { fillPath, flowOrigin, VAR_SENTINEL } from "./flow/lint.js";
 import { UI_ACTIONS, type FlowDoc } from "./flow/parse.js";
 import { groupKey, pathPattern, scanHtml, urlIdentity } from "./spider/html.js";
 import { classifyRobots, robotsAllows, type RobotsPolicy } from "./spider/robots.js";
-import { TOOL_NAME, TOOL_VERSION, REPORT_SCHEMA_VERSION, FLOW_RESULT_SCHEMA_VERSION, type CheckResult, type CheckStatus, type CoverageRow, type Finding, type FlowRunResult, type FlowStatus, type RedirectChain, type RunResult, type ScanMode, type SpiderResult, type TestLevel } from "./types.js";
+import { scanAssets } from "./assets/scan.js";
+import { TOOL_NAME, TOOL_VERSION, REPORT_SCHEMA_VERSION, FLOW_RESULT_SCHEMA_VERSION, type CheckResult, type CheckStatus, type CoverageRow, type Finding, type FlowRunResult, type ClientFinding, type FlowStatus, type RedirectChain, type RunResult, type ScanMode, type SpiderResult, type TestLevel } from "./types.js";
 
 /** Reserved, non-resolvable origin used to probe CORS reflection (RFC 2606 .invalid). */
 export const CORS_PROBE_ORIGIN = "https://navsentry-cors-probe.invalid";
@@ -171,6 +172,11 @@ export interface ExecuteOptions {
   urls?: string[];
   /** `scan --mode spider`: template-aware crawl from the seed paths (SPEC-0.1.3 §6.2). */
   spider?: boolean;
+  /** `scan --mode page|spider`: static asset scan over fetched pages (SPEC-0.1.3 §6.4-B). */
+  assets?: boolean;
+  /** Run work directory (spool) and facts-cache directory, both under `.navsentry/`. */
+  workDir?: string;
+  cacheDir?: string;
 }
 
 export async function executeRun(m: Manifest, opts: ExecuteOptions = {}): Promise<RunResult> {
@@ -178,7 +184,7 @@ export async function executeRun(m: Manifest, opts: ExecuteOptions = {}): Promis
 }
 
 /** Runs seeds and flows through one ScopeGate, Budget and Redactor. */
-export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promise<{ run: RunResult; flowRun?: FlowRunResult }> {
+export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promise<{ run: RunResult; flowRun?: FlowRunResult; clientFindings?: ClientFinding[] }> {
   const env = opts.env ?? process.env;
   // Production guards run before any network activity, for every entry point (SPEC-0.1.3 §3.1, S2).
   assertAuthorizationWindow(m, opts.now?.() ?? new Date());
@@ -248,6 +254,8 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
     return last;
   };
   let spider: SpiderResult | undefined;
+  let assets: RunResult["assets"];
+  let clientFindings: ClientFinding[] | undefined;
 
   try {
     for (const origin of m.targets.origins) {
@@ -272,6 +280,26 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
     if (opts.spider) {
       spider = { groups: [], skipped: [], skippedTotal: 0, robots: [], frontierOverflow: false, pagesFetched: 0 };
       await crawl(m, gate, usable, spider, fetchChain, (ex) => finalUrlOf.get(ex), findingsFor, incomplete, redactor);
+    }
+    if (opts.assets) {
+      const out = await scanAssets({
+        manifest: m, gate, redactor, pages: [...exchanges], actors: usable, literals: secrets, disabled,
+        ...(opts.workDir ? { workDir: opts.workDir } : {}), ...(opts.cacheDir ? { cacheDir: opts.cacheDir } : {}), ...(opts.now ? { now: opts.now } : {}),
+        send: async (spec) => {
+          try {
+            const ex = await http.send({ ...spec, headers: { ...spec.headers, "x-navsentry-run": runId } });
+            exchanges.push(ex);
+            return ex;
+          } catch (e) {
+            if (e instanceof ScopeDenied) return undefined;
+            throw e;
+          }
+        },
+      });
+      checks.push(...out.checks);
+      incomplete.push(...out.incomplete);
+      assets = out.result;
+      clientFindings = out.clientFindings;
     }
   } catch (e) {
     if (e instanceof BudgetExceeded) incomplete.push(e.message);
@@ -350,8 +378,9 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
     capture: cap,
     ...(chains.length ? { redirectChains: chains } : {}),
     ...(spider ? { spider } : {}),
+    ...(assets ? { assets } : {}),
   };
-  if (!opts.flows || !flowOutcome) return { run };
+  if (!opts.flows || !flowOutcome) return { run, ...(clientFindings ? { clientFindings } : {}) };
   for (const f of flowOutcome.flows) {
     const ids = new Set(f.steps.flatMap((x) => x.requestIds));
     f.findings = findings.filter((x) => x.requestIds.some((id) => ids.has(id))).map((x) => x.fingerprint);
@@ -415,9 +444,11 @@ export function buildFindings(checks: CheckResult[]): Finding[] {
     if (existing) {
       existing.requestIds.push(...r.requestIds);
       existing.actual = [...new Set([...existing.actual, ...r.observations])];
+      // A deterministic assertion on the same target upgrades a pattern-only finding.
+      if (r.lifecycle === "VALIDATED" && r.basis !== "draft-flow" && !SUSPECT_ONLY.has(r.ruleId)) { existing.lifecycle = "VALIDATED"; existing.confidence = "high"; }
       continue;
     }
-    const suspect = SUSPECT_ONLY.has(r.ruleId) || r.basis === "draft-flow";
+    const suspect = r.lifecycle === "SUSPECTED" || SUSPECT_ONLY.has(r.ruleId) || r.basis === "draft-flow";
     byFp.set(fp, {
       fingerprint: fp,
       ruleId: r.ruleId,

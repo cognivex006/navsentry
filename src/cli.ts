@@ -24,7 +24,7 @@ import { FLOW_ID, FlowError, loadFlowFiles, type FlowDoc } from "./flow/parse.js
 import { renderFlowSection, renderJunit, renderTestMarkdown, validateFlowRunResult } from "./report/flow-render.js";
 import type { Manifest } from "./config.js";
 import type { Engine, FlowRunResult, RunResult, ScanMode } from "./types.js";
-import { WorkspaceError, authorize, beginRun, endRun, projectRoot, releaseWorkDir, sweepStale, workspaceStatus } from "./workspace.js";
+import { WorkspaceError, authorize, cleanCache, beginRun, endRun, projectRoot, releaseWorkDir, sweepStale, workspaceStatus } from "./workspace.js";
 import { allAdapters } from "./transports/registry.js";
 import { ScopeGate } from "./scope.js";
 import { TOOL_VERSION } from "./types.js";
@@ -45,7 +45,7 @@ Usage:
                  [--env development|production] [--url <in-scope URL>] [--flows <path>] [--out <dir>] [--project <dir>]
                  page without --url scans the seed paths, like test; flow equals test --flows <path> --flows-only.
                  spider crawls from the seed paths, grouping pages by template; computer-use is deferred beyond 0.1.3.
-  navsentry workspace status|clean [--project <dir>] [--dry-run]
+  navsentry workspace status|clean [--project <dir>] [--dry-run] [--cache-max-age-days <n>]
   navsentry report --input <run.json|flows.json> --format markdown|json|sarif|junit [--lang en|th]
   navsentry compare --before <dir|run.json> --after <dir|run.json>   (reads flows.json beside run.json)
   navsentry catalog [--category <CODE>]
@@ -196,7 +196,7 @@ export function exitCode(r: RunResult, flowRun?: FlowRunResult): number {
   return 0;
 }
 
-interface RunOpts { urls?: string[]; spider?: boolean; flows?: FlowDoc[]; flowsOnly?: boolean; warnings?: string[]; scanMode?: ScanMode; engine?: RunResult["engine"]; notTested?: string[] }
+interface RunOpts { assets?: boolean; urls?: string[]; spider?: boolean; flows?: FlowDoc[]; flowsOnly?: boolean; warnings?: string[]; scanMode?: ScanMode; engine?: RunResult["engine"]; notTested?: string[] }
 
 /** Executes a run inside a managed workspace (SPEC-0.1.3 §7.2), writes the reports and returns the exit code. */
 async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<number> {
@@ -205,13 +205,14 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
   const ws = beginRun(arg(argv, "--project") ?? process.cwd(), runId, m.workspace.ignore);
   let res: Awaited<ReturnType<typeof executeTest>>;
   try {
-    res = await executeTest(m, { runId, ...(o.flows ? { flows: o.flows, flowsOnly: !!o.flowsOnly } : {}), ...(o.scanMode ? { scanMode: o.scanMode } : {}), ...(o.engine ? { engine: o.engine } : {}), ...(o.urls ? { urls: o.urls } : {}), ...(o.spider ? { spider: true } : {}) });
+    res = await executeTest(m, { runId, ...(o.flows ? { flows: o.flows, flowsOnly: !!o.flowsOnly } : {}), ...(o.scanMode ? { scanMode: o.scanMode } : {}), ...(o.engine ? { engine: o.engine } : {}), ...(o.urls ? { urls: o.urls } : {}), ...(o.spider ? { spider: true } : {}),
+      ...(o.assets ? { assets: true, workDir: ws.work.path, cacheDir: join(ws.root, ".navsentry", "cache", "assets") } : {}) });
   } catch (e) {
     ws.dispose();
     try { releaseWorkDir(ws.work); } catch { /* reported by the next run's sweep */ }
     throw e;
   }
-  const { run: r, flowRun } = res;
+  const { run: r, flowRun, clientFindings } = res;
   if (o.notTested?.length) { r.incompleteReasons.push(...o.notTested); if (r.executionStatus === "COMPLETE") r.executionStatus = "PARTIAL"; }
   for (const p of ws.sweep.preserved) r.incompleteReasons.push(`work directory preserved during sweep: ${p.reason}`);
   const outArg = arg(argv, "--out");
@@ -219,7 +220,11 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
   mkdirSync(out, { recursive: true });
   const lang = m.report.language;
   const write = (): number => {
+    // The agent-facing summary is written first so its size is recorded in run.json (§6.4-C item 7).
+    const cf = clientFindings ? JSON.stringify({ kind: "navsentry-client-findings", schemaVersion: "1", runId: r.runId, entries: clientFindings, truncated: r.assets?.clientFindings.truncated ?? 0 }, null, 2) + "\n" : undefined;
+    if (cf && r.assets?.cost) r.assets.cost.agentVisibleBytes = Buffer.byteLength(cf);
     const files: [string, string][] = [["run.json", renderJson(r)]];
+    if (cf) files.push(["client-findings.json", cf]);
     if (m.report.formats.includes("markdown")) files.push(["REPORT.md", renderMarkdown(r, lang) + (flowRun ? "\n" + renderFlowSection(flowRun, r, lang) : "")]);
     if (m.report.formats.includes("sarif")) files.push(["report.sarif", JSON.stringify(renderSarif(r), null, 2)]);
     if (flowRun) {
@@ -287,7 +292,7 @@ async function scan(argv: string[]): Promise<number> {
     return await runAndReport(m, argv, { flows: sel.docs, flowsOnly: true, warnings: sel.warnings, scanMode: "flow", engine: eng });
   }
   const notTested = analyze ? ["analysis NOT_TESTED: the page-model analyzer is not available yet (milestone 0.1.3-b)"] : [];
-  return await runAndReport(m, argv, { scanMode: mode, engine: eng, notTested, ...(urls ? { urls } : {}), ...(mode === "spider" ? { spider: true } : {}) });
+  return await runAndReport(m, argv, { scanMode: mode, engine: eng, notTested, assets: true, ...(urls ? { urls } : {}), ...(mode === "spider" ? { spider: true } : {}) });
 }
 
 function workspaceCommand(argv: string[]): number {
@@ -304,7 +309,13 @@ function workspaceCommand(argv: string[]): number {
   }
   if (sub === "clean") {
     const dry = rest.includes("--dry-run");
-    const r = sweepStale(projectRoot(project), { dryRun: dry });
+    const root = projectRoot(project);
+    const r = sweepStale(root, { dryRun: dry });
+    const ageArg = arg(rest, "--cache-max-age-days");
+    const age = ageArg === undefined ? 30 : Number(ageArg);
+    if (!Number.isInteger(age) || age < 0 || age > 365) throw new UsageError("--cache-max-age-days must be an integer in [0, 365]");
+    const cache = cleanCache(root, age, { dryRun: dry });
+    print(`${dry ? "would remove" : "removed"} ${cache.removed} expired cache entr${cache.removed === 1 ? "y" : "ies"} (older than ${age} days)`);
     for (const d of r.removed) print(`${dry ? "would remove" : "removed"} .navsentry/work/${d}`);
     for (const p of r.preserved) print(`preserved .navsentry/work/${p.dir}: ${p.reason}`);
     print(dry ? "dry run: nothing was changed" : `removed ${r.removed.length}; preserved ${r.preserved.length}. Manifests, flows, reports and proposals are never cleaned.`);

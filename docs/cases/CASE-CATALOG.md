@@ -13,11 +13,11 @@
 - **SESS** Session & Token Management: [NSC-SESS-001](#nsc-sess-001), [NSC-SESS-002](#nsc-sess-002), [NSC-SESS-003](#nsc-sess-003), [NSC-SESS-004](#nsc-sess-004)
 - **CRYPT** Cryptography & Transport Security: [NSC-CRYPT-001](#nsc-crypt-001), [NSC-CRYPT-002](#nsc-crypt-002), [NSC-CRYPT-003](#nsc-crypt-003), [NSC-CRYPT-004](#nsc-crypt-004), [NSC-CRYPT-005](#nsc-crypt-005), [NSC-CRYPT-006](#nsc-crypt-006)
 - **INJ** Injection: [NSC-INJ-001](#nsc-inj-001), [NSC-INJ-002](#nsc-inj-002), [NSC-INJ-003](#nsc-inj-003), [NSC-INJ-004](#nsc-inj-004), [NSC-INJ-005](#nsc-inj-005), [NSC-INJ-006](#nsc-inj-006)
-- **CONF** Security Misconfiguration & Hardening Headers: [NSC-CONF-001](#nsc-conf-001), [NSC-CONF-002](#nsc-conf-002), [NSC-CONF-003](#nsc-conf-003), [NSC-CONF-004](#nsc-conf-004), [NSC-CONF-005](#nsc-conf-005), [NSC-CONF-006](#nsc-conf-006), [NSC-CONF-007](#nsc-conf-007), [NSC-CONF-008](#nsc-conf-008)
-- **INFO** Information Disclosure: [NSC-INFO-001](#nsc-info-001), [NSC-INFO-003](#nsc-info-003), [NSC-INFO-004](#nsc-info-004), [NSC-INFO-005](#nsc-info-005)
+- **CONF** Security Misconfiguration & Hardening Headers: [NSC-CONF-001](#nsc-conf-001), [NSC-CONF-002](#nsc-conf-002), [NSC-CONF-003](#nsc-conf-003), [NSC-CONF-004](#nsc-conf-004), [NSC-CONF-009](#nsc-conf-009), [NSC-CONF-005](#nsc-conf-005), [NSC-CONF-006](#nsc-conf-006), [NSC-CONF-007](#nsc-conf-007), [NSC-CONF-008](#nsc-conf-008)
+- **INFO** Information Disclosure: [NSC-INFO-001](#nsc-info-001), [NSC-INFO-007](#nsc-info-007), [NSC-INFO-008](#nsc-info-008), [NSC-INFO-003](#nsc-info-003), [NSC-INFO-004](#nsc-info-004), [NSC-INFO-005](#nsc-info-005)
 - **PRIV** Privacy & Sensitive Data Exposure: [NSC-PRIV-001](#nsc-priv-001), [NSC-PRIV-002](#nsc-priv-002)
 - **ERR** Exceptional Conditions & Error Handling: [NSC-ERR-001](#nsc-err-001), [NSC-ERR-002](#nsc-err-002)
-- **SUPPLY** Vulnerable Components & Supply Chain: [NSC-SUPPLY-001](#nsc-supply-001)
+- **SUPPLY** Vulnerable Components & Supply Chain: [NSC-SUPPLY-001](#nsc-supply-001), [NSC-SUPPLY-002](#nsc-supply-002)
 - **LOG** Security Logging & Alerting: [NSC-LOG-001](#nsc-log-001)
 - **BIZ** Business Logic: [NSC-BIZ-001](#nsc-biz-001)
 - **INFRA** Network / Host Infrastructure (out of web scope): [NSC-INFRA-001](#nsc-infra-001), [NSC-INFRA-002](#nsc-infra-002), [NSC-INFRA-003](#nsc-infra-003), [NSC-INFRA-004](#nsc-infra-004), [NSC-INFRA-005](#nsc-infra-005), [NSC-INFRA-006](#nsc-infra-006), [NSC-INFRA-007](#nsc-infra-007)
@@ -3766,6 +3766,137 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 
 </details>
 
+<a id="nsc-conf-009"></a>
+
+### NSC-CONF-009 — Configuration or VCS files publicly reachable
+
+**เข้าถึงไฟล์ config หรือไฟล์ของระบบจัดการเวอร์ชัน (.env, .git) ได้จากภายนอก**
+
+| Field | Value |
+|---|---|
+| Severity (default) | high |
+| Priority | 🔴 ต้องแก้ทันที (IMMEDIATE) |
+| Automation | auto — NavSentry ตรวจอัตโนมัติได้ใน v0.1 (observe) |
+| OWASP Top 10:2025 | A02:2025 Security Misconfiguration |
+| OWASP Top 10:2021 | A05:2021 Security Misconfiguration |
+| CWE | CWE-538, CWE-527 |
+| OWASP WSTG | WSTG-CONF-04 |
+| OWASP ASVS 5.0 (chapter) | V13 Configuration |
+| CVE | — |
+| Seen in sources | — (required by NavSentry scope, no source occurrence yet) |
+
+**FACT (ข้อเท็จจริง)**
+
+A configuration, environment or version-control file such as /.env, /.git/HEAD or a runtime env.js with non-public keys is served by the web server.
+
+**EVIDENCE (หลักฐานที่ต้องเก็บ)**
+
+- Probe path, the actor (anonymous), that the body matches the file format (for example `ref: refs/` or KEY= lines), and the key names only
+
+**ACCEPTANCE CRITERIA (เกณฑ์ผ่าน)**
+
+- [ ] /.env, /.git/ and server-only configuration files return 404 or 403
+- [ ] Runtime client config contains only public keys
+
+**ตรวจซ้ำบนหน้าเว็บจริง (Web recheck)**
+
+- [ ] Request /.env and /.git/HEAD anonymously: 404/403
+- [ ] The application still loads its public runtime configuration
+
+**แนวทางแก้ (Fix)** — Exclude dotfiles, VCS directories and server-only configuration from the web root and deployment artifact; deny them in the web server; rotate any exposed secret.
+
+**⚠️ ผลกระทบต่อผู้ใช้จริง / Regression guard** — A public runtime config (env.js) that the front end needs must keep its public keys after the secret ones are removed.
+
+**Caveats / False positive**
+
+- A 200 response that is an SPA fallback page is not a finding; the format must match.
+- Only a fixed list of well-known paths is probed (no fuzzing).
+
+<details><summary>Prompt: VERIFY (ตรวจสอบ)</summary>
+
+```text
+[NavSentry NSC-CONF-009 — VERIFY / ตรวจสอบ]
+Role: security verification agent. Target: <ORIGIN> (environment <ENV>) — only if listed in an
+authorized NavSentry manifest. Read-only: do not change code, config or data.
+Goal: confirm or refute "Configuration or VCS files publicly reachable" (เข้าถึงไฟล์ config หรือไฟล์ของระบบจัดการเวอร์ชัน (.env, .git) ได้จากภายนอก).
+
+FACT to test:
+A configuration, environment or version-control file such as /.env, /.git/HEAD or a runtime env.js with non-public keys is served by the web server.
+
+Collect EVIDENCE (redact tokens, cookies, PII, internal IPs BEFORE writing anything):
+- Probe path, the actor (anonymous), that the body matches the file format (for example `ref: refs/` or KEY= lines), and the key names only
+
+Method:
+1. navsentry validate --config <MANIFEST>  then  navsentry test --config <MANIFEST> --out runs/before
+2. Read runs/before/run.json coverage row "NSC-CONF-009" and any finding with ruleId "NSC-CONF-009".
+3. Confirm in a real browser/DevTools:
+   - Request /.env and /.git/HEAD anonymously: 404/403
+   - The application still loads its public runtime configuration
+4. Decide exactly one status: PASS | FAIL | INCONCLUSIVE | NOT_TESTED | ERROR, with a reason.
+   Missing evidence is never PASS. Pattern-only evidence stays SUSPECTED until a human confirms.
+
+Known caveats / false positives:
+- A 200 response that is an SPA fallback page is not a finding; the format must match.
+- Only a fixed list of well-known paths is probed (no fuzzing).
+
+Output: an ISSUE entry (template docs/reports/templates/ISSUE.md) with ID NSC-CONF-009, status,
+fingerprint(s), evidence list and this checklist:
+- [ ] Target is in the authorized manifest scope
+- [ ] NavSentry run.json attached (path) and coverage row quoted
+- [ ] Evidence redacted (no secret/PII values)
+- [ ] Status + reason recorded; priority = IMMEDIATE
+```
+
+</details>
+
+<details><summary>Prompt: FIX (แก้ไข)</summary>
+
+```text
+[NavSentry NSC-CONF-009 — FIX / แก้ไข]
+Role: remediation agent in the application repository. Follow that repository's own
+AGENTS.md/CONTRIBUTING rules. Change only what NSC-CONF-009 needs; no unrelated refactors.
+
+Problem (FACT): A configuration, environment or version-control file such as /.env, /.git/HEAD or a runtime env.js with non-public keys is served by the web server.
+Required change: Exclude dotfiles, VCS directories and server-only configuration from the web root and deployment artifact; deny them in the web server; rotate any exposed secret.
+
+DO NOT BREAK LEGITIMATE CALLERS:
+A public runtime config (env.js) that the front end needs must keep its public keys after the secret ones are removed.
+
+Steps:
+1. Keep the BEFORE run (runs/before/run.json) from the VERIFY step.
+2. Implement the change (configuration first, code only if needed) and add/adjust an automated test.
+3. Deploy to the authorized staging environment.
+4. navsentry test --config <MANIFEST> --out runs/after
+5. navsentry compare --before runs/before/run.json --after runs/after/run.json
+   Required: NSC-CONF-009 in "Fixed" AND no unexplained "Legitimate-response contract drift".
+
+ACCEPTANCE CRITERIA:
+- [ ] /.env, /.git/ and server-only configuration files return 404 or 403
+- [ ] Runtime client config contains only public keys
+- [ ] compare verdict IMPROVED_NO_DRIFT (or every drift row approved by the owner in writing)
+- [ ] Changed files + commit recorded in a FIX entry (template docs/reports/templates/FIX.md)
+```
+
+</details>
+
+<details><summary>Prompt: RECHECK (ตรวจซ้ำ)</summary>
+
+```text
+[NavSentry NSC-CONF-009 — RECHECK / ตรวจซ้ำบนหน้าเว็บจริง]
+Role: independent QA agent (not the agent that wrote the fix). Read-only.
+1. Re-run: navsentry test --config <MANIFEST> --out runs/recheck ; coverage "NSC-CONF-009" must be PASS
+   (or a documented, owner-approved DISMISSED/Exception).
+2. On the real web page / endpoint:
+   - [ ] Request /.env and /.git/HEAD anonymously: 404/403
+   - [ ] The application still loads its public runtime configuration
+3. Regression: main user flows still work and compare shows no unexplained contract drift.
+4. Verdict QA-PASS or QA-FAIL. On QA-FAIL you MUST write improvement criteria
+   (template docs/reports/templates/QA.md): failed acceptance item, expected vs observed (redacted),
+   most likely cause, next concrete action, owner. "Failed" without a reason is not accepted.
+```
+
+</details>
+
 <a id="nsc-conf-005"></a>
 
 ### NSC-CONF-005 — Debug mode / development features enabled
@@ -4406,6 +4537,268 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 2. On the real web page / endpoint:
    - [ ] DevTools > Network > Response Headers: no version numbers
    - [ ] Request a non-existent path: error page shows no version
+3. Regression: main user flows still work and compare shows no unexplained contract drift.
+4. Verdict QA-PASS or QA-FAIL. On QA-FAIL you MUST write improvement criteria
+   (template docs/reports/templates/QA.md): failed acceptance item, expected vs observed (redacted),
+   most likely cause, next concrete action, owner. "Failed" without a reason is not accepted.
+```
+
+</details>
+
+<a id="nsc-info-007"></a>
+
+### NSC-INFO-007 — Secrets embedded in client-side assets
+
+**ฝัง secret ไว้ในไฟล์ฝั่งเบราว์เซอร์ (JS bundle / config)**
+
+| Field | Value |
+|---|---|
+| Severity (default) | high |
+| Priority | 🔴 ต้องแก้ทันที (IMMEDIATE) |
+| Automation | auto — NavSentry ตรวจอัตโนมัติได้ใน v0.1 (observe) |
+| OWASP Top 10:2025 | A07:2025 Authentication Failures<br>A02:2025 Security Misconfiguration |
+| OWASP Top 10:2021 | A07:2021 Identification and Authentication Failures<br>A05:2021 Security Misconfiguration |
+| CWE | CWE-798, CWE-540 |
+| OWASP WSTG | WSTG-INFO-05 |
+| OWASP ASVS 5.0 (chapter) | V13 Configuration, V14 Data Protection |
+| CVE | — |
+| Seen in sources | — (required by NavSentry scope, no source occurrence yet) |
+
+**FACT (ข้อเท็จจริง)**
+
+A JavaScript bundle, stylesheet or source map served to the browser contains a credential, API key, private key or token, so anyone who loads the page can read it.
+
+**EVIDENCE (หลักฐานที่ต้องเก็บ)**
+
+- Asset display URL, line:col and a masked preview [kind,len=n]; an exact match with a known test token or in-scope credential when available (values never kept)
+
+**ACCEPTANCE CRITERIA (เกณฑ์ผ่าน)**
+
+- [ ] No secrets, private keys or server-side tokens in any asset served to the browser
+- [ ] Keys that must ship to the client are public, scoped and restricted by origin or referrer
+
+**ตรวจซ้ำบนหน้าเว็บจริง (Web recheck)**
+
+- [ ] Rebuild and redeploy, then re-run `navsentry scan --mode page`: NSC-INFO-007 PASS for every asset
+- [ ] Rotate every exposed key at the provider; the old value must stop working
+
+**แนวทางแก้ (Fix)** — Move the secret to the server (a backend endpoint or proxy), rotate it, and keep only public, restricted identifiers in client builds; check build-time environment injection.
+
+**⚠️ ผลกระทบต่อผู้ใช้จริง / Regression guard** — Features that call the provider from the browser must switch to the server endpoint before the key is removed, or they break.
+
+**Caveats / False positive**
+
+- A provider format match does not prove a key is live; NavSentry never calls the provider to test it.
+- Exact matches are possible only for values NavSentry knows (test tokens, in-scope credentials).
+
+<details><summary>Prompt: VERIFY (ตรวจสอบ)</summary>
+
+```text
+[NavSentry NSC-INFO-007 — VERIFY / ตรวจสอบ]
+Role: security verification agent. Target: <ORIGIN> (environment <ENV>) — only if listed in an
+authorized NavSentry manifest. Read-only: do not change code, config or data.
+Goal: confirm or refute "Secrets embedded in client-side assets" (ฝัง secret ไว้ในไฟล์ฝั่งเบราว์เซอร์ (JS bundle / config)).
+
+FACT to test:
+A JavaScript bundle, stylesheet or source map served to the browser contains a credential, API key, private key or token, so anyone who loads the page can read it.
+
+Collect EVIDENCE (redact tokens, cookies, PII, internal IPs BEFORE writing anything):
+- Asset display URL, line:col and a masked preview [kind,len=n]; an exact match with a known test token or in-scope credential when available (values never kept)
+
+Method:
+1. navsentry validate --config <MANIFEST>  then  navsentry test --config <MANIFEST> --out runs/before
+2. Read runs/before/run.json coverage row "NSC-INFO-007" and any finding with ruleId "NSC-INFO-007".
+3. Confirm in a real browser/DevTools:
+   - Rebuild and redeploy, then re-run `navsentry scan --mode page`: NSC-INFO-007 PASS for every asset
+   - Rotate every exposed key at the provider; the old value must stop working
+4. Decide exactly one status: PASS | FAIL | INCONCLUSIVE | NOT_TESTED | ERROR, with a reason.
+   Missing evidence is never PASS. Pattern-only evidence stays SUSPECTED until a human confirms.
+
+Known caveats / false positives:
+- A provider format match does not prove a key is live; NavSentry never calls the provider to test it.
+- Exact matches are possible only for values NavSentry knows (test tokens, in-scope credentials).
+
+Output: an ISSUE entry (template docs/reports/templates/ISSUE.md) with ID NSC-INFO-007, status,
+fingerprint(s), evidence list and this checklist:
+- [ ] Target is in the authorized manifest scope
+- [ ] NavSentry run.json attached (path) and coverage row quoted
+- [ ] Evidence redacted (no secret/PII values)
+- [ ] Status + reason recorded; priority = IMMEDIATE
+```
+
+</details>
+
+<details><summary>Prompt: FIX (แก้ไข)</summary>
+
+```text
+[NavSentry NSC-INFO-007 — FIX / แก้ไข]
+Role: remediation agent in the application repository. Follow that repository's own
+AGENTS.md/CONTRIBUTING rules. Change only what NSC-INFO-007 needs; no unrelated refactors.
+
+Problem (FACT): A JavaScript bundle, stylesheet or source map served to the browser contains a credential, API key, private key or token, so anyone who loads the page can read it.
+Required change: Move the secret to the server (a backend endpoint or proxy), rotate it, and keep only public, restricted identifiers in client builds; check build-time environment injection.
+
+DO NOT BREAK LEGITIMATE CALLERS:
+Features that call the provider from the browser must switch to the server endpoint before the key is removed, or they break.
+
+Steps:
+1. Keep the BEFORE run (runs/before/run.json) from the VERIFY step.
+2. Implement the change (configuration first, code only if needed) and add/adjust an automated test.
+3. Deploy to the authorized staging environment.
+4. navsentry test --config <MANIFEST> --out runs/after
+5. navsentry compare --before runs/before/run.json --after runs/after/run.json
+   Required: NSC-INFO-007 in "Fixed" AND no unexplained "Legitimate-response contract drift".
+
+ACCEPTANCE CRITERIA:
+- [ ] No secrets, private keys or server-side tokens in any asset served to the browser
+- [ ] Keys that must ship to the client are public, scoped and restricted by origin or referrer
+- [ ] compare verdict IMPROVED_NO_DRIFT (or every drift row approved by the owner in writing)
+- [ ] Changed files + commit recorded in a FIX entry (template docs/reports/templates/FIX.md)
+```
+
+</details>
+
+<details><summary>Prompt: RECHECK (ตรวจซ้ำ)</summary>
+
+```text
+[NavSentry NSC-INFO-007 — RECHECK / ตรวจซ้ำบนหน้าเว็บจริง]
+Role: independent QA agent (not the agent that wrote the fix). Read-only.
+1. Re-run: navsentry test --config <MANIFEST> --out runs/recheck ; coverage "NSC-INFO-007" must be PASS
+   (or a documented, owner-approved DISMISSED/Exception).
+2. On the real web page / endpoint:
+   - [ ] Rebuild and redeploy, then re-run `navsentry scan --mode page`: NSC-INFO-007 PASS for every asset
+   - [ ] Rotate every exposed key at the provider; the old value must stop working
+3. Regression: main user flows still work and compare shows no unexplained contract drift.
+4. Verdict QA-PASS or QA-FAIL. On QA-FAIL you MUST write improvement criteria
+   (template docs/reports/templates/QA.md): failed acceptance item, expected vs observed (redacted),
+   most likely cause, next concrete action, owner. "Failed" without a reason is not accepted.
+```
+
+</details>
+
+<a id="nsc-info-008"></a>
+
+### NSC-INFO-008 — Source maps with source content served publicly
+
+**เปิดให้ดาวน์โหลด source map ที่มีซอร์สโค้ดฉบับเต็ม**
+
+| Field | Value |
+|---|---|
+| Severity (default) | medium |
+| Priority | 🟡 รอได้ / วางแผนแก้ (PLANNED) |
+| Automation | auto — NavSentry ตรวจอัตโนมัติได้ใน v0.1 (observe) |
+| OWASP Top 10:2025 | A02:2025 Security Misconfiguration |
+| OWASP Top 10:2021 | A05:2021 Security Misconfiguration |
+| CWE | CWE-540 |
+| OWASP WSTG | WSTG-INFO-05 |
+| OWASP ASVS 5.0 (chapter) | V13 Configuration |
+| CVE | — |
+| Seen in sources | — (required by NavSentry scope, no source occurrence yet) |
+
+**FACT (ข้อเท็จจริง)**
+
+A production source map with a non-empty sourcesContent array is reachable, exposing the original source code, comments and internal structure.
+
+**EVIDENCE (หลักฐานที่ต้องเก็บ)**
+
+- Map display URL, the actor that fetched it, and that sourcesContent is not empty (content never kept)
+
+**ACCEPTANCE CRITERIA (เกณฑ์ผ่าน)**
+
+- [ ] Production builds do not serve source maps publicly, or serve them without sourcesContent
+- [ ] Maps needed for error monitoring are uploaded to the monitoring service instead of being served
+
+**ตรวจซ้ำบนหน้าเว็บจริง (Web recheck)**
+
+- [ ] Open the bundle's .map URL anonymously: 404 or no sourcesContent
+- [ ] Error monitoring still symbolicates stack traces
+
+**แนวทางแก้ (Fix)** — Disable public source maps in the production build (or use hidden maps uploaded to the monitoring tool) and remove sourceMappingURL comments from served bundles.
+
+**⚠️ ผลกระทบต่อผู้ใช้จริง / Regression guard** — Error monitoring and support tooling that read maps from the public URL must be switched to uploaded maps first.
+
+**Caveats / False positive**
+
+- Reachability only for an authenticated actor is reported as authenticated-only exposure (SUSPECTED).
+- In the development profile this is an observation only.
+
+<details><summary>Prompt: VERIFY (ตรวจสอบ)</summary>
+
+```text
+[NavSentry NSC-INFO-008 — VERIFY / ตรวจสอบ]
+Role: security verification agent. Target: <ORIGIN> (environment <ENV>) — only if listed in an
+authorized NavSentry manifest. Read-only: do not change code, config or data.
+Goal: confirm or refute "Source maps with source content served publicly" (เปิดให้ดาวน์โหลด source map ที่มีซอร์สโค้ดฉบับเต็ม).
+
+FACT to test:
+A production source map with a non-empty sourcesContent array is reachable, exposing the original source code, comments and internal structure.
+
+Collect EVIDENCE (redact tokens, cookies, PII, internal IPs BEFORE writing anything):
+- Map display URL, the actor that fetched it, and that sourcesContent is not empty (content never kept)
+
+Method:
+1. navsentry validate --config <MANIFEST>  then  navsentry test --config <MANIFEST> --out runs/before
+2. Read runs/before/run.json coverage row "NSC-INFO-008" and any finding with ruleId "NSC-INFO-008".
+3. Confirm in a real browser/DevTools:
+   - Open the bundle's .map URL anonymously: 404 or no sourcesContent
+   - Error monitoring still symbolicates stack traces
+4. Decide exactly one status: PASS | FAIL | INCONCLUSIVE | NOT_TESTED | ERROR, with a reason.
+   Missing evidence is never PASS. Pattern-only evidence stays SUSPECTED until a human confirms.
+
+Known caveats / false positives:
+- Reachability only for an authenticated actor is reported as authenticated-only exposure (SUSPECTED).
+- In the development profile this is an observation only.
+
+Output: an ISSUE entry (template docs/reports/templates/ISSUE.md) with ID NSC-INFO-008, status,
+fingerprint(s), evidence list and this checklist:
+- [ ] Target is in the authorized manifest scope
+- [ ] NavSentry run.json attached (path) and coverage row quoted
+- [ ] Evidence redacted (no secret/PII values)
+- [ ] Status + reason recorded; priority = PLANNED
+```
+
+</details>
+
+<details><summary>Prompt: FIX (แก้ไข)</summary>
+
+```text
+[NavSentry NSC-INFO-008 — FIX / แก้ไข]
+Role: remediation agent in the application repository. Follow that repository's own
+AGENTS.md/CONTRIBUTING rules. Change only what NSC-INFO-008 needs; no unrelated refactors.
+
+Problem (FACT): A production source map with a non-empty sourcesContent array is reachable, exposing the original source code, comments and internal structure.
+Required change: Disable public source maps in the production build (or use hidden maps uploaded to the monitoring tool) and remove sourceMappingURL comments from served bundles.
+
+DO NOT BREAK LEGITIMATE CALLERS:
+Error monitoring and support tooling that read maps from the public URL must be switched to uploaded maps first.
+
+Steps:
+1. Keep the BEFORE run (runs/before/run.json) from the VERIFY step.
+2. Implement the change (configuration first, code only if needed) and add/adjust an automated test.
+3. Deploy to the authorized staging environment.
+4. navsentry test --config <MANIFEST> --out runs/after
+5. navsentry compare --before runs/before/run.json --after runs/after/run.json
+   Required: NSC-INFO-008 in "Fixed" AND no unexplained "Legitimate-response contract drift".
+
+ACCEPTANCE CRITERIA:
+- [ ] Production builds do not serve source maps publicly, or serve them without sourcesContent
+- [ ] Maps needed for error monitoring are uploaded to the monitoring service instead of being served
+- [ ] compare verdict IMPROVED_NO_DRIFT (or every drift row approved by the owner in writing)
+- [ ] Changed files + commit recorded in a FIX entry (template docs/reports/templates/FIX.md)
+```
+
+</details>
+
+<details><summary>Prompt: RECHECK (ตรวจซ้ำ)</summary>
+
+```text
+[NavSentry NSC-INFO-008 — RECHECK / ตรวจซ้ำบนหน้าเว็บจริง]
+Role: independent QA agent (not the agent that wrote the fix). Read-only.
+1. Re-run: navsentry test --config <MANIFEST> --out runs/recheck ; coverage "NSC-INFO-008" must be PASS
+   (or a documented, owner-approved DISMISSED/Exception).
+2. On the real web page / endpoint:
+   - [ ] Open the bundle's .map URL anonymously: 404 or no sourcesContent
+   - [ ] Error monitoring still symbolicates stack traces
 3. Regression: main user flows still work and compare shows no unexplained contract drift.
 4. Verdict QA-PASS or QA-FAIL. On QA-FAIL you MUST write improvement criteria
    (template docs/reports/templates/QA.md): failed acceptance item, expected vs observed (redacted),
@@ -5428,6 +5821,135 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 2. On the real web page / endpoint:
    - [ ] Application smoke test after patching
    - [ ] Re-run NavSentry passive checks; confirm no regression with `navsentry compare`
+3. Regression: main user flows still work and compare shows no unexplained contract drift.
+4. Verdict QA-PASS or QA-FAIL. On QA-FAIL you MUST write improvement criteria
+   (template docs/reports/templates/QA.md): failed acceptance item, expected vs observed (redacted),
+   most likely cause, next concrete action, owner. "Failed" without a reason is not accepted.
+```
+
+</details>
+
+<a id="nsc-supply-002"></a>
+
+### NSC-SUPPLY-002 — Client-side library with known vulnerabilities
+
+**ไลบรารีฝั่งเบราว์เซอร์มีช่องโหว่ที่รู้จักแล้ว**
+
+| Field | Value |
+|---|---|
+| Severity (default) | medium |
+| Priority | 🟡 รอได้ / วางแผนแก้ (PLANNED) |
+| Automation | planned-auto — วางแผนให้ตรวจอัตโนมัติ (0.1.3-v (needs an approved advisory source)) |
+| OWASP Top 10:2025 | A03:2025 Software Supply Chain Failures |
+| OWASP Top 10:2021 | A06:2021 Vulnerable and Outdated Components |
+| CWE | CWE-1395 |
+| OWASP WSTG | WSTG-INFO-08 |
+| OWASP ASVS 5.0 (chapter) | V15 Secure Coding and Architecture |
+| CVE | — |
+| Seen in sources | — (required by NavSentry scope, no source occurrence yet) |
+
+**FACT (ข้อเท็จจริง)**
+
+A JavaScript library served to the browser identifies a version that reviewed advisories list as affected.
+
+**EVIDENCE (หลักฐานที่ต้องเก็บ)**
+
+- Library and version from a banner or package metadata, the advisory record ID and its applicability (affected/unknown)
+
+**ACCEPTANCE CRITERIA (เกณฑ์ผ่าน)**
+
+- [ ] Client libraries are on versions outside every known affected range, or a documented mitigation applies
+
+**ตรวจซ้ำบนหน้าเว็บจริง (Web recheck)**
+
+- [ ] After the upgrade, the served bundle reports the fixed version
+- [ ] The pages that use the library still work
+
+**แนวทางแก้ (Fix)** — Upgrade the library to a fixed version (or apply the vendor mitigation) and rebuild; remove unused copies.
+
+**⚠️ ผลกระทบต่อผู้ใช้จริง / Regression guard** — Major-version upgrades can change behaviour; run the story flows that use the library before and after.
+
+**Caveats / False positive**
+
+- A banner is weak evidence and never suppresses another detector.
+- Not automated until reviewed advisory records from an approved source exist.
+
+<details><summary>Prompt: VERIFY (ตรวจสอบ)</summary>
+
+```text
+[NavSentry NSC-SUPPLY-002 — VERIFY / ตรวจสอบ]
+Role: security verification agent. Target: <ORIGIN> (environment <ENV>) — only if listed in an
+authorized NavSentry manifest. Read-only: do not change code, config or data.
+Goal: confirm or refute "Client-side library with known vulnerabilities" (ไลบรารีฝั่งเบราว์เซอร์มีช่องโหว่ที่รู้จักแล้ว).
+
+FACT to test:
+A JavaScript library served to the browser identifies a version that reviewed advisories list as affected.
+
+Collect EVIDENCE (redact tokens, cookies, PII, internal IPs BEFORE writing anything):
+- Library and version from a banner or package metadata, the advisory record ID and its applicability (affected/unknown)
+
+Method:
+1. navsentry validate --config <MANIFEST>  then  navsentry test --config <MANIFEST> --out runs/before
+2. Read runs/before/run.json coverage row "NSC-SUPPLY-002" and any finding with ruleId "NSC-SUPPLY-002".
+3. This case is "planned-auto" — NavSentry alone cannot conclude it. Gather the evidence above manually:
+   - After the upgrade, the served bundle reports the fixed version
+   - The pages that use the library still work
+4. Decide exactly one status: PASS | FAIL | INCONCLUSIVE | NOT_TESTED | ERROR, with a reason.
+   Missing evidence is never PASS. Pattern-only evidence stays SUSPECTED until a human confirms.
+
+Known caveats / false positives:
+- A banner is weak evidence and never suppresses another detector.
+- Not automated until reviewed advisory records from an approved source exist.
+
+Output: an ISSUE entry (template docs/reports/templates/ISSUE.md) with ID NSC-SUPPLY-002, status,
+fingerprint(s), evidence list and this checklist:
+- [ ] Target is in the authorized manifest scope
+- [ ] NavSentry run.json attached (path) and coverage row quoted
+- [ ] Evidence redacted (no secret/PII values)
+- [ ] Status + reason recorded; priority = PLANNED
+```
+
+</details>
+
+<details><summary>Prompt: FIX (แก้ไข)</summary>
+
+```text
+[NavSentry NSC-SUPPLY-002 — FIX / แก้ไข]
+Role: remediation agent in the application repository. Follow that repository's own
+AGENTS.md/CONTRIBUTING rules. Change only what NSC-SUPPLY-002 needs; no unrelated refactors.
+
+Problem (FACT): A JavaScript library served to the browser identifies a version that reviewed advisories list as affected.
+Required change: Upgrade the library to a fixed version (or apply the vendor mitigation) and rebuild; remove unused copies.
+
+DO NOT BREAK LEGITIMATE CALLERS:
+Major-version upgrades can change behaviour; run the story flows that use the library before and after.
+
+Steps:
+1. Keep the BEFORE run (runs/before/run.json) from the VERIFY step.
+2. Implement the change (configuration first, code only if needed) and add/adjust an automated test.
+3. Deploy to the authorized staging environment.
+4. navsentry test --config <MANIFEST> --out runs/after
+5. navsentry compare --before runs/before/run.json --after runs/after/run.json
+   Required: NSC-SUPPLY-002 in "Fixed" AND no unexplained "Legitimate-response contract drift".
+
+ACCEPTANCE CRITERIA:
+- [ ] Client libraries are on versions outside every known affected range, or a documented mitigation applies
+- [ ] compare verdict IMPROVED_NO_DRIFT (or every drift row approved by the owner in writing)
+- [ ] Changed files + commit recorded in a FIX entry (template docs/reports/templates/FIX.md)
+```
+
+</details>
+
+<details><summary>Prompt: RECHECK (ตรวจซ้ำ)</summary>
+
+```text
+[NavSentry NSC-SUPPLY-002 — RECHECK / ตรวจซ้ำบนหน้าเว็บจริง]
+Role: independent QA agent (not the agent that wrote the fix). Read-only.
+1. Re-run: navsentry test --config <MANIFEST> --out runs/recheck ; coverage "NSC-SUPPLY-002" must be PASS
+   (or a documented, owner-approved DISMISSED/Exception).
+2. On the real web page / endpoint:
+   - [ ] After the upgrade, the served bundle reports the fixed version
+   - [ ] The pages that use the library still work
 3. Regression: main user flows still work and compare shows no unexplained contract drift.
 4. Verdict QA-PASS or QA-FAIL. On QA-FAIL you MUST write improvement criteria
    (template docs/reports/templates/QA.md): failed acceptance item, expected vs observed (redacted),
