@@ -14,7 +14,7 @@
 - **CRYPT** Cryptography & Transport Security: [NSC-CRYPT-001](#nsc-crypt-001), [NSC-CRYPT-002](#nsc-crypt-002), [NSC-CRYPT-003](#nsc-crypt-003), [NSC-CRYPT-004](#nsc-crypt-004), [NSC-CRYPT-005](#nsc-crypt-005), [NSC-CRYPT-006](#nsc-crypt-006)
 - **INJ** Injection: [NSC-INJ-001](#nsc-inj-001), [NSC-INJ-002](#nsc-inj-002), [NSC-INJ-003](#nsc-inj-003), [NSC-INJ-004](#nsc-inj-004), [NSC-INJ-005](#nsc-inj-005), [NSC-INJ-006](#nsc-inj-006)
 - **CONF** Security Misconfiguration & Hardening Headers: [NSC-CONF-001](#nsc-conf-001), [NSC-CONF-002](#nsc-conf-002), [NSC-CONF-003](#nsc-conf-003), [NSC-CONF-004](#nsc-conf-004), [NSC-CONF-009](#nsc-conf-009), [NSC-CONF-005](#nsc-conf-005), [NSC-CONF-006](#nsc-conf-006), [NSC-CONF-007](#nsc-conf-007), [NSC-CONF-008](#nsc-conf-008)
-- **INFO** Information Disclosure: [NSC-INFO-001](#nsc-info-001), [NSC-INFO-007](#nsc-info-007), [NSC-INFO-008](#nsc-info-008), [NSC-INFO-003](#nsc-info-003), [NSC-INFO-004](#nsc-info-004), [NSC-INFO-005](#nsc-info-005)
+- **INFO** Information Disclosure: [NSC-INFO-001](#nsc-info-001), [NSC-INFO-007](#nsc-info-007), [NSC-INFO-006](#nsc-info-006), [NSC-INFO-008](#nsc-info-008), [NSC-INFO-003](#nsc-info-003), [NSC-INFO-004](#nsc-info-004), [NSC-INFO-005](#nsc-info-005)
 - **PRIV** Privacy & Sensitive Data Exposure: [NSC-PRIV-001](#nsc-priv-001), [NSC-PRIV-002](#nsc-priv-002)
 - **ERR** Exceptional Conditions & Error Handling: [NSC-ERR-001](#nsc-err-001), [NSC-ERR-002](#nsc-err-002)
 - **SUPPLY** Vulnerable Components & Supply Chain: [NSC-SUPPLY-001](#nsc-supply-001), [NSC-SUPPLY-002](#nsc-supply-002)
@@ -4668,6 +4668,139 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 2. On the real web page / endpoint:
    - [ ] Rebuild and redeploy, then re-run `navsentry scan --mode page`: NSC-INFO-007 PASS for every asset
    - [ ] Rotate every exposed key at the provider; the old value must stop working
+3. Regression: main user flows still work and compare shows no unexplained contract drift.
+4. Verdict QA-PASS or QA-FAIL. On QA-FAIL you MUST write improvement criteria
+   (template docs/reports/templates/QA.md): failed acceptance item, expected vs observed (redacted),
+   most likely cause, next concrete action, owner. "Failed" without a reason is not accepted.
+```
+
+</details>
+
+<a id="nsc-info-006"></a>
+
+### NSC-INFO-006 — Sensitive data written to the browser console
+
+**เขียนข้อมูลสำคัญ (token / secret) ลง console ของเบราว์เซอร์**
+
+| Field | Value |
+|---|---|
+| Severity (default) | medium |
+| Priority | 🟠 แก้แล้วอาจกระทบผู้ใช้จริง ต้องระวัง (CAUTION) |
+| Automation | auto — NavSentry ตรวจอัตโนมัติได้ใน v0.1 (observe) |
+| OWASP Top 10:2025 | A09:2025 Security Logging and Alerting Failures |
+| OWASP Top 10:2021 | A09:2021 Security Logging and Monitoring Failures |
+| CWE | CWE-532 |
+| OWASP WSTG | WSTG-INFO-05 |
+| OWASP ASVS 5.0 (chapter) | V16 Security Logging and Error Handling, V14 Data Protection |
+| CVE | — |
+| Seen in sources | — (required by NavSentry scope, no source occurrence yet) |
+
+**FACT (ข้อเท็จจริง)**
+
+Client-side code writes a token, credential, API key or echoed sensitive response field to the browser console, where browser extensions, shared devices, screen recordings and error-collection scripts can read it.
+
+**EVIDENCE (หลักฐานที่ต้องเก็บ)**
+
+- Console level, source file:line, template hash and a masked preview [kind,len=n] captured by the playwright engine; an exact match with a known test token or in-scope credential when available (message text never kept)
+
+**ACCEPTANCE CRITERIA (เกณฑ์ผ่าน)**
+
+- [ ] No console output in production builds carries tokens, credentials, keys or sensitive response fields
+- [ ] Debug logging is removed from production builds, not only hidden by overriding console methods
+
+**ตรวจซ้ำบนหน้าเว็บจริง (Web recheck)**
+
+- [ ] Re-run the flow with `navsentry scan --mode flow --engine playwright`: NSC-INFO-006 PASS
+- [ ] Open DevTools > Console while repeating the journey: no token or credential appears
+
+**แนวทางแก้ (Fix)** — Remove the logging call (or log a value-free message), strip debug logging from production builds (e.g. drop_console or a logger with a production level), and rotate any credential that was logged.
+
+**⚠️ ผลกระทบต่อผู้ใช้จริง / Regression guard** — Error reporting that relied on the logged object must keep working: log an identifier or error code instead of the payload, and confirm the flow still passes.
+
+**Caveats / False positive**
+
+- Needs a JS runtime: with the http engine the check is NOT_TESTED.
+- A pattern match is SUSPECTED; only an exact match with a known in-scope value is VALIDATED.
+- Overriding console.log hides output but leaves the call in the bundle; that is an observation, not a fix.
+
+<details><summary>Prompt: VERIFY (ตรวจสอบ)</summary>
+
+```text
+[NavSentry NSC-INFO-006 — VERIFY / ตรวจสอบ]
+Role: security verification agent. Target: <ORIGIN> (environment <ENV>) — only if listed in an
+authorized NavSentry manifest. Read-only: do not change code, config or data.
+Goal: confirm or refute "Sensitive data written to the browser console" (เขียนข้อมูลสำคัญ (token / secret) ลง console ของเบราว์เซอร์).
+
+FACT to test:
+Client-side code writes a token, credential, API key or echoed sensitive response field to the browser console, where browser extensions, shared devices, screen recordings and error-collection scripts can read it.
+
+Collect EVIDENCE (redact tokens, cookies, PII, internal IPs BEFORE writing anything):
+- Console level, source file:line, template hash and a masked preview [kind,len=n] captured by the playwright engine; an exact match with a known test token or in-scope credential when available (message text never kept)
+
+Method:
+1. navsentry validate --config <MANIFEST>  then  navsentry test --config <MANIFEST> --out runs/before
+2. Read runs/before/run.json coverage row "NSC-INFO-006" and any finding with ruleId "NSC-INFO-006".
+3. Confirm in a real browser/DevTools:
+   - Re-run the flow with `navsentry scan --mode flow --engine playwright`: NSC-INFO-006 PASS
+   - Open DevTools > Console while repeating the journey: no token or credential appears
+4. Decide exactly one status: PASS | FAIL | INCONCLUSIVE | NOT_TESTED | ERROR, with a reason.
+   Missing evidence is never PASS. Pattern-only evidence stays SUSPECTED until a human confirms.
+
+Known caveats / false positives:
+- Needs a JS runtime: with the http engine the check is NOT_TESTED.
+- A pattern match is SUSPECTED; only an exact match with a known in-scope value is VALIDATED.
+- Overriding console.log hides output but leaves the call in the bundle; that is an observation, not a fix.
+
+Output: an ISSUE entry (template docs/reports/templates/ISSUE.md) with ID NSC-INFO-006, status,
+fingerprint(s), evidence list and this checklist:
+- [ ] Target is in the authorized manifest scope
+- [ ] NavSentry run.json attached (path) and coverage row quoted
+- [ ] Evidence redacted (no secret/PII values)
+- [ ] Status + reason recorded; priority = CAUTION
+```
+
+</details>
+
+<details><summary>Prompt: FIX (แก้ไข)</summary>
+
+```text
+[NavSentry NSC-INFO-006 — FIX / แก้ไข]
+Role: remediation agent in the application repository. Follow that repository's own
+AGENTS.md/CONTRIBUTING rules. Change only what NSC-INFO-006 needs; no unrelated refactors.
+
+Problem (FACT): Client-side code writes a token, credential, API key or echoed sensitive response field to the browser console, where browser extensions, shared devices, screen recordings and error-collection scripts can read it.
+Required change: Remove the logging call (or log a value-free message), strip debug logging from production builds (e.g. drop_console or a logger with a production level), and rotate any credential that was logged.
+
+DO NOT BREAK LEGITIMATE CALLERS:
+Error reporting that relied on the logged object must keep working: log an identifier or error code instead of the payload, and confirm the flow still passes.
+
+Steps:
+1. Keep the BEFORE run (runs/before/run.json) from the VERIFY step.
+2. Implement the change (configuration first, code only if needed) and add/adjust an automated test.
+3. Deploy to the authorized staging environment.
+4. navsentry test --config <MANIFEST> --out runs/after
+5. navsentry compare --before runs/before/run.json --after runs/after/run.json
+   Required: NSC-INFO-006 in "Fixed" AND no unexplained "Legitimate-response contract drift".
+
+ACCEPTANCE CRITERIA:
+- [ ] No console output in production builds carries tokens, credentials, keys or sensitive response fields
+- [ ] Debug logging is removed from production builds, not only hidden by overriding console methods
+- [ ] compare verdict IMPROVED_NO_DRIFT (or every drift row approved by the owner in writing)
+- [ ] Changed files + commit recorded in a FIX entry (template docs/reports/templates/FIX.md)
+```
+
+</details>
+
+<details><summary>Prompt: RECHECK (ตรวจซ้ำ)</summary>
+
+```text
+[NavSentry NSC-INFO-006 — RECHECK / ตรวจซ้ำบนหน้าเว็บจริง]
+Role: independent QA agent (not the agent that wrote the fix). Read-only.
+1. Re-run: navsentry test --config <MANIFEST> --out runs/recheck ; coverage "NSC-INFO-006" must be PASS
+   (or a documented, owner-approved DISMISSED/Exception).
+2. On the real web page / endpoint:
+   - [ ] Re-run the flow with `navsentry scan --mode flow --engine playwright`: NSC-INFO-006 PASS
+   - [ ] Open DevTools > Console while repeating the journey: no token or credential appears
 3. Regression: main user flows still work and compare shows no unexplained contract drift.
 4. Verdict QA-PASS or QA-FAIL. On QA-FAIL you MUST write improvement criteria
    (template docs/reports/templates/QA.md): failed acceptance item, expected vs observed (redacted),

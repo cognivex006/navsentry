@@ -88,7 +88,7 @@ export function manualLine(s: FlowStep): string {
   return `${s.id} — as ${s.actor}: ${verb} ${what}${value}`;
 }
 
-function flowStatus(steps: StepResult[]): FlowStatus {
+export function flowStatus(steps: StepResult[]): FlowStatus {
   const st = steps.map((s) => s.status);
   if (st.includes("FAIL")) return "FAIL";
   if (st.includes("ERROR")) return "ERROR";
@@ -327,6 +327,27 @@ export async function runFlows(docs: FlowDoc[], ctx: FlowContext): Promise<Flows
     done.set(d.header.id, { status: res.status, exports: chain.exports });
   }
   return { flows, checks, incomplete: budget.exhausted ? [budget.exhausted] : [] };
+}
+
+/**
+ * `console: "silent"` (SPEC-0.1.3 §6.4-A): a step during which the page wrote to the console fails the
+ * functional assertion `console_silent` with the count. It is a functional FAIL only; a security
+ * finding needs sensitive content (NSC-INFO-006). Without a JS runtime the assertion is NOT_TESTED.
+ */
+export function applyConsoleSilent(flows: FlowResult[], docs: FlowDoc[], perStep: Map<string, number> | undefined): void {
+  for (const f of flows) {
+    const doc = docs.find((d) => d.header.id === f.id);
+    if (doc?.header.console !== "silent") continue;
+    for (const st of f.steps) {
+      if (st.status === "NOT_TESTED" || st.status === "ERROR") continue;
+      if (!perStep) { st.assertions.push({ kind: "console_silent", status: "NOT_TESTED", expected: "no console output", observed: "no JS runtime (http engine)" }); continue; }
+      const n = perStep.get(st.key) ?? 0;
+      st.assertions.push({ kind: "console_silent", status: n ? "FAIL" : "PASS", expected: "no console output", observed: n ? `${n} console message(s)` : "none" });
+      st.status = worst(st.assertions.map((a) => a.status));
+    }
+    f.status = flowStatus(f.steps);
+    f.reasons = [...new Set(f.steps.filter((x) => x.status !== "PASS").map((x) => `${x.id} ${x.status}${x.reason ? `: ${x.reason}` : ""}`))];
+  }
 }
 
 export function functionalResult(flows: FlowResult[]): "PASS" | "FAIL" | "INCOMPLETE" {

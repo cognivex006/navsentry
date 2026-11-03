@@ -250,6 +250,7 @@ function assetVerdicts(ctx: AssetContext, s: Scanned, url: string, check: (...a:
   const secrets = s.facts.filter((f) => f.detector === "STA-SECRET");
   const internal = s.facts.filter((f) => f.detector === "STA-INTERNAL");
   const dev = s.facts.filter((f) => f.detector === "STA-DEVBUILD" || f.kind === "sourcemap-file-url");
+  const hidden = s.facts.filter((f) => f.detector === "STA-HIDDENLOG");
   const where = (fs: Fact[]) => fs.slice(0, 5).map((f) => `${preview(f)} at ${f.line}:${f.col}`);
   const incompleteReason = s.complete ? undefined : s.reason ?? "incomplete capture";
   // NSC-INFO-007: an exact known-token match is deterministic (VALIDATED); a format match is SUSPECTED.
@@ -272,6 +273,8 @@ function assetVerdicts(ctx: AssetContext, s: Scanned, url: string, check: (...a:
       for (const f of dev) addFinding("NSC-CONF-005", ex, f, preview(f));
     } else check("NSC-CONF-005", ex, url, "NOT_TESTED", "development build markers observed", where(dev), { reason: "development profile: observation only" });
   }
+  // Hidden logging is an observation: whether the retained calls log sensitive data needs the runtime console check.
+  if (hidden.length) check("NSC-INFO-006", ex, url, "NOT_TESTED", "console output is hidden in the bundle, not removed", [...where(hidden), "debug toggles are reported only; NavSentry never sets them (S9)"], { reason: "static observation only; run the flow with --engine playwright to inspect console output" });
 }
 
 function mapVerdict(ctx: AssetContext, s: Scanned, url: string, actor: string, ok: boolean, check: (...a: Parameters<CheckFn>) => void, addFinding: AddFn): void {

@@ -6,17 +6,18 @@
 import { SECRET_SHAPES } from "../redact.js";
 
 /** Bump when a detector changes; it invalidates cached facts. */
-export const DETECTOR_VERSION = "1";
+export const DETECTOR_VERSION = "2";
 /** Longest match a detector reports; the overlap window is this long. */
 export const MAX_MATCH = 4096;
 
 export type FactKind =
   | "secret" | "private-key" | "secret-assignment" | "internal-host" | "private-ip"
-  | "dev-server-client" | "sourcemap-url" | "sourcemap-file-url" | "sources-content";
+  | "dev-server-client" | "sourcemap-url" | "sourcemap-file-url" | "sources-content"
+  | "console-override" | "debug-toggle";
 
 export interface Fact {
   /** Detector label (internal). */
-  detector: "STA-SECRET" | "STA-INTERNAL" | "STA-DEVBUILD" | "STA-SOURCEMAP";
+  detector: "STA-SECRET" | "STA-INTERNAL" | "STA-DEVBUILD" | "STA-SOURCEMAP" | "STA-HIDDENLOG";
   kind: FactKind;
   /** Public provider marker from the detector definition, e.g. "aws-access-key". */
   marker?: string;
@@ -66,6 +67,9 @@ const RULES: Rule[] = [
     re: /\b[a-z0-9-]{1,63}(?:\.[a-z0-9-]{1,63}){0,6}\.(?:internal|corp|intranet|lan)\b|\blocalhost:\d{2,5}\b|\b(?:staging|stg|uat|preprod)[.-][a-z0-9-]{1,63}(?:\.[a-z0-9-]{1,63}){0,6}\.[a-z]{2,}\b/gi,
   },
   { detector: "STA-DEVBUILD", kind: "dev-server-client", re: /webpack-dev-server|\[HMR\] |\/@vite\/client|__webpack_hmr/g },
+  // Logging that is only hidden, not removed (SPEC-0.1.3 §6.4-A). Observations; toggles are never set (S9).
+  { detector: "STA-HIDDENLOG", kind: "console-override", re: /\bconsole\.(?:log|debug|info|warn|error)\s*=\s*(?:function\s*\w*\s*\(\s*\)\s*\{\s*\}|\(\s*\)\s*=>\s*(?:\{\s*\}|void 0|undefined|null|0))/g },
+  { detector: "STA-HIDDENLOG", kind: "debug-toggle", re: /[?&]debug=(?:1|true)\b|localStorage\.(?:getItem|setItem)\(\s*["'`](?:debug|DEBUG|loglevel|logLevel)["'`]/g },
   { detector: "STA-SOURCEMAP", kind: "sourcemap-file-url", re: /[#@] sourceMappingURL=file:\/\/[^\s'"]+/g },
   { detector: "STA-SOURCEMAP", kind: "sources-content", re: /"sourcesContent"\s*:\s*\[\s*"/g },
 ];

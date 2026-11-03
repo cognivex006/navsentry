@@ -61,6 +61,15 @@ export async function startBrowserFixture(): Promise<BrowserFixture> {
         return html(res, "<title>Quiet</title><h1>Quiet</h1>");
       case "/ui/noisy":
         return html(res, `<title>Noisy</title><h1>Noisy</h1><script>console.log("loaded widget 3")</script>`);
+      case "/ui/twice":
+        // Same message shape twice: harmless first, then carrying the token (it must still be found).
+        return html(res, `<title>Twice</title><h1>Twice</h1><script>console.log("session ref abcdef123456");console.log("session ref ${CONSOLE_TEST_TOKEN}")</script>`);
+      case "/ui/hidden":
+        return html(res, `<title>Hidden</title><h1>Hidden</h1><script src="/ui/hidden.js"></script>`);
+      case "/ui/hidden.js":
+        // Harmless bundle that only hides logging; NavSentry must never set the ?debug toggle (S9).
+        res.writeHead(200, { "content-type": "text/javascript" }).end(`if(!location.search.includes("debug=1")){console.log=()=>{}}console.log("widget ready");`);
+        return;
       default:
         res.writeHead(404, { "content-type": "text/plain" }).end("not found");
     }
