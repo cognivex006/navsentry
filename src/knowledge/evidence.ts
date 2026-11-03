@@ -88,3 +88,16 @@ export function evaluateKnowledge(s: Snapshot, exchanges: Exchange[], now = new 
     proposals,
   };
 }
+
+/** Applicability rows for evidence that has records (lockfile packages); no per-package proposals. */
+export function evaluateEvidence(s: Snapshot, evidence: ProductEvidence[]): KnowledgeResult["applicability"] {
+  const rows: KnowledgeResult["applicability"] = [];
+  for (const e of evidence) {
+    for (const r of s.records.filter((x) => x.product.ecosystem === e.ecosystem && x.product.name === e.name)) {
+      const m = applicability(r, e);
+      if (m.applicability === "not-applicable") continue;
+      rows.push({ product: `${e.ecosystem}/${e.name}${e.version ? ` ${e.version}` : ""}`, provenance: e.provenance, recordId: r.id, identifiers: [...r.identifiers.cve, ...r.identifiers.advisory], applicability: m.applicability, caveats: m.caveats, case: r.nsc, fix: r.fix });
+    }
+  }
+  return rows;
+}

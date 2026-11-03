@@ -238,6 +238,22 @@ export interface KnowledgeResult {
   proposals: { id: string; status: "new" | "unchanged" | "revised" }[];
 }
 
+/** Development code inventory (SPEC-0.1.3 §4.1): relative paths, validated routes and package counts only. */
+export interface CodeInventory {
+  kind: "navsentry-code-inventory";
+  schemaVersion: "1";
+  routes: { method: string; path: string; source: string; file: string; line: number }[];
+  openapi: string[];
+  tests: string[];
+  dependencies: { npm: number; composer: number };
+  skipped: { links: number; large: number; unreadable: number; invalidRoutes: number };
+  complete: boolean;
+  incompleteReasons: string[];
+  /** Lockfile packages that have records in the knowledge snapshot. */
+  knowledge?: KnowledgeResult["applicability"];
+  snapshot?: { version: string; sha256: string };
+}
+
 export interface WorkspaceResult {
   /** PASS: no unexpected change. FAIL: WORKSPACE_DIRTY (exit 4). NOT_TESTED: tree too large or unreadable. */
   status: "PASS" | "FAIL" | "NOT_TESTED";

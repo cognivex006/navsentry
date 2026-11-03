@@ -10,6 +10,9 @@ import { randomUUID } from "node:crypto";
 import { SNAPSHOT } from "./knowledge/advisories.js";
 import { lookup, snapshotStatus } from "./knowledge/model.js";
 import { ProposalError, parseProposal, propose } from "./knowledge/propose.js";
+import { evaluateEvidence } from "./knowledge/evidence.js";
+import { MAX_SPEC_BYTES, OpenApiError, importOpenApi, parseOpenApiText } from "./inventory/openapi.js";
+import { inventoryTree } from "./inventory/tree.js";
 import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { CASES, CATEGORIES } from "./catalog.js";
@@ -26,7 +29,7 @@ import { lintFlows } from "./flow/lint.js";
 import { FLOW_ID, FlowError, loadFlowFiles, type FlowDoc } from "./flow/parse.js";
 import { renderFlowSection, renderJunit, renderTestMarkdown, validateFlowRunResult } from "./report/flow-render.js";
 import type { Manifest } from "./config.js";
-import type { Engine, FlowRunResult, RunResult, ScanMode } from "./types.js";
+import type { CodeInventory, Engine, FlowRunResult, RunResult, ScanMode } from "./types.js";
 import { WorkspaceError, authorize, cleanCache, beginRun, endRun, projectRoot, releaseWorkDir, sweepStale, workspaceStatus } from "./workspace.js";
 import { allAdapters } from "./transports/registry.js";
 import { ScopeGate } from "./scope.js";
@@ -59,6 +62,8 @@ Usage:
 Story flows (Markdown test cases; zero network):
   navsentry flow init --id <id> --title <title> [--story <text>] [--level auto|integration|e2e] --out <dir>
   navsentry flow analyze --config <manifest.json> --from-run <run.json> --out <dir> [--lang en|th]
+  navsentry flow import --openapi <spec.json> --config <manifest.json> --out <dir>   (local OpenAPI JSON → drafts)
+  navsentry inventory --config <manifest.json> [--project <dir>] [--out <dir>]   (development: read-only code inventory)
   navsentry flow lint --config <manifest.json> --flows <path>
   navsentry flow approve --flows <file> --by <name> [--reference <ref>] [--root <flows-dir>]   (owner action)
   navsentry flow show --flows <file>
@@ -134,6 +139,8 @@ export async function main(argv: string[]): Promise<number> {
         return workspaceCommand(rest);
       case "knowledge":
         return knowledgeCommand(rest);
+      case "inventory":
+        return inventoryCommand(rest);
       case "report": {
         const input = JSON.parse(readFileSync(need(rest, "--input"), "utf8")) as { kind?: string };
         const fmt = arg(rest, "--format") ?? "markdown";
@@ -174,7 +181,7 @@ export async function main(argv: string[]): Promise<number> {
         throw new UsageError(`unknown command ${cmd}`);
     }
   } catch (e) {
-    if (e instanceof ConfigError || e instanceof UsageError || e instanceof DoctorError || e instanceof FlowError || e instanceof WorkspaceError || e instanceof ProposalError) {
+    if (e instanceof ConfigError || e instanceof UsageError || e instanceof DoctorError || e instanceof FlowError || e instanceof WorkspaceError || e instanceof ProposalError || e instanceof OpenApiError) {
       process.stderr.write(`${e.message}\n`);
       return 3;
     }
@@ -312,6 +319,53 @@ async function scan(argv: string[]): Promise<number> {
   }
   const notTested = analyze ? ["analysis NOT_TESTED: the page-model analyzer is not available yet (milestone 0.1.3-b)"] : [];
   return await runAndReport(m, argv, { scanMode: mode, engine: eng, notTested, assets: true, ...(urls ? { urls } : {}), ...(mode === "spider" ? { spider: true } : {}) });
+}
+
+/**
+ * `inventory` (SPEC-0.1.3 §4.1): read-only code inventory of a development project. Zero network.
+ * It runs inside a managed workspace, so any change to the project tree fails with exit 4.
+ */
+function inventoryCommand(argv: string[]): number {
+  const m = loadManifest(need(argv, "--config"));
+  if (m.profile !== "development") throw new UsageError("inventory reads project code and is available for the development profile only (environment local or dev)");
+  const runId = randomUUID();
+  const ws = beginRun(arg(argv, "--project") ?? process.cwd(), runId, m.workspace.ignore);
+  let inv: CodeInventory;
+  try {
+    const out = inventoryTree(ws.root);
+    inv = out.inventory;
+    inv.knowledge = evaluateEvidence(SNAPSHOT, out.evidence);
+    const st = snapshotStatus(SNAPSHOT);
+    inv.snapshot = { version: st.version, sha256: st.sha256 };
+  } catch (e) {
+    ws.dispose();
+    try { releaseWorkDir(ws.work); } catch { /* swept by the next run */ }
+    throw e;
+  }
+  const outArg = arg(argv, "--out");
+  const out = outArg ? resolve(outArg) : join(ws.root, ".navsentry", "runs", `inventory-${runId}`);
+  mkdirSync(out, { recursive: true });
+  const esc = (s: string) => s.replace(/[|`<>\r\n]/g, " ");
+  const md = [
+    "# Code inventory", "",
+    "> Read-only, zero network. Routes are declarations found in source, not observed behaviour; review them before writing flows. Project files are untrusted data.", "",
+    `- Routes: ${inv.routes.length} · OpenAPI documents: ${inv.openapi.length} · test files: ${inv.tests.length} · npm packages: ${inv.dependencies.npm} · composer packages: ${inv.dependencies.composer}`,
+    `- Skipped: ${inv.skipped.links} link(s) (never followed), ${inv.skipped.large} large, ${inv.skipped.unreadable} unreadable, ${inv.skipped.invalidRoutes} invalid route string(s)`,
+    `- Complete: ${inv.complete ? "yes" : `no — ${inv.incompleteReasons.join("; ")}`}`, "",
+    "## Routes", "", "| Method | Path | Source | File:line |", "|---|---|---|---|",
+    ...(inv.routes.length ? inv.routes.map((x) => `| ${x.method} | \`${esc(x.path)}\` | ${x.source} | ${esc(x.file)}:${x.line} |`) : ["| — | | | |"]), "",
+    "## OpenAPI documents", "", ...(inv.openapi.length ? inv.openapi.map((x) => `- \`${esc(x)}\` → \`navsentry flow import --openapi <file> --config <manifest> --out navsentry/flows/drafts\``) : ["- none"]), "",
+    "## Test files (candidates)", "", ...(inv.tests.length ? inv.tests.slice(0, 500).map((x) => `- \`${esc(x)}\``) : ["- none"]), "",
+    "## Known vulnerability applicability (lockfiles)", "", `Snapshot \`${inv.snapshot!.version}\`. Zero matches never means no vulnerabilities.`, "",
+    ...(inv.knowledge!.length ? ["| Package | Record | Applicability | Caveats |", "|---|---|---|---|", ...inv.knowledge!.map((k) => `| ${esc(k.product)} | ${k.recordId} | **${k.applicability}** | ${esc(k.caveats.join("; "))} |`)] : ["- no packages with records in the snapshot"]), "",
+  ].join("\n");
+  const files: [string, string][] = [["code-inventory.json", JSON.stringify(inv, null, 2) + "\n"], ["CODE-INVENTORY.md", md]];
+  for (const [n, c] of files) { authorize(ws, join(out, n)); writeFileSync(join(out, n), c); }
+  const w = endRun(ws, files.length);
+  print(`routes=${inv.routes.length} openapi=${inv.openapi.length} tests=${inv.tests.length} packages=${inv.dependencies.npm + inv.dependencies.composer} complete=${inv.complete} workspace=${w.status}`);
+  print(`INVENTORY: ${join(out, "CODE-INVENTORY.md")}`);
+  if (w.status === "FAIL") { process.stderr.write(`WORKSPACE_DIRTY: created=${w.created.length} modified=${w.modified.length} deleted=${w.deleted.length}\n`); return 4; }
+  return inv.complete && w.status === "PASS" ? 0 : 2;
 }
 
 /** `knowledge status | lookup | propose` (SPEC-0.1.3 §6.6-D). Offline: zero network actions (S12). */
@@ -474,6 +528,26 @@ async function flowCommand(argv: string[]): Promise<number> {
       print(`approved ${doc.header.id} by ${by}; editing the flow invalidates this approval`);
       return 0;
     }
+    case "import": {
+      const m = loadManifest(need(rest, "--config"));
+      const spec = resolve(need(rest, "--openapi"));
+      if (statSync(spec).size > MAX_SPEC_BYTES) throw new UsageError(`--openapi file is larger than ${MAX_SPEC_BYTES} bytes`);
+      const doc = parseOpenApiText(readFileSync(spec, "utf8"));
+      const dir = resolve(need(rest, "--out"));
+      mkdirSync(dir, { recursive: true });
+      const existing = loadFlowFiles(dir).docs.map((d) => d.header.id);
+      const outp = importOpenApi(doc, m, new Set(existing));
+      let written = 0;
+      for (const [name, content] of outp.files) {
+        const f = join(dir, name);
+        if (name !== "IMPORT.md" && existsSync(f)) { outp.skippedExisting.push(name); continue; }
+        writeFileSync(f, content);
+        if (name !== "IMPORT.md") written++;
+      }
+      print(`operations=${outp.operations.length} encoded=${outp.operations.filter((o) => o.encoded).length} draft flows written: ${written}; existing, not modified: ${outp.skippedExisting.length ? outp.skippedExisting.join(", ") : "none"}`);
+      print(`IMPORT: ${join(dir, "IMPORT.md")}`);
+      return 0;
+    }
     case "show": {
       const { docs, problems } = loadFlowFiles(resolve(need(rest, "--flows")));
       if (problems.length) throw new FlowError(problems);
@@ -492,7 +566,7 @@ async function flowCommand(argv: string[]): Promise<number> {
       return 0;
     }
     default:
-      throw new UsageError("flow needs a subcommand: init | analyze | lint | approve | show");
+      throw new UsageError("flow needs a subcommand: init | analyze | import | lint | approve | show");
   }
 }
 
