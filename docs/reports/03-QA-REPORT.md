@@ -80,7 +80,8 @@ Re-run: `npm run gate` → `.navsentry/gate/GATE-REPORT.md` (the final pre-push 
 - **Next action:** add `scenarios[]` with `kind: cross-role-access`, `fixture_refs` per actor, request templates; implement under `safe-validate` (read-only GET first); add fixture routes with an IDOR bug and a fixed variant.
 - **Re-QA acceptance:** NSC-AC-003 FAIL on vulnerable fixture with VALIDATED lifecycle, PASS on secure; missing positive control → INCONCLUSIVE.
 
-### QA-AT-10 — Dependency-audit fixture (QA-FAIL)
+### QA-AT-10 — Dependency-audit fixture (re-QA pending)
+- **Implemented 2026-11-03:** GATE-10 audits `test/fixtures/sca/package-lock.json` (lockfile only) and expects it to be flagged, in the same run as GATE-04 on the real tree. Status stays open until independent re-QA.
 - **Expected:** gate demonstrably blocks on a known-vulnerable dependency without installing it into NavSentry.
 - **Observed:** GATE-04 audits the real tree only.
 - **Next action:** add `test/fixtures/sca/package-lock.json` pinning an old version with a published advisory (lockfile only, never installed); run `npm audit --package-lock-only` against that folder in a gate self-test; expect FAIL; mark INCOMPLETE when offline.
