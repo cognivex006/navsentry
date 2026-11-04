@@ -234,7 +234,8 @@ export function parseManifest(input: unknown): Manifest {
   const mode = (sf.mode ?? "observe") as SafetyMode;
   if (!["observe", "safe-validate", "active-approved"].includes(mode)) p.push("safety.mode: observe | safe-validate");
   if (mode === "active-approved") p.push("safety.mode: active-approved is not available in this release (see docs/DEV-PLAN.md)");
-  if (environment === "production" && mode !== "observe") p.push("safety.mode: production targets are limited to observe mode");
+  // By profile, not by name: staging (and an unrecognized environment) is the production profile too.
+  if (profile === "production" && mode !== "observe") p.push(`safety.mode: the production profile (environment "${environment}") is limited to observe mode`);
   if (sf.allow_mutations !== undefined && sf.allow_mutations !== false) p.push("safety.allow_mutations: mutations are not supported in this release");
   const allowed_methods = strArr(sf.allowed_methods, "safety.allowed_methods", p, ["GET", "HEAD", "OPTIONS"]) as HttpMethod[];
   for (const m of allowed_methods) if (!["GET", "HEAD", "OPTIONS"].includes(m)) p.push(`safety.allowed_methods: ${m} is not a safe method; only GET, HEAD, OPTIONS are allowed in this release`);
