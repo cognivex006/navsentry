@@ -5,6 +5,7 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Fixed
+- The local gate gave the test suite only 5 minutes; the suite now takes about 4, so a slow or busy machine turned GATE-02 into a FAIL with `pass=?`. The limit is 15 minutes, and a timeout is reported as such.
 - `safety.mode: safe-validate` was accepted for `environment: staging`, because the check compared the environment name instead of the profile. Every production-profile environment (staging, production, unrecognized) is now limited to observe.
 
 ### Added

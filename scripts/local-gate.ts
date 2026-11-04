@@ -17,7 +17,9 @@ const gates: Gate[] = [];
 const add = (id: string, title: string, status: G, detail: string, fixHint?: string) => gates.push({ id, title, status, detail, ...(fixHint ? { fixHint } : {}) });
 // Run npm through its JS entry point (set by `npm run`) so no shell is ever involved.
 const npmCli = process.env.npm_execpath;
-const run = (cmd: string, args: string[]) => spawnSync(cmd, args, { cwd: ROOT, encoding: "utf8", shell: false, timeout: 300000 });
+const run = (cmd: string, args: string[], timeout = 300000) => spawnSync(cmd, args, { cwd: ROOT, encoding: "utf8", shell: false, timeout });
+/** The full suite (browser tests, 300 MiB asset streams) takes ~4 min locally; leave headroom so a slow machine is not a FAIL. */
+const TEST_TIMEOUT_MS = 15 * 60 * 1000;
 const runNpm = (args: string[]) => (npmCli ? run(process.execPath, [npmCli, ...args]) : { status: -1, stdout: "", stderr: "run via `npm run gate` so npm_execpath is set" });
 
 // G1 — owner policy: no hosted CI workflows.
@@ -32,9 +34,9 @@ const gitBefore = gitState();
 const fsBefore = snapshot(ROOT, HYGIENE_IGNORE);
 
 // G2 — tests.
-const t = run(process.execPath, ["--test", "--test-concurrency=1", "dist/test/"]);
+const t = run(process.execPath, ["--test", "--test-concurrency=1", "dist/test/"], TEST_TIMEOUT_MS);
 const pass = /ℹ pass (\d+)/.exec(t.stdout)?.[1], fail = /ℹ fail (\d+)/.exec(t.stdout)?.[1], skipped = /ℹ skipped (\d+)/.exec(t.stdout)?.[1] ?? "0";
-add("GATE-02", "Unit + fixture E2E tests", t.status === 0 ? "PASS" : "FAIL", `pass=${pass ?? "?"} fail=${fail ?? "?"} skipped=${skipped}${skipped !== "0" ? " (skipped tests did not run; see TESTING.md)" : ""} exit=${t.status}`, "Run `npm test` and fix failing assertions; never skip a test to pass the gate.");
+add("GATE-02", "Unit + fixture E2E tests", t.status === 0 ? "PASS" : "FAIL", `${t.status === null ? `timed out after ${TEST_TIMEOUT_MS / 60000} min (${t.signal ?? "killed"}); ` : ""}pass=${pass ?? "?"} fail=${fail ?? "?"} skipped=${skipped}${skipped !== "0" ? " (skipped tests did not run; see TESTING.md)" : ""} exit=${t.status}`, "Run `npm test` and fix failing assertions; never skip a test to pass the gate.");
 
 // G3 — generated docs in sync with the catalog.
 const d = run(process.execPath, ["dist/scripts/gen-catalog-docs.js", "--check"]);
