@@ -5,6 +5,7 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Fixed
+- `npm run build` (and so `test`, `gate`, `docs:catalog`, `release:pack`) deletes `dist/` first. `tsc` never removes outputs whose sources are gone, so after a branch switch the gate could run stale compiled tests.
 - An unrecognized `environment` (for example `development`) still fails safe to the production profile, but the authorization errors no longer claim the manifest said `"staging"`; they explain the fallback and name `local`/`dev`.
 
 ### Added
