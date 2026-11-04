@@ -59,3 +59,9 @@ test("an unrecognized environment fails safe without naming an environment the u
   assert.ok(p.some((x) => x.includes("authorization.reference") && x.includes("unrecognized environment is treated as production")));
   assert.ok(!p.join(" ").includes('"staging"'));
 });
+
+test("safe-validate is refused for every production-profile environment, not only \"production\"", () => {
+  for (const environment of ["staging", "production"]) assert.ok(problems({ ...base(), environment, safety: { mode: "safe-validate" } }).some((x) => x.includes("limited to observe mode")), environment);
+  assert.ok(problems({ ...base(), environment: "development", safety: { mode: "safe-validate" } }).some((x) => x.includes("limited to observe mode")), "an unrecognized environment fails safe");
+  assert.deepEqual(problems({ ...base(), environment: "dev", authorization: { acknowledged: true, owner: "o" }, safety: { mode: "safe-validate" } }), []);
+});
