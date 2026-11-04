@@ -131,9 +131,12 @@ export class PlaywrightBrowserAdapter implements ExecutionAdapter {
 }
 
 export class VisualComputerUseAdapter implements ExecutionAdapter {
-  readonly capabilities = base("visual-computer-use", "visual", 9, { trustLevel: "external-provider", evidenceFormats: ["screenshot"], unenforceableChannels: ["everything rendered by the provider's own browser"] });
+  // NavSentry owns the browser (ADR-0009); the host agent only sees screenshots and sends coordinates.
+  readonly capabilities = base("visual-computer-use", "visual", 9, { trustLevel: "in-process", supportsDOM: true, supportsJSRuntime: true, supportsCookies: true, evidenceFormats: ["screenshot", "network-log"], unenforceableChannels: ["WebSocket (disabled: closed before connecting)", "service workers (disabled: blocked per context)", "browser-internal traffic (disabled by launch flags and a dead proxy, not by ScopeGate)", "screenshots leave NavSentry through the host agent (owner consent: transports.visual_computer_use)"] });
   async probe(): Promise<TransportStatus> {
-    return { id: this.capabilities.id, available: false, usable: false, reason: "no visual provider configured; interface only (provider terms must be reviewed before integration)" };
+    // The visual driver (ADR-0009) runs on the playwright engine; NavSentry calls no visual provider itself.
+    const p = probePlaywright();
+    return { id: this.capabilities.id, available: p.available, usable: p.usable, reason: p.usable ? "visual driver over playwright-browser: `navsentry browse` (development; needs transports.visual_computer_use: true)" : `visual driver needs the playwright engine: ${p.reason}`, ...(p.version ? { version: p.version } : {}) };
   }
 }
 

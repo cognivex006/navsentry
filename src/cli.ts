@@ -37,6 +37,8 @@ import { WorkspaceError, authorize, cleanCache, beginRun, endRun, projectRoot, r
 import { allAdapters } from "./transports/registry.js";
 import { ScopeGate } from "./scope.js";
 import { TOOL_VERSION } from "./types.js";
+import { SessionRefused, sendCommand, startSession } from "./visual/session.js";
+import { renderVisualSession } from "./visual/report.js";
 
 const HELP = `navsentry ${TOOL_VERSION} — Navigate. Validate. Secure.
 Authorized targets only. Default mode is observe (GET/HEAD/OPTIONS + TLS handshake).
@@ -53,7 +55,12 @@ Usage:
   navsentry scan --config <manifest.json> --mode page|spider|flow [--engine http|playwright|analyzer] [--analyze [--extractors <dir>]]
                  [--env development|production] [--url <in-scope URL>] [--flows <path>] [--out <dir>] [--project <dir>]
                  page without --url scans the seed paths, like test; flow equals test --flows <path> --flows-only.
-                 spider crawls from the seed paths, grouping pages by template; computer-use is deferred beyond 0.1.3.
+                 spider crawls from the seed paths, grouping pages by template; scan --engine computer-use exits 3: use browse.
+  navsentry browse start --config <manifest.json> --url <in-scope URL> [--actor <name>] [--idle-seconds <n>] [--out <dir>] [--project <dir>]
+  navsentry browse screenshot|status|end --session <id> [--project <dir>]
+  navsentry browse click --x <px> --y <px> | scroll --dx <px> --dy <px> --session <id> [--project <dir>]
+                 visual driver (development only, transports.visual_computer_use: true): NavSentry owns the browser,
+                 every request goes through ScopeGate and the Budget; start runs until end, idle timeout or deadline.
   navsentry workspace status|clean [--project <dir>] [--dry-run] [--cache-max-age-days <n>]
   navsentry knowledge status [--json]
   navsentry knowledge lookup --product <name> [--version <v>] | --id <CVE|advisory|alias> [--json]
@@ -144,6 +151,8 @@ export async function main(argv: string[]): Promise<number> {
         return knowledgeCommand(rest);
       case "inventory":
         return inventoryCommand(rest);
+      case "browse":
+        return await browseCommand(rest);
       case "report": {
         const input = JSON.parse(readFileSync(need(rest, "--input"), "utf8")) as { kind?: string };
         const fmt = arg(rest, "--format") ?? "markdown";
@@ -308,7 +317,7 @@ async function scan(argv: string[]): Promise<number> {
   const mode = need(argv, "--mode");
   if (mode !== "page" && mode !== "spider" && mode !== "flow") throw new UsageError("--mode must be page, spider or flow");
   const rawEngine = arg(argv, "--engine") ?? "http";
-  if (rawEngine === "computer-use") throw new UsageError("--engine computer-use is deferred beyond 0.1.3: ScopeGate cannot be enforced in a host-owned browser (S1)");
+  if (rawEngine === "computer-use") throw new UsageError("--engine computer-use does not drive a host-owned browser (S1 cannot be enforced there); use `navsentry browse start` (visual driver on the playwright engine, ADR-0009)");
   if (rawEngine !== "http" && rawEngine !== "playwright" && rawEngine !== "analyzer") throw new UsageError("--engine must be http, playwright or analyzer");
   const analyze = argv.includes("--analyze") || rawEngine === "analyzer";
   const engine: Engine = rawEngine === "analyzer" ? "http" : rawEngine;
@@ -338,6 +347,66 @@ async function scan(argv: string[]): Promise<number> {
   }
   const drafts = arg(argv, "--extractors");
   return await runAndReport(m, argv, { scanMode: mode, engine: eng, assets: true, ...(analyze ? { analyze: { extractors: [], ...(drafts ? { draftsDir: resolve(need(argv, "--extractors")) } : {}) } } : {}), ...(urls ? { urls } : {}), ...(mode === "spider" ? { spider: true } : {}) });
+}
+
+/**
+ * `browse` (ADR-0009): the visual driver. `start` holds the browser and the run's safety state until the
+ * session ends; the other subcommands talk to it over a local pipe. Screenshot paths point into the run's
+ * work directory, which is deleted when the session ends.
+ */
+async function browseCommand(argv: string[]): Promise<number> {
+  const sub = argv[0];
+  const rest = argv.slice(1);
+  const project = arg(rest, "--project") ?? process.cwd();
+  if (sub === "start") {
+    const m = loadManifest(need(rest, "--config"));
+    assertEnv(m, rest);
+    let url: string;
+    try { url = new URL(need(rest, "--url")).toString(); } catch { throw new UsageError("--url must be an absolute http(s) URL"); }
+    const idle = arg(rest, "--idle-seconds");
+    const idleSeconds = idle === undefined ? 300 : Number(idle);
+    if (!Number.isInteger(idleSeconds) || idleSeconds < 10 || idleSeconds > 3600) throw new UsageError("--idle-seconds must be an integer between 10 and 3600");
+    let h: Awaited<ReturnType<typeof startSession>>;
+    try {
+      h = await startSession({ manifest: m, projectDir: project, url, idleSeconds, ...(arg(rest, "--actor") ? { actor: need(rest, "--actor") } : {}) });
+    } catch (e) {
+      if (e instanceof SessionRefused) throw new UsageError(e.message);
+      throw e;
+    }
+    print(`SESSION: ${h.id}`);
+    const { result, workspace } = await h.done;
+    const outArg = arg(rest, "--out");
+    const out = outArg ? resolve(outArg) : join(workspace.root, ".navsentry", "runs", `browse-${h.id}`);
+    const write = () => {
+      mkdirSync(out, { recursive: true });
+      for (const [n, c] of [["session.json", JSON.stringify(result, null, 2)], ["VISUAL-SESSION.md", renderVisualSession(result)]] as const) { authorize(workspace, join(out, n)); writeFileSync(join(out, n), c); }
+      return 2;
+    };
+    write();
+    result.workspace = endRun(workspace, 2);
+    if (result.workspace.status !== "PASS") result.incompleteReasons.push(`workspace check ${result.workspace.status}`);
+    write();
+    print(`ended=${result.endReason} actions=${result.actions.length} requests=${result.requests.length} findings=${result.findings.length} workspace=${result.workspace.status}`);
+    print(`REPORT: ${join(out, "VISUAL-SESSION.md")}`);
+    if (result.workspace.status === "FAIL") return 4;
+    if (result.findings.length) return 1;
+    return result.executionStatus === "COMPLETE" ? 0 : 2;
+  }
+  const cmds = ["screenshot", "click", "scroll", "status", "end"] as const;
+  if (!cmds.includes(sub as (typeof cmds)[number])) throw new UsageError("browse start|screenshot|click|scroll|status|end");
+  const id = need(rest, "--session");
+  if (!/^[A-Za-z0-9-]{8,64}$/.test(id)) throw new UsageError("--session must be a session id printed by browse start");
+  const num = (k: string) => { const v = Number(need(rest, k)); if (!Number.isInteger(v)) throw new UsageError(`${k} must be an integer`); return v; };
+  const cmd = sub === "click" ? { cmd: "click" as const, x: num("--x"), y: num("--y") } : sub === "scroll" ? { cmd: "scroll" as const, dx: num("--dx"), dy: num("--dy") } : { cmd: sub as "screenshot" | "status" | "end" };
+  let res: Record<string, unknown>;
+  try {
+    res = await sendCommand(join(projectRoot(project), ".navsentry", "work", id), cmd);
+  } catch (e) {
+    if (e instanceof SessionRefused) throw new UsageError(e.message);
+    throw e;
+  }
+  print(JSON.stringify(res));
+  return res.ok ? 0 : 2;
 }
 
 /**

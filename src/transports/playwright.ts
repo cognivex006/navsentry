@@ -18,6 +18,7 @@ import type { UiTarget } from "../flow/parse.js";
 interface PwRequest { url(): string; method(): string; headers(): Record<string, string>; resourceType(): string; isNavigationRequest(): boolean; frame(): { parentFrame(): unknown } }
 interface PwRoute { request(): PwRequest; fulfill(o: { status: number; headers: Record<string, string>; body: Buffer }): Promise<void>; abort(code?: string): Promise<void> }
 interface PwWebSocketRoute { url(): string; close(o?: { code?: number; reason?: string }): Promise<void> }
+interface PwMouse { click(x: number, y: number): Promise<void>; wheel(dx: number, dy: number): Promise<void> }
 interface PwLocator { first(): PwLocator; click(o: { timeout: number }): Promise<void>; waitFor(o: { state: "visible"; timeout: number }): Promise<void>; isVisible(): Promise<boolean> }
 interface PwConsoleMessage { type(): string; text(): string; location(): { url: string; lineNumber: number } }
 interface PwPage {
@@ -31,6 +32,10 @@ interface PwPage {
   on(ev: "popup", fn: (p: PwPage) => void): void;
   on(ev: "pageerror", fn: (e: Error) => void): void;
   close(): Promise<void>;
+  mouse: PwMouse;
+  screenshot(o: { path: string; type: "png"; fullPage: false }): Promise<unknown>;
+  url(): string;
+  waitForEvent(ev: "framenavigated", o: { timeout: number }): Promise<unknown>;
 }
 interface PwContext {
   route(p: string, fn: (r: PwRoute) => Promise<void>): Promise<void>;
@@ -43,6 +48,8 @@ interface PwChromium { executablePath(): string; launch(o: Record<string, unknow
 
 export const PLAYWRIGHT_VERSION = "1.64.1";
 const ACTION_TIMEOUT_MS = 10_000;
+/** Fixed viewport so screenshot pixel coordinates are click coordinates (visual driver). */
+export const VIEWPORT = { width: 1280, height: 800 } as const;
 
 /** Launch flags that leave the browser without a usable network path of its own (defence in depth). */
 export const ISOLATION_ARGS = [
@@ -142,7 +149,7 @@ export class BrowserEngine {
   private async session(actor: string): Promise<{ ctx: PwContext; page: PwPage }> {
     const have = this.contexts.get(actor);
     if (have) return have;
-    const ctx = await this.browser.newContext({ serviceWorkers: "block", acceptDownloads: false, bypassCSP: false, ignoreHTTPSErrors: false, javaScriptEnabled: true });
+    const ctx = await this.browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 1, serviceWorkers: "block", acceptDownloads: false, bypassCSP: false, ignoreHTTPSErrors: false, javaScriptEnabled: true });
     await ctx.routeWebSocket("**", async (ws) => {
       this.opts.onDenied(ws.url(), "GET", "WebSocket is disabled in the playwright engine (S1: frames after the upgrade cannot be checked)");
       await ws.close({ code: 1008, reason: "blocked by NavSentry" });
@@ -223,6 +230,47 @@ export class BrowserEngine {
       const msg = firstLine(e);
       if (/timeout/i.test(msg)) return { ok: false, observed: action === "click" ? "element not clickable before timeout" : "not visible before timeout" };
       return { ok: false, observed: "action failed", error: msg };
+    }
+  }
+
+  /** Visual driver: a PNG of the viewport, written only to the given path (inside the run's work directory). */
+  async screenshot(actor: string, path: string): Promise<{ url: string } | { error: string }> {
+    const s = this.contexts.get(actor);
+    if (!s) return { error: "no page loaded for this actor" };
+    try {
+      await s.page.screenshot({ path, type: "png", fullPage: false });
+      return { url: s.page.url() };
+    } catch (e) {
+      return { error: `screenshot failed: ${firstLine(e)}` };
+    }
+  }
+
+  /** Visual driver: a click at viewport coordinates. Any request it causes still goes through route(). */
+  async clickAt(actor: string, x: number, y: number): Promise<{ url: string } | { error: string }> {
+    const s = this.contexts.get(actor);
+    if (!s) return { error: "no page loaded for this actor" };
+    if (!(Number.isInteger(x) && Number.isInteger(y) && x >= 0 && y >= 0 && x < VIEWPORT.width && y < VIEWPORT.height)) return { error: `coordinates must be integers inside the ${VIEWPORT.width}x${VIEWPORT.height} viewport` };
+    try {
+      // A click may start a navigation asynchronously; give it a moment to begin, then wait for the load.
+      const nav = s.page.waitForEvent("framenavigated", { timeout: 1_000 }).catch(() => undefined);
+      await s.page.mouse.click(x, y);
+      await nav;
+      await s.page.waitForLoadState("load", { timeout: ACTION_TIMEOUT_MS }).catch(() => undefined);
+      return { url: s.page.url() };
+    } catch (e) {
+      return { error: `click failed: ${firstLine(e)}` };
+    }
+  }
+
+  async scroll(actor: string, dx: number, dy: number): Promise<{ url: string } | { error: string }> {
+    const s = this.contexts.get(actor);
+    if (!s) return { error: "no page loaded for this actor" };
+    if (!(Number.isInteger(dx) && Number.isInteger(dy) && Math.abs(dx) <= 10_000 && Math.abs(dy) <= 10_000)) return { error: "scroll deltas must be integers within ±10000" };
+    try {
+      await s.page.mouse.wheel(dx, dy);
+      return { url: s.page.url() };
+    } catch (e) {
+      return { error: `scroll failed: ${firstLine(e)}` };
     }
   }
 

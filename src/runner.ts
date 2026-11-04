@@ -80,7 +80,7 @@ interface ActorRuntime {
   headers: Record<string, string>;
 }
 
-function resolveActors(m: Manifest, env: NodeJS.ProcessEnv): { usable: ActorRuntime[]; skipped: { actor: string; reason: string }[]; secrets: string[] } {
+export function resolveActors(m: Manifest, env: NodeJS.ProcessEnv): { usable: ActorRuntime[]; skipped: { actor: string; reason: string }[]; secrets: string[] } {
   const usable: ActorRuntime[] = [{ name: "anonymous", headers: {} }];
   const skipped: { actor: string; reason: string }[] = [];
   const secrets: string[] = [];
@@ -535,7 +535,7 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
   return { run, flowRun, proposals: kn.proposals };
 }
 
-function perExchange(ex: Exchange, actor: string, rawUrl: string): CheckResult[] {
+export function perExchange(ex: Exchange, actor: string, rawUrl: string): CheckResult[] {
   const ctx = { actor };
   return [
     P.checkHsts(ex), P.checkCsp(ex), P.checkFraming(ex), P.checkContentType(ex), P.checkCache(ex, ctx),

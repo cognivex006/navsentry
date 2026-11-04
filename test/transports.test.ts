@@ -36,8 +36,8 @@ test("optional adapters are honest about availability", async () => {
   assert.equal(pw.usable, probePlaywright().usable);
   if (!pw.usable) assert.ok(pw.reason.length > 0);
   const vis = await new VisualComputerUseAdapter().probe();
-  assert.equal(vis.available, false);
-  assert.equal(vis.usable, false);
+  // The visual driver runs on the playwright engine (ADR-0009), so it is usable exactly when that engine is.
+  assert.equal(vis.usable, probePlaywright().usable);
 });
 
 test("router picks the lowest-cost usable transport and never substitutes unavailable ones", async () => {

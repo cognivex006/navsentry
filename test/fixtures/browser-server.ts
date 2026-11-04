@@ -59,6 +59,11 @@ export async function startBrowserFixture(): Promise<BrowserFixture> {
         return html(res, `<title>Leak</title><h1>Leak</h1><script>console.log("debug token ${CONSOLE_TEST_TOKEN}")</script>`);
       case "/ui/quiet":
         return html(res, "<title>Quiet</title><h1>Quiet</h1>");
+      case "/ui/visual": {
+        // Fixed-position targets for the visual driver: an in-scope link, an off-scope link, and the shop script.
+        const box = (top: number) => `position:absolute;left:10px;top:${top}px;width:300px;height:60px;display:block;margin:0`;
+        return html(res, `<title>Visual</title><body style="margin:0"><a href="/ui/next" style="${box(10)}">Next page</a><a href="${canary}/escape" style="${box(110)}">Elsewhere</a><script src="/ui/app.js"></script></body>`);
+      }
       case "/ui/noisy":
         return html(res, `<title>Noisy</title><h1>Noisy</h1><script>console.log("loaded widget 3")</script>`);
       case "/ui/twice":
