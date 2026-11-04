@@ -742,16 +742,16 @@ export const CASES: CaseDef[] = [
   },
   {
     id: "NSC-SUPPLY-002", category: "SUPPLY", titleEn: "Client-side library with known vulnerabilities", titleTh: "ไลบรารีฝั่งเบราว์เซอร์มีช่องโหว่ที่รู้จักแล้ว",
-    severity: "medium", priority: "PLANNED", automation: "planned-auto", milestone: "0.1.3-v (needs an approved advisory source)",
+    severity: "medium", priority: "PLANNED", automation: "auto",
     owasp2021: [T21.A06], owasp2025: [T25.A03], cwe: ["CWE-1395"], wstg: ["WSTG-INFO-08"], asvs5Chapter: [V5.V15],
     sources: [],
     fact: "A JavaScript library served to the browser identifies a version that reviewed advisories list as affected.",
-    evidence: ["Library and version from a banner or package metadata, the advisory record ID and its applicability (affected/unknown)"],
+    evidence: ["Library and version from its licence banner in a served bundle (STA-LIBVULN) or package metadata, the reviewed advisory record ID and its applicability (affected/unknown)"],
     acceptance: ["Client libraries are on versions outside every known affected range, or a documented mitigation applies"],
     webRecheck: ["After the upgrade, the served bundle reports the fixed version", "The pages that use the library still work"],
     fix: "Upgrade the library to a fixed version (or apply the vendor mitigation) and rebuild; remove unused copies.",
     regressionGuard: "Major-version upgrades can change behaviour; run the story flows that use the library before and after.",
-    caveats: ["A banner is weak evidence and never suppresses another detector.", "Not automated until reviewed advisory records from an approved source exist."],
+    caveats: ["A banner is weak evidence and never suppresses another detector.", "Only reviewed records are used; libraries without reviewed records (only jQuery has them as of 2026-11-04) stay NOT_TESTED."],
   },
   // ───────────────────────── LOG / BIZ ─────────────────────────
   {

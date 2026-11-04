@@ -25,7 +25,7 @@ Principle: each milestone ships working, tested behavior — never empty interfa
 ## Immediate next steps (ordered)
 1. Owner: remove `workflow` scope from the GitHub CLI token; enable private vulnerability reporting in repository settings.
 2. Run `npm test` on Linux and Node 22/24; update [TESTING.md](TESTING.md#platform-matrix).
-3. Independent review of the 3 candidate advisory records (promote to `reviewed`), then STA-LIBVULN (client library banners → NSC-SUPPLY-002).
+3. More reviewed client-library records (STA-LIBVULN recognises jQuery banners today) and other library banners, each with primary-source verification and independent review.
 4. M2 scenario schema design review before code.
 
 ## Risks

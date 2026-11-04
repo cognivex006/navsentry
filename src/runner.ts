@@ -299,7 +299,7 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
     }
     if (opts.assets) {
       const out = await scanAssets({
-        manifest: m, gate, redactor, pages: [...exchanges], actors: usable, literals: secrets, disabled,
+        manifest: m, gate, redactor, pages: [...exchanges], actors: usable, literals: secrets, disabled, snapshot: opts.snapshot ?? SNAPSHOT,
         ...(opts.workDir ? { workDir: opts.workDir } : {}), ...(opts.cacheDir ? { cacheDir: opts.cacheDir } : {}), ...(opts.now ? { now: opts.now } : {}),
         send: async (spec) => {
           try {

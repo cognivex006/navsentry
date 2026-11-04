@@ -5972,7 +5972,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 |---|---|
 | Severity (default) | medium |
 | Priority | 🟡 รอได้ / วางแผนแก้ (PLANNED) |
-| Automation | planned-auto — วางแผนให้ตรวจอัตโนมัติ (0.1.3-v (needs an approved advisory source)) |
+| Automation | auto — NavSentry ตรวจอัตโนมัติได้ใน v0.1 (observe) |
 | OWASP Top 10:2025 | A03:2025 Software Supply Chain Failures |
 | OWASP Top 10:2021 | A06:2021 Vulnerable and Outdated Components |
 | CWE | CWE-1395 |
@@ -5987,7 +5987,7 @@ A JavaScript library served to the browser identifies a version that reviewed ad
 
 **EVIDENCE (หลักฐานที่ต้องเก็บ)**
 
-- Library and version from a banner or package metadata, the advisory record ID and its applicability (affected/unknown)
+- Library and version from its licence banner in a served bundle (STA-LIBVULN) or package metadata, the reviewed advisory record ID and its applicability (affected/unknown)
 
 **ACCEPTANCE CRITERIA (เกณฑ์ผ่าน)**
 
@@ -6005,7 +6005,7 @@ A JavaScript library served to the browser identifies a version that reviewed ad
 **Caveats / False positive**
 
 - A banner is weak evidence and never suppresses another detector.
-- Not automated until reviewed advisory records from an approved source exist.
+- Only reviewed records are used; libraries without reviewed records (only jQuery has them as of 2026-11-04) stay NOT_TESTED.
 
 <details><summary>Prompt: VERIFY (ตรวจสอบ)</summary>
 
@@ -6019,12 +6019,12 @@ FACT to test:
 A JavaScript library served to the browser identifies a version that reviewed advisories list as affected.
 
 Collect EVIDENCE (redact tokens, cookies, PII, internal IPs BEFORE writing anything):
-- Library and version from a banner or package metadata, the advisory record ID and its applicability (affected/unknown)
+- Library and version from its licence banner in a served bundle (STA-LIBVULN) or package metadata, the reviewed advisory record ID and its applicability (affected/unknown)
 
 Method:
 1. navsentry validate --config <MANIFEST>  then  navsentry test --config <MANIFEST> --out runs/before
 2. Read runs/before/run.json coverage row "NSC-SUPPLY-002" and any finding with ruleId "NSC-SUPPLY-002".
-3. This case is "planned-auto" — NavSentry alone cannot conclude it. Gather the evidence above manually:
+3. Confirm in a real browser/DevTools:
    - After the upgrade, the served bundle reports the fixed version
    - The pages that use the library still work
 4. Decide exactly one status: PASS | FAIL | INCONCLUSIVE | NOT_TESTED | ERROR, with a reason.
@@ -6032,7 +6032,7 @@ Method:
 
 Known caveats / false positives:
 - A banner is weak evidence and never suppresses another detector.
-- Not automated until reviewed advisory records from an approved source exist.
+- Only reviewed records are used; libraries without reviewed records (only jQuery has them as of 2026-11-04) stay NOT_TESTED.
 
 Output: an ISSUE entry (template docs/reports/templates/ISSUE.md) with ID NSC-SUPPLY-002, status,
 fingerprint(s), evidence list and this checklist:

@@ -13,6 +13,7 @@ import type { ScopeGate } from "../scope.js";
 import type { Exchange, HttpRequestSpec } from "../transports/types.js";
 import type { AssetScanResult, CheckResult, ClientFinding } from "../types.js";
 import { scanHtml } from "../spider/html.js";
+import { applicability, type Snapshot } from "../knowledge/model.js";
 import { DETECTOR_VERSION, LiteralScanner, StreamScanner, exposureMatch, type ExposureFormat, type Fact } from "./detect.js";
 
 export const MAX_ASSETS = 200;
@@ -45,6 +46,8 @@ export interface AssetContext {
   cacheDir?: string;
   disabled: Set<string>;
   now?: () => Date;
+  /** Knowledge snapshot for STA-LIBVULN; only `reviewed` records are used (SPEC-0.1.3 §6.4-B). */
+  snapshot?: Snapshot;
 }
 
 interface Scanned {
@@ -66,7 +69,7 @@ export async function scanAssets(ctx: AssetContext): Promise<{ checks: CheckResu
   const checks: CheckResult[] = [];
   const incomplete: string[] = [];
   const findings: ClientFinding[] = [];
-  const result: AssetScanResult = { engine: "node-detector", detectorVersion: DETECTOR_VERSION, assets: [], probes: [], maps: [], skipped: [], clientFindings: { entries: 0, truncated: 0 }, libraryAdvisories: "NOT_TESTED: client library matching needs reviewed advisory records from an approved source (SPEC-0.1.3 §6.6-A)" };
+  const result: AssetScanResult = { engine: "node-detector", detectorVersion: DETECTOR_VERSION, assets: [], probes: [], maps: [], skipped: [], clientFindings: { entries: 0, truncated: 0 }, libraryAdvisories: ctx.snapshot?.records.some((r) => r.state === "reviewed" && r.nsc === "NSC-SUPPLY-002") ? "STA-LIBVULN: licence banners matched against reviewed records (NSC-SUPPLY-002)" : "NOT_TESTED: no reviewed client-library advisory records in the snapshot" };
   const cost = { bytesScannedLocally: 0, cacheEligible: 0, cacheHits: 0 };
   const spoolBudget = { used: 0, max: m.capture.max_work_bytes };
   let spoolN = 0;
@@ -251,6 +254,7 @@ function assetVerdicts(ctx: AssetContext, s: Scanned, url: string, check: (...a:
   const internal = s.facts.filter((f) => f.detector === "STA-INTERNAL");
   const dev = s.facts.filter((f) => f.detector === "STA-DEVBUILD" || f.kind === "sourcemap-file-url");
   const hidden = s.facts.filter((f) => f.detector === "STA-HIDDENLOG");
+  const libs = s.facts.filter((f) => f.detector === "STA-LIBVULN" && f.library);
   const where = (fs: Fact[]) => fs.slice(0, 5).map((f) => `${preview(f)} at ${f.line}:${f.col}`);
   const incompleteReason = s.complete ? undefined : s.reason ?? "incomplete capture";
   // NSC-INFO-007: an exact known-token match is deterministic (VALIDATED); a format match is SUSPECTED.
@@ -274,7 +278,34 @@ function assetVerdicts(ctx: AssetContext, s: Scanned, url: string, check: (...a:
     } else check("NSC-CONF-005", ex, url, "NOT_TESTED", "development build markers observed", where(dev), { reason: "development profile: observation only" });
   }
   // Hidden logging is an observation: whether the retained calls log sensitive data needs the runtime console check.
+  for (const f of libs) libraryVerdict(ctx, ex, url, f, check, addFinding);
   if (hidden.length) check("NSC-INFO-006", ex, url, "NOT_TESTED", "console output is hidden in the bundle, not removed", [...where(hidden), "debug toggles are reported only; NavSentry never sets them (S9)"], { reason: "static observation only; run the flow with --engine playwright to inspect console output" });
+}
+
+/**
+ * STA-LIBVULN → NSC-SUPPLY-002. A banner-version match supports SUSPECTED only, never validated
+ * exploitability, and a banner never suppresses another detector. Candidate records are not used.
+ */
+function libraryVerdict(ctx: AssetContext, ex: Exchange, url: string, f: Fact, check: (...a: Parameters<CheckFn>) => void, addFinding: AddFn): void {
+  const lib = f.library!;
+  const label = `npm/${lib.name} ${lib.version}`;
+  const records = (ctx.snapshot?.records ?? []).filter((r) => r.product.ecosystem === lib.ecosystem && r.product.name === lib.name);
+  const reviewed = records.filter((r) => r.state === "reviewed");
+  if (!reviewed.length) {
+    const why = records.length ? `${records.length} record(s) for ${lib.name} are not reviewed yet` : `no records for ${lib.name} in the snapshot (not proof of absence)`;
+    check("NSC-SUPPLY-002", ex, url, "NOT_TESTED", `${label} identified from its licence banner`, [`banner at ${f.line}:${f.col}`], { reason: why });
+    return;
+  }
+  const evidence = { ecosystem: lib.ecosystem, name: lib.name, version: lib.version, provenance: "client-banner" as const };
+  const hits = reviewed.map((r) => ({ r, m: applicability(r, evidence) })).filter((x) => x.m.applicability === "affected");
+  if (!hits.length) {
+    const unknown = reviewed.map((r) => applicability(r, evidence)).find((m) => m.applicability === "unknown");
+    check("NSC-SUPPLY-002", ex, url, "NOT_TESTED", `${label}: ${unknown ? "applicability unknown" : "outside the affected ranges of the reviewed records"}`, [`banner at ${f.line}:${f.col}`], { reason: unknown ? `applicability unknown: ${unknown.caveats.join("; ")}` : "an offline snapshot cannot prove that no other advisory exists" });
+    return;
+  }
+  const ids = hits.map((x) => [...x.r.identifiers.cve, x.r.id].join(" / "));
+  check("NSC-SUPPLY-002", ex, url, "FAIL", `${label} matches ${hits.length} reviewed advisory record(s)`, [...ids, `banner at ${f.line}:${f.col}`, ...hits[0]!.m.caveats], { lifecycle: "SUSPECTED" });
+  for (const x of hits) addFinding("NSC-SUPPLY-002", ex, f, `[${lib.name},v=${lib.version},${x.r.id}]`);
 }
 
 function mapVerdict(ctx: AssetContext, s: Scanned, url: string, actor: string, ok: boolean, check: (...a: Parameters<CheckFn>) => void, addFinding: AddFn): void {

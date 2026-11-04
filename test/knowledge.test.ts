@@ -57,11 +57,12 @@ test("lookup is offline and bounded; an unresolved alias returns candidates and 
   assert.equal(snapshotStatus(s, new Date("2100-01-01")).stale, 2, "past next-review date");
 });
 
-test("packaged snapshot: real GitHub Advisory Database records, attributed, candidate until independent review", () => {
+test("packaged snapshot: real GitHub Advisory Database records, attributed and reviewed", () => {
   assert.ok(SNAPSHOT.records.length > 0);
   for (const r of SNAPSHOT.records) {
     assert.equal(r.synthetic, undefined, `${r.id} is not synthetic`);
-    assert.equal(r.state, "candidate", `${r.id} needs independent review before it is reviewed`);
+    assert.equal(r.state, "reviewed", `${r.id} was promoted after independent review`);
+    assert.ok(r.revision >= 2, "promotion is a new revision");
     assert.ok(r.sources.every((s) => s.url === `https://github.com/advisories/${r.id}`), `${r.id} links its CC-BY source`);
     assert.ok(r.identifiers.advisory.includes(r.id));
   }

@@ -129,7 +129,7 @@ export interface ProductEvidence {
   name: string;
   version?: string;
   /** Where the evidence came from; an HTTP banner is weak evidence. */
-  provenance: "http-banner" | "lockfile" | "manifest" | "installed";
+  provenance: "http-banner" | "lockfile" | "manifest" | "installed" | "client-banner";
   /** A distribution packaging hint (for example "(Ubuntu)"): backports may apply. */
   distribution?: string;
 }
@@ -146,6 +146,7 @@ export function applicability(r: AdvisoryRecord, e: ProductEvidence): Match {
   if (r.product.ecosystem !== e.ecosystem || r.product.name !== e.name) return { record: r, applicability: "not-applicable", caveats };
   if (r.state === "withdrawn" || r.state === "superseded") return { record: r, applicability: "not-applicable", caveats: [`record ${r.state}`] };
   if (e.provenance === "http-banner") caveats.push("version from an HTTP banner: weak evidence that may be stale or altered");
+  if (e.provenance === "client-banner") caveats.push("version from the library's licence banner in a served bundle: a patched or re-bundled copy can keep an old banner");
   if (r.preconditions.length) caveats.push(`preconditions not verified: ${r.preconditions.join("; ")}`);
   if (!e.version) return { record: r, applicability: "unknown", caveats: [...caveats, "version not observed"] };
   if (r.versionScheme !== "semver") return { record: r, applicability: "unknown", caveats: [...caveats, "unsupported version scheme"] };
