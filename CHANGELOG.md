@@ -4,6 +4,12 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 
 ## [Unreleased]
 
+### Added
+- STA-LIBVULN detector (SPEC-0.1.3 §6.4-B): the jQuery licence banner in a served bundle is matched against reviewed advisory records; an affected version is NSC-SUPPLY-002 SUSPECTED with the CVE and GHSA IDs and a client-finding preview `[jquery,v=<version>,<GHSA>]`. Outside the ranges, unknown, or only candidate records → NOT_TESTED with the reason. A plugin that only mentions jQuery is not a match, and a banner never suppresses another detector. Detector version 3 invalidates cached facts. NSC-SUPPLY-002 is now `auto`.
+
+### Changed
+- The three jQuery advisory records are promoted to `reviewed` (revision 2) after an independent, fresh-context review against the GHSA pages, the NVD API and the jQuery 3.4.0/3.5.0 release notes (2026-11-04).
+
 ### Fixed
 - `npm run build` (and so `test`, `gate`, `docs:catalog`, `release:pack`) deletes `dist/` first. `tsc` never removes outputs whose sources are gone, so after a branch switch the gate could run stale compiled tests.
 - An unrecognized `environment` (for example `development`) still fails safe to the production profile, but the authorization errors no longer claim the manifest said `"staging"`; they explain the fallback and name `local`/`dev`.
