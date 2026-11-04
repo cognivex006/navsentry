@@ -183,6 +183,44 @@ export interface RunResult {
   analyzer?: AnalyzerResult;
 }
 
+/** One logged visual-driver action (ADR-0009). Coordinates and display URLs only; never page content. */
+export interface VisualAction {
+  seq: number;
+  at: string;
+  action: "navigate" | "screenshot" | "click" | "scroll";
+  x?: number;
+  y?: number;
+  dx?: number;
+  dy?: number;
+  url?: string;
+  result?: "ok" | "error";
+  error?: string;
+  requestIds: string[];
+}
+
+/** Visual-driver session result (`session.json` beside VISUAL-SESSION.md). Screenshots are never kept. */
+export interface VisualSessionResult {
+  schemaVersion: 1;
+  id: string;
+  engine: "visual-driver/playwright-browser";
+  actor: string;
+  startUrl: string;
+  startedAt: string;
+  endedAt: string;
+  endReason: string;
+  viewport: { width: number; height: number };
+  /** Screenshots taken; all were deleted with the work directory. */
+  screenshots: number;
+  actions: VisualAction[];
+  requests: ObservedRequest[];
+  denials: { url: string; method: string; reason: string }[];
+  checks: CheckResult[];
+  findings: Finding[];
+  incompleteReasons: string[];
+  executionStatus: "COMPLETE" | "PARTIAL";
+  workspace?: WorkspaceResult;
+}
+
 /** Console capture summary (0.1.3-k). Previews are `[kind,len=n]`; templates hash a value-free shape. */
 export interface ConsoleResult {
   engine: "playwright-browser";

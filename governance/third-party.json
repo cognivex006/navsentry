@@ -169,13 +169,12 @@
       "decision": "APPROVED"
     },
     {
-      "name": "SaaS advisory APIs (OSV, NVD, GitHub Advisory API), Postman cloud, visual computer-use providers, OWASP ZAP",
+      "name": "SaaS advisory APIs (OSV, NVD, GitHub Advisory API), Postman cloud, OWASP ZAP",
       "usage": "NOT USED in v0.1.",
       "terms": [
         "https://google.github.io/osv.dev/faq/",
         "https://nvd.nist.gov/developers/terms-of-use",
         "https://www.postman.com/legal/terms/",
-        "https://www.anthropic.com/legal/aup",
         "https://www.zaproxy.org/"
       ],
       "findings": "Each requires its own terms review (rate limits, API keys, data sharing of target information, acceptable use) before any integration. Target data must never be sent to a SaaS without the target owner's approval.",
@@ -194,6 +193,15 @@
       "findings": "Owner approved 2026-11-03. Data is CC-BY 4.0: attribution to the GitHub Advisory Database with a link to each advisory is required and is carried in every record's source URL and in the generated KB header. Manual per-record reading stays far below any automated-use concern in the GitHub AUP. OSV.dev was considered and NOT adopted: its FAQ and site state no data license or terms of use (missing evidence = blocked).",
       "reviewed": "2026-11-03",
       "review_due": "2027-05-03",
+      "decision": "APPROVED_WITH_CONDITIONS"
+    },
+    {
+      "name": "Visual driver: screenshots handed to the host agent (and its model provider)",
+      "usage": "`navsentry browse` writes PNG screenshots of the target into the run's work directory; the host agent reads them. NavSentry itself calls no model or visual provider API and sends nothing off the machine.",
+      "terms": [],
+      "findings": "Owner approved 2026-11-04 (ADR-0009). The data flow to a provider is the host agent's, under the host's own terms; NavSentry's condition is per-target owner consent through manifest `transports.visual_computer_use: true`, development profile only. Integrating a provider API directly would need its own terms review and is NOT adopted.",
+      "reviewed": "2026-11-04",
+      "review_due": "2027-05-04",
       "decision": "APPROVED_WITH_CONDITIONS"
     }
   ]
