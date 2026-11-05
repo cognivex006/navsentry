@@ -23,6 +23,8 @@ export type HttpMethod = "GET" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" |
 export const SAFE_METHODS: ReadonlySet<HttpMethod> = new Set(["GET", "HEAD", "OPTIONS"]);
 
 export interface ObservedRequest {
+  /** safe-validate mutations: sha256 of the request body (never the body itself). */
+  requestBodySha256?: string;
   id: string;
   transport: string;
   actor: string;
@@ -181,6 +183,56 @@ export interface RunResult {
   console?: ConsoleResult;
   knowledge?: KnowledgeResult;
   analyzer?: AnalyzerResult;
+  /** safe-validate (SPEC-0.2.0 §3.5, §7): per-run marker, fixture lifecycle and every non-observe request. */
+  marker?: string;
+  fixtures?: FixtureRunSummary;
+  mutations?: MutationRecord[];
+}
+
+/** One fixture create intent in `fixtures.pending.json` (S14), written before the create is sent. */
+export interface PendingFixture {
+  seq: number;
+  fixture: string;
+  state: "intent" | "created" | "unknown" | "refused" | "cleaned";
+  marker: string;
+  at: string;
+  id?: string;
+}
+
+export interface FixtureLeftover {
+  fixture: string;
+  id?: string;
+  displayId: string;
+  status: "unknown-outcome" | "cleanup-failed" | "still-present" | "not-attempted";
+  reason: string;
+  lastStatus?: number;
+  marker?: string;
+  /** The exact manual action for the owner; NavSentry never improvises a delete. */
+  manualAction: string;
+}
+
+export interface FixtureRunSummary {
+  marker: string;
+  created: number;
+  cleaned: number;
+  verifiedGone: number;
+  mutationsUsed: number;
+  mutationsMax: number;
+  leftovers: FixtureLeftover[];
+  /** Pending intents found in stale work directories of interrupted runs; reported, never deleted. */
+  pendingFromPreviousRuns?: (PendingFixture & { workDir: string })[];
+}
+
+/** A non-observe request: method, declared path template, entry, actor, status, body hash (never the body). */
+export interface MutationRecord {
+  method: string;
+  path: string;
+  entry: string;
+  actor: string;
+  status?: number;
+  error?: string;
+  bodySha256?: string;
+  requestId?: string;
 }
 
 /** One logged visual-driver action (ADR-0009). Coordinates and display URLs only; never page content. */
@@ -340,12 +392,12 @@ export const FLOW_FORMAT_VERSION = "1";
 export const FLOW_RESULT_SCHEMA_VERSION = "1";
 
 export type TestLevel = "integration" | "e2e";
-export type FlowAction = "http" | "navigate" | "click" | "fill" | "select" | "submit" | "see" | "wait_for";
+export type FlowAction = "http" | "navigate" | "click" | "fill" | "select" | "submit" | "see" | "wait_for" | "fixture_create";
 export type FlowStatus = "PASS" | "FAIL" | "INCOMPLETE" | "ERROR" | "NOT_TESTED";
 export type FunctionalResult = "PASS" | "FAIL" | "INCOMPLETE";
 
 export interface AssertionResult {
-  kind: "status" | "content_type" | "header_present" | "header_absent" | "json" | "shape" | "text_present" | "text_absent" | "redirect_to" | "access" | "ui" | "console_silent";
+  kind: "status" | "content_type" | "header_present" | "header_absent" | "json" | "shape" | "text_present" | "text_absent" | "redirect_to" | "access" | "ui" | "console_silent" | "fixture";
   status: CheckStatus;
   /** From the linted flow file. */
   expected: string;

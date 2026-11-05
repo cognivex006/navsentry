@@ -8,6 +8,8 @@ export class BudgetExceeded extends Error {}
 
 export class Budget {
   private used = 0;
+  /** Slots held back for cleanup (SPEC-0.2.0 §6.1); ordinary requests cannot use them. */
+  private reserved = 0;
   private lastAt = 0;
   private readonly startedAt = Date.now();
   private readonly minIntervalMs: number;
@@ -44,6 +46,27 @@ export class Budget {
     return Math.max(0, this.maxDurationMs - (Date.now() - this.startedAt));
   }
 
+  /** Time left before the earlier of the run's duration budget and the authorization deadline. */
+  get timeLeftMs(): number {
+    const auth = this.deadline ? this.deadline.getTime() - Date.now() : Number.POSITIVE_INFINITY;
+    return Math.max(0, Math.min(this.remainingMs, auth));
+  }
+
+  get reservedSlots(): number {
+    return this.reserved;
+  }
+
+  /** Holds `n` request slots for cleanup; throws when they do not fit beside what is used and held. */
+  reserve(n: number): void {
+    if (this.used + this.reserved + n > this.maxRequests) throw new BudgetExceeded(`cleanup reserve of ${n} request(s) does not fit in max_requests (${this.maxRequests})`);
+    this.reserved += n;
+  }
+
+  /** Returns unused reserved slots (an object was cleaned with fewer requests than reserved). */
+  release(n: number): void {
+    this.reserved = Math.max(0, this.reserved - n);
+  }
+
   /** Aborted when the authorization deadline passes; transports pass it to each connection. */
   get signal(): AbortSignal {
     return this.abort.signal;
@@ -54,20 +77,24 @@ export class Budget {
     if (this.deadlineTimer) clearTimeout(this.deadlineTimer);
   }
 
-  private check(): void {
+  private check(fromReserve = false): void {
     if (this.deadline && Date.now() >= this.deadline.getTime()) throw new BudgetExceeded("authorization window ended");
-    if (this.used >= this.maxRequests) throw new BudgetExceeded(`request budget exhausted (${this.maxRequests})`);
+    if (fromReserve ? this.reserved <= 0 : this.used + this.reserved >= this.maxRequests) throw new BudgetExceeded(`request budget exhausted (${this.maxRequests})`);
     if (this.remainingMs <= 0) throw new BudgetExceeded("duration budget exhausted");
   }
 
-  /** Reserves one request slot, waiting to respect the rate limit. Throws when exhausted. */
-  acquire(): Promise<void> {
+  /**
+   * Takes one request slot, waiting to respect the rate limit. Throws when exhausted. `fromReserve` draws a
+   * cleanup slot held by `reserve`: still rate-limited, still stopped by the deadlines.
+   */
+  acquire(fromReserve = false): Promise<void> {
     const next = this.queue.then(async () => {
-      this.check();
+      this.check(fromReserve);
       const wait = this.lastAt + this.minIntervalMs - Date.now();
       if (wait > 0) await sleep(wait);
       // Limits and the deadline may have run out during the wait.
-      this.check();
+      this.check(fromReserve);
+      if (fromReserve) this.reserved--;
       this.used++;
       this.lastAt = Date.now();
     });

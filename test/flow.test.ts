@@ -46,7 +46,7 @@ test("parser: strict keys, block typos, nested fences and limits; messages carry
   assert.match(parseFlowText("x".repeat(300 * 1024), "a.flow.md").problems.join(), /larger than/);
   assert.match(parseFlowText("\u0000", "a.flow.md").problems.join(), /NUL/);
   assert.deepEqual(parseFlowText("﻿" + wrap(H, S).replace(/\n/g, "\r\n"), "a.flow.md").problems, [], "BOM and CRLF are accepted");
-  assert.match(parseFlowText(wrap(H, { ...S, request: { method: "POST", path: "/" } }), "a.flow.md").problems.join(), /only GET, HEAD and OPTIONS/);
+  assert.match(parseFlowText(wrap(H, { ...S, request: { method: "POST", path: "/" } }), "a.flow.md").problems.join(), /needs "fixture"/);
   assert.match(parseFlowText(wrap(H, S, S), "a.flow.md").problems.join(), /duplicate step id/);
   const narrative = parseFlowText(wrap(H, S).replace("# t", "# t\n\n```json\n{\"not\": \"parsed\"}\n```"), "a.flow.md");
   assert.deepEqual(narrative.problems, [], "non-navsentry fences are narrative");

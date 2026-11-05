@@ -83,16 +83,17 @@ export class DirectHttpAdapter implements ExecutionAdapter {
   };
 
   async send(spec: HttpRequestSpec): Promise<Exchange> {
-    const decision = this.gate.checkRequest(spec.url, spec.method);
+    if (spec.body && !spec.mutation) throw new ScopeDenied("a request body is allowed only on a declared mutation");
+    const decision = spec.mutation ? this.gate.checkMutation(spec.url, spec.method, spec.mutation) : this.gate.checkRequest(spec.url, spec.method);
     if (!decision.allowed) {
       this.onDenied(spec.displayUrl ? templateUrl(this.redactor.url(spec.displayUrl)) : this.redactor.url(spec.url), spec.method, decision.reason);
       throw new ScopeDenied(decision.reason);
     }
-    await this.budget.acquire();
+    await this.budget.acquire(spec.fromReserve === true);
     const id = randomUUID();
     const started = Date.now();
     const u = new URL(spec.url);
-    const headers: Record<string, string> = { "user-agent": USER_AGENT, accept: "*/*", "accept-encoding": "identity", ...lower(spec.headers ?? {}) };
+    const headers: Record<string, string> = { "user-agent": USER_AGENT, accept: "*/*", "accept-encoding": "identity", ...lower(spec.headers ?? {}), ...(spec.body ? { "content-type": spec.body.contentType, "content-length": String(spec.body.data.length) } : {}) };
     const redactedReqHeaders = Object.fromEntries(Object.entries(headers).map(([k, v]) => [k, this.redactor.headerValue(k, v)]));
     const base = {
       id,
@@ -103,6 +104,7 @@ export class DirectHttpAdapter implements ExecutionAdapter {
       requestHeaders: redactedReqHeaders,
       startedAt: new Date(started).toISOString(),
       ...(spec.flow ? { flow: spec.flow } : {}),
+      ...(spec.body ? { requestBodySha256: createHash("sha256").update(spec.body.data).digest("hex") } : {}),
     };
     const mod = u.protocol === "https:" ? https : http;
     const lim = this.capture;
@@ -185,7 +187,7 @@ export class DirectHttpAdapter implements ExecutionAdapter {
         signal.addEventListener("abort", onAbort, { once: true });
         req.on("timeout", () => req.destroy(new Error("request timeout")));
         req.on("error", (e) => { signal.removeEventListener("abort", onAbort); reject(e); });
-        req.end();
+        req.end(spec.body?.data);
       });
       const ct = raw.headers["content-type"]?.[0] ?? "";
       const body = spec.noExcerpt ? { outcome: { applied: false, count: 0, kinds: ["withheld:asset"], safe: true } } as ReturnType<Redactor["body"]> : this.redactor.body(raw.body, ct);

@@ -4,6 +4,7 @@
  * rejected so a typo can never silently widen scope.
  */
 import { readFileSync } from "node:fs";
+import { fixtureScopeProblems, parseAuthEndpoints, parseFixtures, type AuthEndpoints, type FixtureDecl } from "./fixtures/config.js";
 import type { HttpMethod, SafetyMode } from "./types.js";
 
 export interface PrivateNetworkApproval {
@@ -57,6 +58,10 @@ export interface Manifest {
     max_depth: number;
     representatives_per_pattern: number;
     max_frontier: number;
+    /** safe-validate: non-observe requests per run, including login and logout (SPEC-0.2.0 §3.2). */
+    max_mutations: number;
+    /** safe-validate: creates stop when less than this remains before the earlier deadline (§6.1). */
+    cleanup_window_seconds: number;
   };
   capture: CaptureLimits;
   analyzer: { timeout_seconds: number; include_text: boolean };
@@ -65,6 +70,9 @@ export interface Manifest {
   actors: Record<string, ActorConfig>;
   checks: { disabled: string[] };
   report: { language: "en" | "th"; formats: ("json" | "markdown" | "sarif")[]; evidence: "redacted-only" | "none" };
+  /** safe-validate only (SPEC-0.2.0 §3.2); empty otherwise. */
+  fixtures: Record<string, FixtureDecl>;
+  auth_endpoints: AuthEndpoints;
 }
 
 export class ConfigError extends Error {
@@ -162,7 +170,7 @@ function section(input: Obj, key: string, p: string[]): Obj {
 export function parseManifest(input: unknown): Manifest {
   const p: string[] = [];
   if (!isObj(input)) throw new ConfigError(["manifest root must be an object"]);
-  checkKeys(input, ["version", "project", "environment", "authorization", "targets", "network", "safety", "transports", "actors", "checks", "report", "capture", "analyzer", "workspace"], "$", p);
+  checkKeys(input, ["version", "project", "environment", "authorization", "targets", "network", "safety", "transports", "actors", "checks", "report", "capture", "analyzer", "workspace", "fixtures", "auth_endpoints"], "$", p);
 
   if (input.version !== "1") p.push('version: must be "1"');
   const project = typeof input.project === "string" && /^[a-z0-9][a-z0-9._-]{0,63}$/i.test(input.project) ? input.project : (p.push("project: required, [A-Za-z0-9._-], max 64"), "invalid");
@@ -230,7 +238,7 @@ export function parseManifest(input: unknown): Manifest {
   }
 
   const sf = isObj(input.safety) ? input.safety : {};
-  checkKeys(sf, ["mode", "max_pages", "max_requests", "max_requests_per_second", "max_duration_seconds", "concurrency", "allow_mutations", "allowed_methods", "max_depth", "representatives_per_pattern", "max_frontier"], "safety", p);
+  checkKeys(sf, ["mode", "max_pages", "max_requests", "max_requests_per_second", "max_duration_seconds", "concurrency", "allow_mutations", "allowed_methods", "max_depth", "representatives_per_pattern", "max_frontier", "max_mutations", "cleanup_window_seconds"], "safety", p);
   const mode = (sf.mode ?? "observe") as SafetyMode;
   if (!["observe", "safe-validate", "active-approved"].includes(mode)) p.push("safety.mode: observe | safe-validate");
   if (mode === "active-approved") p.push("safety.mode: active-approved is not available in this release (see docs/DEV-PLAN.md)");
@@ -285,6 +293,8 @@ export function parseManifest(input: unknown): Manifest {
     max_depth: int(sf.max_depth, "safety.max_depth", p, pd.max_depth, 1, 10),
     representatives_per_pattern: int(sf.representatives_per_pattern, "safety.representatives_per_pattern", p, pd.representatives_per_pattern, 1, 10),
     max_frontier: int(sf.max_frontier, "safety.max_frontier", p, pd.max_frontier, 10, 100_000),
+    max_mutations: int(sf.max_mutations, "safety.max_mutations", p, 20, 1, 200),
+    cleanup_window_seconds: int(sf.cleanup_window_seconds, "safety.cleanup_window_seconds", p, 30, 10, 300),
   };
 
   const cp = section(input, "capture", p);
@@ -315,6 +325,17 @@ export function parseManifest(input: unknown): Manifest {
   if (ignore.length > 50) p.push("workspace.ignore: at most 50 globs");
   for (const g of ignore) if (!safeGlob(g)) p.push(`workspace.ignore: "${g}" must be a relative glob without "..", absolute, drive or UNC paths`);
 
+  // safe-validate declarations (SPEC-0.2.0): only with that mode and the development profile.
+  let fixtures: Record<string, FixtureDecl> = {};
+  let auth_endpoints: AuthEndpoints = {};
+  if (input.fixtures !== undefined || input.auth_endpoints !== undefined) {
+    if (mode !== "safe-validate" || profile !== "development") p.push("fixtures, auth_endpoints: need safety.mode safe-validate and the development profile (environment local or dev)");
+    else {
+      if (input.fixtures !== undefined) fixtures = parseFixtures(input.fixtures, Object.keys(actors), p);
+      if (input.auth_endpoints !== undefined) auth_endpoints = parseAuthEndpoints(input.auth_endpoints, p);
+      p.push(...fixtureScopeProblems(fixtures, auth_endpoints, allowed_paths, denied_paths));
+    }
+  }
   if (p.length) throw new ConfigError(p);
   return {
     version: "1",
@@ -343,6 +364,8 @@ export function parseManifest(input: unknown): Manifest {
     transports: { order, visual_computer_use: tr.visual_computer_use === true },
     actors,
     checks: { disabled },
+    fixtures,
+    auth_endpoints,
     report: { language, formats, evidence },
   };
 }

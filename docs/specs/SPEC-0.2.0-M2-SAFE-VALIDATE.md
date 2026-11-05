@@ -1,6 +1,6 @@
 # SPEC 0.2.0 — M2 safe-validate: login actors, fixture mutations and cleanup
 
-- Status: **ACCEPTED** · Drafted: 2026-11-04 · Review: round 1 done 2026-11-04, 22 findings resolved ([§13](#13-review-log)) · Owner decisions D1–D9: decided 2026-11-04 with the recommended options ([§12](#12-owner-decisions)) · Implementation: not started (0.2.0-a next)
+- Status: **ACCEPTED** · Drafted: 2026-11-04 · Review: round 1 done 2026-11-04, 22 findings resolved ([§13](#13-review-log)) · Owner decisions D1–D9: decided 2026-11-04 with the recommended options ([§12](#12-owner-decisions)) · Implementation: 0.2.0-a in progress on `feat/0.2.0-a` (tests 1–7)
 - Related: [DEV-PLAN](../DEV-PLAN.md) M2 · [SPEC-0.1.2](SPEC-0.1.2-FLOW-TEST-CASES.md) §16 · [SPEC-0.1.3](SPEC-0.1.3-SCAN-MODES-AND-WORKSPACE.md) · ADR-0004, ADR-0008, ADR-0009 · TM-03
 - Cases: NSC-AC-002, NSC-AC-003 (modification), NSC-AC-006, NSC-AUTH-002, NSC-BIZ-001, NSC-INJ-004 (reflection only)
 - No code may be written for a milestone below until this spec is ACCEPTED and its owner decisions are recorded.
@@ -255,6 +255,6 @@ Decided 2026-11-04: the owner accepted every recommended option below.
 ## 14. Implementation readiness checklist
 - [x] Owner answers D1–D9 (2026-11-04, recommended options).
 - [x] Review round 1 recorded in §13 with every finding resolved.
-- [ ] Vulnerable and secure fixture apps designed for §9, with the same response contract for legitimate callers.
-- [ ] ADR for safe-validate, fixtures and `checkMutation`.
-- [ ] Threat model TM-32 to TM-35 merged.
+- [ ] Vulnerable and secure fixture apps designed for §9, with the same response contract for legitimate callers (0.2.0-a: `test/fixtures/fixture-server.ts` covers tests 1–7; the AC/AUTH/BIZ variants come with 0.2.0-c/d).
+- [x] ADR for safe-validate, fixtures and `checkMutation` ([ADR-0010](../adr/0010-safe-validate-fixtures.md)).
+- [x] Threat model TM-32 to TM-35 merged (TM-34 and TM-35 marked as planned).

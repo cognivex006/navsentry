@@ -6,13 +6,14 @@
 import { BudgetExceeded } from "../budget.js";
 import { getCase } from "../catalog.js";
 import type { Manifest } from "../config.js";
-import type { ScopeGate } from "../scope.js";
+import { fillBody, RequestRefused, type FixtureLifecycle } from "../fixtures/lifecycle.js";
+import { validMutationId, type ScopeGate } from "../scope.js";
 import type { Exchange } from "../transports/types.js";
 import type { AssertionResult, CheckResult, CheckStatus, FlowResult, FlowStatus, StepResult } from "../types.js";
 import { evaluate, resolvePointer, worst } from "./assert.js";
 import { classify, flowHash, requestTemplate, stepHash, stepTransport } from "./classify.js";
 import { fillPath, flowOrigin, placeholders, topoOrder } from "./lint.js";
-import { UI_ACTIONS, type FlowDoc, type FlowStep, type UiTarget } from "./parse.js";
+import { MUTATION_METHODS, UI_ACTIONS, type FlowDoc, type FlowStep, type UiTarget } from "./parse.js";
 
 export const MAX_FLOW_REDIRECTS = 5;
 const SAFE_VALUE = /^[A-Za-z0-9._~-]{1,128}$/;
@@ -41,6 +42,9 @@ export interface FlowContext {
   displayUrl(url: string): string;
   /** Present when the run uses the playwright engine (M1b); UI steps are NOT_TESTED without it. */
   browser?: FlowBrowser;
+  /** safe-validate (SPEC-0.2.0): the run's fixture lifecycle and marker; absent in observe. */
+  fixtures?: FixtureLifecycle;
+  marker?: string;
 }
 
 /** Browser steps as the flow runner sees them; every request inside goes through `send`'s ScopeGate/Budget path. */
@@ -83,7 +87,7 @@ function uiReason(s: FlowStep): string {
 export function manualLine(s: FlowStep): string {
   const t = s.target;
   const what = !t ? "" : "role" in t ? `${t.role} “${t.name}”` : "label" in t ? `field “${t.label}”` : "text" in t ? `text “${t.text}”` : `element [data-testid=${t.test_id}]`;
-  const verb = { click: "click", select: "select an option in", fill: "fill", submit: "submit", see: "check that you can see", wait_for: "wait until you can see", http: "request", navigate: "open" }[s.action];
+  const verb = { click: "click", select: "select an option in", fill: "fill", submit: "submit", see: "check that you can see", wait_for: "wait until you can see", http: "request", navigate: "open", fixture_create: "create the declared fixture" }[s.action];
   const value = s.value ? ` with the value of variable ${s.value.var} (not shown)` : "";
   return `${s.id} — as ${s.actor}: ${verb} ${what}${value}`;
 }
@@ -138,6 +142,16 @@ async function runDoc(doc: FlowDoc, ctx: FlowContext, budget: { exhausted?: stri
     if (!actorHeaders) { skip(`actor ${s.actor} not tested: ${ctx.actorSkipReasons.get(s.actor) ?? "not usable"}`); continue; }
     const dep = (s.depends_on ?? []).find((d) => byId.get(d)?.result.status !== "PASS");
     if (dep) { skip(`dependency ${dep} did not pass`); continue; }
+    if (s.action === "fixture_create") {
+      if (!ctx.fixtures) { skip("fixture_create needs safety.mode safe-validate with declared fixtures"); continue; }
+      const o = await ctx.fixtures.create(s.fixture!, s.actor, { id: doc.header.id, step: s.id });
+      res.requestIds.push(...o.requestIds);
+      res.status = o.status;
+      if (o.reason) res.reason = o.reason;
+      if (o.status !== "NOT_TESTED") res.assertions = [{ kind: "fixture", status: o.status, expected: "created, id valid, exists", observed: o.status === "PASS" ? "created and exists" : (o.reason ?? o.status) }];
+      if (o.status === "PASS" && o.id) { vars.set(s.as!, o.id); chain.exports.set(s.as!, o.id); }
+      continue;
+    }
     if (ctx.browser && UI_ACTIONS.has(s.action)) {
       try {
         const a = await ctx.browser.act(s.actor, s.action as "click" | "see" | "wait_for", s.target!, { id: doc.header.id, step: s.id });
@@ -186,11 +200,37 @@ async function runDoc(doc: FlowDoc, ctx: FlowContext, budget: { exhausted?: stri
     }
     const accept = s.action === "navigate" ? ACCEPT.html : ACCEPT[(r.accept as keyof typeof ACCEPT) ?? "any"] ?? ACCEPT.any;
     let ex: Exchange | undefined;
-    try {
+    if (MUTATION_METHODS.has(r.method)) {
+      // safe-validate mutation (SPEC-0.2.0 §4.1): one declared entry, validated ids, JSON body, no redirects.
+      if (!ctx.fixtures) { skip(`${r.method} needs safety.mode safe-validate with declared fixtures`); continue; }
+      const fx = ctx.manifest.fixtures[s.fixture ?? ""];
+      const tpl = r.path.split("/").map((seg) => (/^\{\{\w+\}\}$/.test(seg) ? "{{id}}" : seg)).join("/");
+      const entry = fx?.allowed_mutations.find((e) => e.method === r.method && e.path === tpl);
+      if (!entry) { res.status = "ERROR"; res.reason = `${r.method} ${tpl} matches no allowed_mutations entry of fixture ${s.fixture}`; continue; }
+      const badId = placeholders(s).find((v) => !validMutationId(vars.get(v)));
+      if (badId) { res.status = "ERROR"; res.reason = `variable ${badId} rejected by the safe-validate id rule`; continue; }
+      let body: Buffer | undefined;
+      if (r.body) {
+        if ((entry.content_type ?? "application/json") !== "application/json") { res.status = "ERROR"; res.reason = `http steps send JSON; the entry declares ${entry.content_type}`; continue; }
+        const b = fillBody(r.body.json, (n) => (n === "marker" ? ctx.marker : vars.get(n)));
+        if (b.error) { res.status = "ERROR"; res.reason = b.error; continue; }
+        if (b.data!.length > (entry.max_body_bytes ?? 4096)) { res.status = "ERROR"; res.reason = `body exceeds max_body_bytes (${entry.max_body_bytes})`; continue; }
+        body = b.data;
+      }
+      try {
+        ex = await ctx.fixtures.mutate(s.fixture!, entry, u.toString(), du.toString(), s.actor, { ...actorHeaders, accept, "x-navsentry-flow": `${doc.header.id}/${s.id}` }, body, { id: doc.header.id, step: s.id, ...(s.expect?.access === "denied" ? { deniedProbe: true as const } : {}) });
+        res.requestIds.push(ex.record.id);
+        if (!ex.record.error) checks.push(...ctx.securityChecks(ex, s.actor, u.toString()));
+      } catch (e) {
+        if (e instanceof BudgetExceeded) { skip(e.message); if (!e.message.startsWith("stopped") && !e.message.startsWith("mutation limit")) budget.exhausted = e.message; continue; }
+        if (e instanceof RequestRefused) { skip("denied by scope (see run.json denials)"); continue; }
+        throw e;
+      }
+    } else try {
       let url = u.toString();
       let shown = du.toString();
       for (let hop = 0; ; hop++) {
-        ex = await ctx.send({ method: r.method, url, displayUrl: shown, actor: s.actor, headers: { ...actorHeaders, accept, "x-navsentry-flow": `${doc.header.id}/${s.id}` }, flow: { id: doc.header.id, step: s.id, ...(s.expect?.access === "denied" ? { deniedProbe: true as const } : {}) } });
+        ex = await ctx.send({ method: r.method as FlowSendRequest["method"], url, displayUrl: shown, actor: s.actor, headers: { ...actorHeaders, accept, "x-navsentry-flow": `${doc.header.id}/${s.id}` }, flow: { id: doc.header.id, step: s.id, ...(s.expect?.access === "denied" ? { deniedProbe: true as const } : {}) } });
         if (!ex) break;
         res.requestIds.push(ex.record.id);
         if (ex.record.error) break;
