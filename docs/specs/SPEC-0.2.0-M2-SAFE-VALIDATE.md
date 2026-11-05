@@ -1,6 +1,6 @@
 # SPEC 0.2.0 — M2 safe-validate: login actors, fixture mutations and cleanup
 
-- Status: **DRAFT for owner decisions** · Drafted: 2026-11-04 · Review: round 1 done 2026-11-04, 22 findings resolved in this revision ([§13](#13-review-log)) · Owner decisions: open ([§12](#12-owner-decisions))
+- Status: **ACCEPTED** · Drafted: 2026-11-04 · Review: round 1 done 2026-11-04, 22 findings resolved ([§13](#13-review-log)) · Owner decisions D1–D9: decided 2026-11-04 with the recommended options ([§12](#12-owner-decisions)) · Implementation: not started (0.2.0-a next)
 - Related: [DEV-PLAN](../DEV-PLAN.md) M2 · [SPEC-0.1.2](SPEC-0.1.2-FLOW-TEST-CASES.md) §16 · [SPEC-0.1.3](SPEC-0.1.3-SCAN-MODES-AND-WORKSPACE.md) · ADR-0004, ADR-0008, ADR-0009 · TM-03
 - Cases: NSC-AC-002, NSC-AC-003 (modification), NSC-AC-006, NSC-AUTH-002, NSC-BIZ-001, NSC-INJ-004 (reflection only)
 - No code may be written for a milestone below until this spec is ACCEPTED and its owner decisions are recorded.
@@ -12,7 +12,7 @@
 - **ยังไม่มี payload โจมตี** (injection, brute force, DoS) ตามกฎข้อ 6 XSS ทำได้แค่ดูว่าข้อความ marker ธรรมดาสะท้อนกลับมาไหม
 - ถ้าลบข้อมูลทดสอบคืนไม่สำเร็จ หรือไม่แน่ใจว่าสร้างไปแล้วหรือยัง run เป็น FAILED พร้อมรายการที่ต้องลบเอง
 - visual driver ยังเป็น observe อย่างเดียวใน 0.2.0 (ยังไม่พิมพ์)
-- เจ้าของต้องตัดสินใจ 9 ข้อใน §12
+- เจ้าของตัดสินใจครบ 9 ข้อแล้ว (2026-11-04) ใช้ตัวเลือกที่แนะนำทั้งหมด
 
 ## 1. Goals
 | ID | Goal |
@@ -209,7 +209,9 @@ The marker (letters and digits only) is placed by a create or `fill`. If a later
 FLOWS.md, flow examples, README and CLI help, ARCHITECTURE, THREAT-MODEL (TM-32 to TM-35), SKILL.md (declaring fixtures, never improvising a delete, reporting leftovers), the catalog entries and milestones for the cases in §5, CHANGELOG and DEV-PLAN.
 
 ## 12. Owner decisions
-| ID | Question | Recommended |
+Decided 2026-11-04: the owner accepted every recommended option below.
+
+| ID | Question | Decision (recommended) |
 |---|---|---|
 | D1 | Should `safe-validate` stay development-only? | Yes. Staging is the production profile and stays observe-only. |
 | D2 | What is the default and maximum for `max_mutations`? | 20 and 200. |
@@ -251,7 +253,7 @@ FLOWS.md, flow examples, README and CLI help, ARCHITECTURE, THREAT-MODEL (TM-32 
 | 22 | Low | The INJ-004 status was ambiguous. | §5.5: a fact in `observations`, never a case result; catalog update. |
 
 ## 14. Implementation readiness checklist
-- [ ] Owner answers D1–D9.
+- [x] Owner answers D1–D9 (2026-11-04, recommended options).
 - [x] Review round 1 recorded in §13 with every finding resolved.
 - [ ] Vulnerable and secure fixture apps designed for §9, with the same response contract for legitimate callers.
 - [ ] ADR for safe-validate, fixtures and `checkMutation`.

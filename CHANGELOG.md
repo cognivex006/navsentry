@@ -5,10 +5,11 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Fixed
+- The local gate gave the test suite only 5 minutes; the suite now takes about 4, so a slow or busy machine turned GATE-02 into a FAIL with `pass=?`. The limit is 15 minutes, and a timeout is reported as such.
 - `safety.mode: safe-validate` was accepted for `environment: staging`, because the check compared the environment name instead of the profile. Every production-profile environment (staging, production, unrecognized) is now limited to observe.
 
 ### Added
-- Design spec [SPEC-0.2.0](docs/specs/SPEC-0.2.0-M2-SAFE-VALIDATE.md) for M2 safe-validate (fixture mutations with tracked cleanup, login and cookie-session actors, CSRF, session-after-logout, business invariants). It is a draft awaiting owner decisions; no behaviour changes.
+- Design spec [SPEC-0.2.0](docs/specs/SPEC-0.2.0-M2-SAFE-VALIDATE.md) for M2 safe-validate (fixture mutations with tracked cleanup, login and cookie-session actors, CSRF, session-after-logout, business invariants). Accepted 2026-11-04 with owner decisions D1–D9; no behaviour changes until milestone 0.2.0-a.
 - Computer Use as a visual driver on a NavSentry-owned browser ([ADR-0009](docs/adr/0009-visual-driver-on-owned-browser.md)): `navsentry browse start|screenshot|click|scroll|status|end` (development profile, `transports.visual_computer_use: true`). The agent sees screenshots and sends coordinates; every request the page makes still goes through ScopeGate and the Budget (S1). Commands use a token-protected local pipe, every action is logged, sessions end on `end`, idle timeout, deadline, budget or action limit, and screenshots are deleted with the work directory. Writes `VISUAL-SESSION.md` and `session.json`. No typing until M2. `scan --engine computer-use` still exits 3 and points to `browse`.
 - STA-LIBVULN detector (SPEC-0.1.3 §6.4-B): the jQuery licence banner in a served bundle is matched against reviewed advisory records; an affected version is NSC-SUPPLY-002 SUSPECTED with the CVE and GHSA IDs and a client-finding preview `[jquery,v=<version>,<GHSA>]`. Outside the ranges, unknown, or only candidate records → NOT_TESTED with the reason. A plugin that only mentions jQuery is not a match, and a banner never suppresses another detector. Detector version 3 invalidates cached facts. NSC-SUPPLY-002 is now `auto`.
 
