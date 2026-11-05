@@ -185,8 +185,19 @@ export interface RunResult {
   analyzer?: AnalyzerResult;
   /** safe-validate (SPEC-0.2.0 §3.5, §7): per-run marker, fixture lifecycle and every non-observe request. */
   marker?: string;
+  /** Facts that are not case results (SPEC-0.2.0 §5.5): where the run marker came back in a page. */
+  observations?: MarkerObservation[];
   fixtures?: FixtureRunSummary;
   mutations?: MutationRecord[];
+}
+
+/** The run marker reflected in an HTML attribute or script context. A fact only; it never sets NSC-INJ-004. */
+export interface MarkerObservation {
+  kind: "marker-reflection";
+  context: "attribute" | "script";
+  url: string;
+  requestId: string;
+  count: number;
 }
 
 /** One fixture create intent in `fixtures.pending.json` (S14), written before the create is sent. */

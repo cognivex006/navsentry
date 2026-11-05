@@ -26,7 +26,14 @@ export interface FixtureDecl {
   cleanup: EndpointEntry;
   verify_gone?: EndpointEntry;
   allowed_mutations: EndpointEntry[];
+  /** NSC-BIZ-001 (SPEC-0.2.0 §5.4): owner-declared rules on the object as `exists` returns it. NavSentry never invents one. */
+  invariants: Invariant[];
+  forbidden_transitions: Transition[];
 }
+
+export type InvariantOp = ">=" | "<=" | "==" | "!=" | "in";
+export interface Invariant { name: string; pointer: string; op: InvariantOp; value: unknown }
+export interface Transition { name: string; pointer: string; from: string | number | boolean; to: string | number | boolean }
 
 export interface AuthEndpoints {
   login?: EndpointEntry;
@@ -99,7 +106,7 @@ export function parseFixtures(raw: unknown, actors: string[], p: string[]): Reco
     const w = `fixtures.${name}`;
     if (!NAME.test(name)) p.push(`${w}: invalid fixture name`);
     if (!isObj(f)) { p.push(`${w}: must be an object`); continue; }
-    keys(f, ["owner_actor", "cleanup_actor", "create", "exists", "cleanup", "verify_gone", "allowed_mutations"], w, p);
+    keys(f, ["owner_actor", "cleanup_actor", "create", "exists", "cleanup", "verify_gone", "allowed_mutations", "invariants", "forbidden_transitions"], w, p);
     const owner = f.owner_actor;
     if (typeof owner !== "string" || !actors.includes(owner)) p.push(`${w}.owner_actor: must name an actor in actors`);
     const cleanupActor = f.cleanup_actor ?? owner;
@@ -120,8 +127,41 @@ export function parseFixtures(raw: unknown, actors: string[], p: string[]): Reco
       if (!Array.isArray(f.allowed_mutations) || f.allowed_mutations.length > 20) p.push(`${w}.allowed_mutations: an array of at most 20 entries`);
       else f.allowed_mutations.forEach((m, i) => { const e = endpoint(m, `${w}.allowed_mutations[${i}]`, p, { methods: MUTATION, placeholder: true, bodyRules: true, csrf: true }); if (e) muts.push(e); });
     }
+    const invariants: Invariant[] = [];
+    const POINTER = /^(\/[^/]{1,64}){1,8}$/;
+    const NAME_RE = /^[a-z][a-z0-9_-]{0,47}$/;
+    const scalar = (v: unknown) => ["string", "number", "boolean"].includes(typeof v);
+    if (f.invariants !== undefined) {
+      if (!Array.isArray(f.invariants) || f.invariants.length > 20) p.push(`${w}.invariants: an array of at most 20 rules`);
+      else f.invariants.forEach((r, i) => {
+        const at = `${w}.invariants[${i}]`;
+        if (!isObj(r)) { p.push(`${at}: must be an object`); return; }
+        keys(r, ["name", "pointer", "op", "value"], at, p);
+        const op = r.op as InvariantOp;
+        if (typeof r.name !== "string" || !NAME_RE.test(r.name)) p.push(`${at}.name: [a-z0-9_-], max 48`);
+        else if (typeof r.pointer !== "string" || !POINTER.test(r.pointer)) p.push(`${at}.pointer: a JSON pointer`);
+        else if (![">=", "<=", "==", "!=", "in"].includes(op)) p.push(`${at}.op: >=, <=, ==, != or in`);
+        else if ((op === ">=" || op === "<=") && typeof r.value !== "number") p.push(`${at}.value: a number for ${op}`);
+        else if (op === "in" && (!Array.isArray(r.value) || !r.value.length || r.value.length > 50 || !r.value.every(scalar))) p.push(`${at}.value: a non-empty array of at most 50 scalars for in`);
+        else if ((op === "==" || op === "!=") && !scalar(r.value)) p.push(`${at}.value: a scalar`);
+        else invariants.push({ name: r.name, pointer: r.pointer, op, value: r.value });
+      });
+    }
+    const transitions: Transition[] = [];
+    if (f.forbidden_transitions !== undefined) {
+      if (!Array.isArray(f.forbidden_transitions) || f.forbidden_transitions.length > 20) p.push(`${w}.forbidden_transitions: an array of at most 20 rules`);
+      else f.forbidden_transitions.forEach((r, i) => {
+        const at = `${w}.forbidden_transitions[${i}]`;
+        if (!isObj(r)) { p.push(`${at}: must be an object`); return; }
+        keys(r, ["name", "pointer", "from", "to"], at, p);
+        if (typeof r.name !== "string" || !NAME_RE.test(r.name)) p.push(`${at}.name: [a-z0-9_-], max 48`);
+        else if (typeof r.pointer !== "string" || !POINTER.test(r.pointer)) p.push(`${at}.pointer: a JSON pointer`);
+        else if (!scalar(r.from) || !scalar(r.to)) p.push(`${at}.from, to: scalars`);
+        else transitions.push({ name: r.name, pointer: r.pointer, from: r.from as string, to: r.to as string });
+      });
+    }
     if (create && extract && exists && cleanup && typeof owner === "string" && typeof cleanupActor === "string")
-      out[name] = { owner_actor: owner, cleanup_actor: cleanupActor, create: { ...create, extract }, exists, cleanup, ...(verify ? { verify_gone: verify } : {}), allowed_mutations: muts };
+      out[name] = { owner_actor: owner, cleanup_actor: cleanupActor, create: { ...create, extract }, exists, cleanup, ...(verify ? { verify_gone: verify } : {}), allowed_mutations: muts, invariants, forbidden_transitions: transitions };
   }
   return out;
 }

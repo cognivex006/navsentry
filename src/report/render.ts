@@ -47,6 +47,11 @@ export function renderMarkdown(r: RunResult, lang: "en" | "th" = "en"): string {
       for (const p of fx.pendingFromPreviousRuns) out.push(`- ${esc(p.fixture)} ${p.id ? `\`${esc(p.id)}\`` : "(id unknown)"} · state ${p.state} · marker \`${p.marker}\``);
       out.push("");
     }
+    if (r.observations?.length) {
+      out.push("## Marker reflections (facts, not results)", "", "NSC-INJ-004 stays NOT_TESTED: testing output encoding needs an injection payload (active-approved).", "", "| Context | Count | URL |", "|---|---|---|");
+      for (const o of r.observations) out.push(`| ${o.context} | ${o.count} | \`${esc(o.url)}\` |`);
+      out.push("");
+    }
     out.push("## Mutations", "", "| Method | Path | Entry | Actor | Status | Body sha256 |", "|---|---|---|---|---|---|");
     for (const x of r.mutations ?? []) out.push(`| ${x.method} | \`${esc(x.path)}\` | ${esc(x.entry)} | ${esc(x.actor)} | ${x.status ?? esc(x.error ?? "—")} | ${x.bodySha256 ? `\`${x.bodySha256.slice(0, 16)}…\`` : "—"} |`);
     out.push("");

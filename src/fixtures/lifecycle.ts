@@ -18,8 +18,8 @@ import type { Manifest } from "../config.js";
 import { resolvePointer } from "../flow/assert.js";
 import { fillTemplate, validMutationId } from "../scope.js";
 import type { Exchange, HttpRequestSpec } from "../transports/types.js";
-import type { FixtureLeftover, FixtureRunSummary, MutationRecord, PendingFixture } from "../types.js";
-import type { EndpointEntry, FixtureDecl } from "./config.js";
+import type { CheckResult, FixtureLeftover, FixtureRunSummary, MutationRecord, PendingFixture } from "../types.js";
+import type { EndpointEntry, FixtureDecl, Invariant } from "./config.js";
 
 export const PENDING_FILE = "fixtures.pending.json";
 const MAX_BODY = 4096;
@@ -59,9 +59,42 @@ interface Registered {
   decl: FixtureDecl;
   id: string;
   reserved: number;
+  /** The creating flow is owner-approved (VALIDATED findings need an approved flow). */
+  approved: boolean;
+  /** Values of the forbidden-transition pointers right after create, in memory only (BIZ-001). */
+  start: Map<string, unknown>;
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+function jsonOf(ex: Exchange | undefined): unknown {
+  if (!ex?.raw) return undefined;
+  try { return JSON.parse(ex.raw.body.toString("utf8")); } catch { return undefined; }
+}
+
+function holds(v: unknown, op: Invariant["op"], want: unknown): boolean {
+  if (op === "in") return Array.isArray(want) && want.includes(v);
+  if (op === "==") return v === want;
+  if (op === "!=") return v !== want;
+  if (typeof v !== "number" || typeof want !== "number") return false;
+  return op === ">=" ? v >= want : v <= want;
+}
+
+/**
+ * Where a marker appears in HTML (SPEC-0.2.0 §5.5): inside a tag (attribute) or inside a <script> element.
+ * Text-node reflections are not reported. A heuristic over the raw markup, never a parse that executes anything.
+ */
+export function markerContexts(html: string, marker: string): { attribute: number; script: number } {
+  const out = { attribute: 0, script: 0 };
+  const lower = html.toLowerCase();
+  for (let i = html.indexOf(marker); i >= 0; i = html.indexOf(marker, i + marker.length)) {
+    const lt = html.lastIndexOf("<", i), gt = html.lastIndexOf(">", i);
+    if (lt > gt && /^<[a-z]/i.test(html.slice(lt, lt + 2))) { out.attribute++; continue; }
+    const open = lower.lastIndexOf("<script", i), close = lower.lastIndexOf("</script", i);
+    if (open > close) out.script++;
+  }
+  return out;
+}
 
 /** Fills a JSON body template: a string leaf that is exactly `{{name}}` takes a value; any other `{{` is refused. */
 export function fillBody(template: Record<string, unknown>, lookup: (name: string) => string | undefined): { data?: Buffer; error?: string } {
@@ -153,7 +186,7 @@ export class FixtureLifecycle {
    * `fixture_create` (§4.2): reserve → pending intent → create → validated id → registered → `exists`.
    * NOT_TESTED when the create could not be attempted; ERROR when it was sent and something went wrong.
    */
-  async create(fixture: string, actor: string, flow: { id: string; step: string }): Promise<StepOutcome> {
+  async create(fixture: string, actor: string, flow: { id: string; step: string }, approved = false): Promise<StepOutcome> {
     const decl = this.o.manifest.fixtures[fixture];
     const ids: string[] = [];
     if (!decl) return { status: "ERROR", reason: `fixture ${fixture} is not declared`, requestIds: ids };
@@ -228,13 +261,16 @@ export class FixtureLifecycle {
     if (!id) return lost("the created id was rejected by the safe-validate id rule");
     intent.state = "created";
     intent.id = id;
-    this.registered.push({ seq, fixture, decl, id, reserved: reserve });
+    const reg: Registered = { seq, fixture, decl, id, reserved: reserve, approved, start: new Map() };
+    this.registered.push(reg);
     this.created++;
     this.safePersist();
     // Positive control: the object must exist for the owner's cleanup actor.
     const exists = await this.observe(decl.exists, decl.cleanup_actor, id, flow);
     if (exists.exchange) ids.push(exists.exchange.record.id);
     if (!exists.ok) return { status: "ERROR", reason: `exists check failed: ${exists.why}; the object stays registered for cleanup`, id, requestIds: ids, exchange: ex };
+    const doc = jsonOf(exists.exchange);
+    for (const t of decl.forbidden_transitions) reg.start.set(t.pointer, doc === undefined ? undefined : resolvePointer(doc, t.pointer).value);
     return { status: "PASS", id, requestIds: ids, exchange: ex };
   }
 
@@ -293,6 +329,44 @@ export class FixtureLifecycle {
     } catch (e) {
       return { ok: false, why: (e as Error).message };
     }
+  }
+
+  /**
+   * NSC-BIZ-001 (SPEC-0.2.0 §5.4): before cleanup, reads each object through `exists` and evaluates the owner's
+   * invariants and forbidden transitions. Observed values stay in memory; only rule names, pointers and the
+   * declared values are reported. Fixtures without rules give one NOT_TESTED result.
+   */
+  async checkInvariants(): Promise<CheckResult[]> {
+    const out: CheckResult[] = [];
+    const flow = { id: "fixtures", step: "invariants" };
+    const hasRules = Object.values(this.o.manifest.fixtures).some((f) => f.invariants.length || f.forbidden_transitions.length);
+    if (!hasRules) return [{ ruleId: "NSC-BIZ-001", status: "NOT_TESTED", target: "fixtures", transport: "direct-http", summary: "Business invariants not tested", observations: [], requestIds: [], reason: "no owner-declared invariants or forbidden_transitions on any fixture (NavSentry never invents one)" }];
+    for (const r of this.registered) {
+      const d = r.decl;
+      if (!d.invariants.length && !d.forbidden_transitions.length) continue;
+      const target = `GET ${new URL(d.exists.path, this.o.origin).toString()}`;
+      const base = { ruleId: "NSC-BIZ-001", target, transport: "direct-http", ...(r.approved ? {} : { basis: "draft-flow" as const }) };
+      if (this.stopReason) { out.push({ ...base, status: "NOT_TESTED", summary: "Business invariants not checked", observations: [], requestIds: [], reason: `stopped: ${this.stopReason}` }); continue; }
+      const read = await this.observe(d.exists, d.cleanup_actor, r.id, flow);
+      const ids = read.exchange ? [read.exchange.record.id] : [];
+      const doc = read.ok ? jsonOf(read.exchange) : undefined;
+      if (doc === undefined) { out.push({ ...base, status: "INCONCLUSIVE", summary: "Business invariants inconclusive", observations: [`fixture ${r.fixture}: ${read.ok ? "exists response is not JSON" : read.why}`], requestIds: ids, reason: read.ok ? "exists response is not JSON" : read.why }); continue; }
+      const broken: string[] = [], held: string[] = [], missing: string[] = [];
+      for (const inv of d.invariants) {
+        const v = resolvePointer(doc, inv.pointer);
+        if (!v.found) { missing.push(`${inv.name}: ${inv.pointer} absent`); continue; }
+        (holds(v.value, inv.op, inv.value) ? held : broken).push(`${inv.name}: ${inv.pointer} ${inv.op} ${JSON.stringify(inv.value)}`);
+      }
+      for (const t of d.forbidden_transitions) {
+        const now = resolvePointer(doc, t.pointer);
+        if (!now.found || !r.start.has(t.pointer)) { missing.push(`${t.name}: ${t.pointer} absent`); continue; }
+        (r.start.get(t.pointer) === t.from && now.value === t.to ? broken : held).push(`${t.name}: ${t.pointer} ${JSON.stringify(t.from)} → ${JSON.stringify(t.to)} is forbidden`);
+      }
+      const status = broken.length ? "FAIL" : missing.length ? "INCONCLUSIVE" : "PASS";
+      out.push({ ...base, status, summary: status === "FAIL" ? `Business logic flaw: ${broken.length} owner-declared rule(s) violated on fixture ${r.fixture}` : status === "PASS" ? `owner-declared rules hold on fixture ${r.fixture}` : "Business invariants inconclusive",
+        observations: [...broken.map((x) => `violated ${x} (observed value withheld)`), ...missing, ...held.map((x) => `holds ${x}`)], requestIds: ids, ...(status === "INCONCLUSIVE" ? { reason: missing.join("; ") } : {}) });
+    }
+    return out;
   }
 
   /** Sends `entry` (cleanup) or GETs it (verify_gone) with one retry on a network error or 5xx. */

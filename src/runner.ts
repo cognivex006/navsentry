@@ -1,6 +1,6 @@
 /** Plan (zero network) and execute (observe mode) runs. */
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { FixtureLifecycle, RequestRefused, fillBody } from "./fixtures/lifecycle.js";
+import { FixtureLifecycle, RequestRefused, fillBody, markerContexts } from "./fixtures/lifecycle.js";
 import { Budget, BudgetExceeded, ByteBudget } from "./budget.js";
 import { CASES, getCase } from "./catalog.js";
 import * as P from "./checks/passive.js";
@@ -553,9 +553,25 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
 
   // S14: cleanup runs at normal end, after failures and exhaustion, and on the first signal (≤ 30 s then).
   if (fixtures) {
+    // NSC-BIZ-001: owner-declared rules are read before the objects are cleaned up.
+    try { checks.push(...(await fixtures.checkInvariants()).filter((c) => !disabled.has(c.ruleId))); } catch (e) { incomplete.push(`business invariants not checked: ${(e as Error).message}`); }
     try { await fixtures.cleanupAll(fixtures.stopped ? 30_000 : undefined); } catch (e) { incomplete.push(`fixture cleanup aborted: ${(e as Error).message}`); fixtures.abandon(); }
     if (fixtures.stopped) incomplete.push(`stopped: ${fixtures.stopped}`);
     if (fixtures.leftovers.length) incomplete.push(`fixtures: ${fixtures.leftovers.length} leftover(s) not cleaned and verified gone (see run.json fixtures.leftovers)`);
+  }
+  // NSC-INJ-004 (SPEC-0.2.0 §5.5): marker reflections are facts in run.json, never a case result.
+  let observations: NonNullable<RunResult["observations"]> | undefined;
+  if (marker) {
+    observations = [];
+    for (const ex of exchanges) {
+      const raw = ex.raw;
+      if (!raw || ex.record.error || !/text\/html|application\/xhtml/i.test(raw.headers["content-type"]?.[0] ?? "")) continue;
+      const html = raw.body.toString("utf8");
+      if (!html.includes(marker)) continue;
+      const c = markerContexts(html, marker);
+      for (const k of ["attribute", "script"] as const) if (c[k]) observations.push({ kind: "marker-reflection", context: k, url: ex.record.url, requestId: ex.record.id, count: c[k] });
+    }
+    if (!disabled.has("NSC-INJ-004")) checks.push({ ruleId: "NSC-INJ-004", status: "NOT_TESTED", target: "marker reflections", transport: "direct-http", summary: "Output encoding not tested", observations: observations.map((o) => `marker reflected in ${o.context} context (${o.count}x) at ${o.url}`), requestIds: observations.map((o) => o.requestId), reason: "testing output encoding needs an injection payload (active-approved); marker reflections are recorded in run.json observations" });
   }
   await engine?.close();
   budget.close();
@@ -650,6 +666,7 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
     ...(assets ? { assets } : {}),
     ...(consoleResult ? { console: consoleResult } : {}),
     knowledge: kn.knowledge,
+    ...(observations ? { observations } : {}),
     ...(fixtures ? { marker: marker!, fixtures: fixtures.summary(opts.pendingFromPreviousRuns ?? []), mutations: fixtures.mutations } : {}),
   };
   if (!opts.flows || !flowOutcome) return { run, proposals: kn.proposals, ...(clientFindings ? { clientFindings } : {}), ...(pageModels ? { pageModels } : {}) };
