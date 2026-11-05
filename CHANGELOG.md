@@ -5,6 +5,8 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Fixed
+- safe-validate review fixes: a `logout` step on a fixture `cleanup_actor` is now refused at runtime as well as by lint, so cleanup always keeps its session. Lint now requires `fixture_create` to run as the fixture `owner_actor` (previously only a runtime ERROR). Browser login flows now stop on the first signal like other flows.
+- Threat model IDs were duplicated: the console-output and visual-driver rows reused TM-30 and TM-31 from the analyzer rows. They are now TM-36 and TM-37.
 - The local gate gave the test suite only 5 minutes; the suite now takes about 4, so a slow or busy machine turned GATE-02 into a FAIL with `pass=?`. The limit is 15 minutes, and a timeout is reported as such.
 - `safety.mode: safe-validate` was accepted for `environment: staging`, because the check compared the environment name instead of the profile. Every production-profile environment (staging, production, unrecognized) is now limited to observe.
 

@@ -498,6 +498,7 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
         manifest: m, gate, env, actors: actorMap, actorSkipReasons: new Map(), onDenied: (url, method, reason) => denials.push({ url, method, reason }), displayUrl: (u) => redactor.url(u),
         securityChecks: (ex, actor, url) => perExchange(ex, actor, url).filter((c) => !disabled.has(c.ruleId)), browser: flowBrowser!, fixtures: fixtures!, marker: marker!,
         send: async (q) => {
+          if (fixtures?.stopped) throw new BudgetExceeded(`stopped: ${fixtures.stopped}`);
           try {
             const ex = await http.send({ method: q.method, url: q.url, displayUrl: q.displayUrl, actor: q.actor, flow: q.flow, headers: { ...q.headers, "x-navsentry-run": runId } });
             exchanges.push(ex);

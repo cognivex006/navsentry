@@ -143,3 +143,19 @@ test("10: NSC-AUTH-002 — vulnerable FAIL, secure PASS; the actor is logged out
   const errs = lintFlows([flow(["alice"], [LOGOUT])], m).errors.join("\n");
   assert.match(errs, /cleanup_actor of orders; logging it out would leave fixtures behind/);
 });
+
+test("review: a logout of a cleanup_actor is refused at runtime too; fixture_create must run as owner_actor (lint)", async () => {
+  const s = await startFixtureServer("secure");
+  try {
+    const m = manifest(s.origin, "reader_a", { fixtures: { orders: { ...fixture("reader_a"), cleanup_actor: "alice" } } });
+    const out = await executeTest(m, { env: ENV, flows: [flow(["alice"], [LOGOUT])], flowsOnly: true, fixtureWorkDir: mkdtempSync(join(tmpdir(), "ns-svc-")) });
+    const st = out.flowRun!.flows[0]!.steps[0]!;
+    assert.equal(st.status, "ERROR");
+    assert.match(st.reason!, /cleanup_actor of orders; logout refused/);
+    assert.ok(!s.log.includes("POST /api/session/logout"));
+  } finally {
+    await s.close();
+  }
+  const errs = lintFlows([flow(["reader_b"], [{ ...CREATE, actor: "reader_b" }])], manifest("http://127.0.0.1:9")).errors.join("\n");
+  assert.match(errs, /is created by its owner_actor reader_a/);
+});
