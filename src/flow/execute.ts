@@ -118,7 +118,7 @@ function uiReason(s: FlowStep): string {
 export function manualLine(s: FlowStep): string {
   const t = s.target;
   const what = !t ? "" : "role" in t ? `${t.role} “${t.name}”` : "label" in t ? `field “${t.label}”` : "text" in t ? `text “${t.text}”` : `element [data-testid=${t.test_id}]`;
-  const verb = { click: "click", select: "select an option in", fill: "fill", submit: "submit", see: "check that you can see", wait_for: "wait until you can see", http: "request", navigate: "open", fixture_create: "create the declared fixture", logout: "log out, then repeat the read with the old session:" }[s.action];
+  const verb = { click: "click", select: "select an option in", fill: "fill", submit: "submit", see: "check that you can see", wait_for: "wait until you can see", http: "request", navigate: "open", fixture_create: "create the declared fixture", fixture_verify_gone: "check that the fixture object is gone", logout: "log out, then repeat the read with the old session:" }[s.action];
   const value = s.value ? ` with the value of variable ${s.value.var} (not shown)` : "";
   return `${s.id} — as ${s.actor}: ${verb} ${what}${value}`;
 }
@@ -174,6 +174,17 @@ async function runDoc(doc: FlowDoc, ctx: FlowContext, budget: { exhausted?: stri
     if (!actorHeaders) { skip(`actor ${s.actor} not tested: ${ctx.actorSkipReasons.get(s.actor) ?? "not usable"}`); continue; }
     const dep = (s.depends_on ?? []).find((d) => byId.get(d)?.result.status !== "PASS");
     if (dep) { skip(`dependency ${dep} did not pass`); continue; }
+    if (s.action === "fixture_verify_gone") {
+      if (!ctx.fixtures) { skip("fixture_verify_gone needs safety.mode safe-validate with declared fixtures"); continue; }
+      const id = vars.get(s.var!);
+      if (id === undefined) { skip(varMissing.get(s.var!) ?? `variable ${s.var} has no value`); continue; }
+      const o = await ctx.fixtures.verifyGone(id, { id: doc.header.id, step: s.id });
+      res.requestIds.push(...o.requestIds);
+      res.status = o.status;
+      if (o.reason) res.reason = o.reason;
+      if (o.status === "PASS" || o.status === "FAIL") res.assertions = [{ kind: "fixture", status: o.status, expected: "object gone (verify_gone)", observed: o.status === "PASS" ? "gone" : o.reason! }];
+      continue;
+    }
     if (s.action === "fixture_create") {
       if (!ctx.fixtures) { skip("fixture_create needs safety.mode safe-validate with declared fixtures"); continue; }
       const o = await ctx.fixtures.create(s.fixture!, s.actor, { id: doc.header.id, step: s.id }, approved);

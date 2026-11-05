@@ -243,3 +243,23 @@ test("7: refused DELETE and an object still present are leftovers; the sweep rep
   const next = await run("secure", [{ id: "S1", action: "http", actor: "reader_a", request: { method: "GET", path: "/api/ok" }, expect: { status: [200] } }], {}, { pendingFromPreviousRuns: pend.map((p) => ({ ...p, workDir: "dead" })) });
   assert.equal(next.run.fixtures!.pendingFromPreviousRuns!.length, 1);
 });
+
+test("fixture_verify_gone: PASS after a declared delete, FAIL while the object exists; cleanup still runs; lint needs a producer", async () => {
+  const withDelete = { orders: { ...ORDERS, allowed_mutations: [...ORDERS.allowed_mutations, { method: "DELETE", path: "/api/test-fixtures/orders/{{id}}", content_type: "application/json" }] } };
+  const DEL = { id: "S2", action: "http", actor: "reader_a", fixture: "orders", request: { method: "DELETE", path: "/api/test-fixtures/orders/{{orderA}}" }, expect: { status: [204] } };
+  const GONE = { id: "S3", action: "fixture_verify_gone", actor: "reader_a", var: "orderA" };
+  const gone = await run("secure", [CREATE, DEL, GONE], { fixtures: withDelete });
+  assert.equal(gone.flowRun!.flows[0]!.steps[2]!.status, "PASS", gone.flowRun!.flows[0]!.steps[2]!.reason);
+  assert.equal(gone.run.executionStatus, "COMPLETE", gone.run.incompleteReasons.join("; "));
+  assert.equal(gone.run.fixtures!.leftovers.length, 0, "a 404 on cleanup counts as done");
+
+  const present = await run("secure", [CREATE, { ...GONE, id: "S2" }]);
+  assert.equal(present.flowRun!.flows[0]!.steps[1]!.status, "FAIL");
+  assert.match(present.flowRun!.flows[0]!.steps[1]!.reason!, /still present/);
+  assert.ok(present.log.includes("DELETE /api/test-fixtures/orders/o1"), "cleanup still runs");
+
+  const m = manifest("http://127.0.0.1:9");
+  assert.match(lintFlows([flow({ ...GONE, id: "S1" })], m).errors.join("\n"), /not created by an earlier fixture_create/);
+  const noVerify = manifest("http://127.0.0.1:9", { fixtures: { orders: { ...ORDERS, verify_gone: undefined } } });
+  assert.match(lintFlows([flow(CREATE, { ...GONE, id: "S2" })], noVerify).errors.join("\n"), /declares no verify_gone/);
+});

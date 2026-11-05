@@ -49,7 +49,7 @@ Examples: [examples/flows/](../examples/flows/) (Integration with access control
 | Key | Rules |
 |---|---|
 | `id` | `S1`, `S2`, … unique within the flow |
-| `action` | `http`, `navigate`, `click`, `fill`, `select`, `submit`, `see`, `wait_for`, `fixture_create` and `logout` (safe-validate) |
+| `action` | `http`, `navigate`, `click`, `fill`, `select`, `submit`, `see`, `wait_for`, `fixture_create`, `fixture_verify_gone` and `logout` (safe-validate) |
 | `actor` | Must be listed in the header's `actors` |
 | `request` | `http`/`navigate` only: `{method, path, query?, accept?}`. `path` starts with `/` and contains no query string, `..`, backslash or encoded separators. A `{{var}}` placeholder must be a whole path segment or a whole query value. `accept` is `json`, `text` or `any`; `navigate` always sends an HTML `Accept`. Custom headers are not supported: credentials come only from manifest actors. |
 | `target` | UI actions only: exactly one of `{role, name}`, `{label}`, `{text}`, `{test_id}` |
@@ -137,6 +137,7 @@ Steps:
 
 - `fixture_create` runs as the fixture's `owner_actor`. It holds the cleanup reserve, writes a pending intent, creates the object, validates the id and registers it for cleanup, then runs `exists` as the positive control. A failed `exists` makes the step ERROR, and the object is still cleaned.
 - A mutation step must match one `allowed_mutations` entry exactly: the same method, and the same path once each variable segment becomes `{{id}}`. Every variable in its path must pass the id rule `^[A-Za-z0-9_-]{1,128}$`. It never follows redirects and takes no query.
+- `{ "action": "fixture_verify_gone", "actor": "reader_a", "var": "orderA" }` checks mid-flow, through the fixture's `verify_gone` as `cleanup_actor`, that an object this run created is gone (for example after a declared DELETE). Gone is PASS, still present is FAIL. The object stays registered, so cleanup still runs; a 404 there counts as done. The variable must come from an earlier `fixture_create`, and the fixture must declare `verify_gone`.
 - Cleanup has no step. It always runs at the end, in reverse order, as `cleanup_actor`, including after failures, after the limits are hit and on Ctrl+C. Do not write delete steps.
 - A run that leaves anything behind, or loses a create's response, is `FAILED` (exit 2). REPORT.md lists each leftover with the exact manual action.
 
