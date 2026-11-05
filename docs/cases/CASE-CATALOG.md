@@ -2929,7 +2929,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 |---|---|
 | Severity (default) | high |
 | Priority | 🔴 ต้องแก้ทันที (IMMEDIATE) |
-| Automation | planned-auto — วางแผนให้ตรวจอัตโนมัติ (M2) |
+| Automation | planned-auto — วางแผนให้ตรวจอัตโนมัติ (active-approved (design)) |
 | OWASP Top 10:2025 | A05:2025 Injection |
 | OWASP Top 10:2021 | A03:2021 Injection |
 | CWE | CWE-79 |
@@ -2944,7 +2944,7 @@ Input is reflected into HTML/JS without context-aware encoding.
 
 **EVIDENCE (หลักฐานที่ต้องเก็บ)**
 
-- Benign, non-executing marker reflection context observed in a real browser (planned M2)
+- safe-validate records where the run marker (letters, digits and hyphens only) comes back in an attribute or script context, as a fact in run.json observations. That is not proof of XSS: testing output encoding needs an injection payload, which only a future active-approved mode may send
 
 **ACCEPTANCE CRITERIA (เกณฑ์ผ่าน)**
 
@@ -2953,11 +2953,16 @@ Input is reflected into HTML/JS without context-aware encoding.
 
 **ตรวจซ้ำบนหน้าเว็บจริง (Web recheck)**
 
+- [ ] Review the observed reflection contexts with the developer
 - [ ] Search for a term like <b>test</b>: the page shows the literal text, not bold
 
 **แนวทางแก้ (Fix)** — Use framework auto-escaping, context-aware encoders, and avoid innerHTML/dangerouslySetInnerHTML with user data.
 
 **⚠️ ผลกระทบต่อผู้ใช้จริง / Regression guard** — Fields that legitimately contain rich text must go through a vetted HTML sanitizer, not be double-encoded.
+
+**Caveats / False positive**
+
+- Stays NOT_TESTED in observe and safe-validate: a marker reflection is reported as an observation, never as a case result.
 
 <details><summary>Prompt: VERIFY (ตรวจสอบ)</summary>
 
@@ -2971,15 +2976,19 @@ FACT to test:
 Input is reflected into HTML/JS without context-aware encoding.
 
 Collect EVIDENCE (redact tokens, cookies, PII, internal IPs BEFORE writing anything):
-- Benign, non-executing marker reflection context observed in a real browser (planned M2)
+- safe-validate records where the run marker (letters, digits and hyphens only) comes back in an attribute or script context, as a fact in run.json observations. That is not proof of XSS: testing output encoding needs an injection payload, which only a future active-approved mode may send
 
 Method:
 1. navsentry validate --config <MANIFEST>  then  navsentry test --config <MANIFEST> --out runs/before
 2. Read runs/before/run.json coverage row "NSC-INJ-004" and any finding with ruleId "NSC-INJ-004".
 3. This case is "planned-auto" — NavSentry alone cannot conclude it. Gather the evidence above manually:
+   - Review the observed reflection contexts with the developer
    - Search for a term like <b>test</b>: the page shows the literal text, not bold
 4. Decide exactly one status: PASS | FAIL | INCONCLUSIVE | NOT_TESTED | ERROR, with a reason.
    Missing evidence is never PASS. Pattern-only evidence stays SUSPECTED until a human confirms.
+
+Known caveats / false positives:
+- Stays NOT_TESTED in observe and safe-validate: a marker reflection is reported as an observation, never as a case result.
 
 Output: an ISSUE entry (template docs/reports/templates/ISSUE.md) with ID NSC-INJ-004, status,
 fingerprint(s), evidence list and this checklist:
@@ -3029,6 +3038,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 1. Re-run: navsentry test --config <MANIFEST> --out runs/recheck ; coverage "NSC-INJ-004" must be PASS
    (or a documented, owner-approved DISMISSED/Exception).
 2. On the real web page / endpoint:
+   - [ ] Review the observed reflection contexts with the developer
    - [ ] Search for a term like <b>test</b>: the page shows the literal text, not bold
 3. Regression: main user flows still work and compare shows no unexplained contract drift.
 4. Verdict QA-PASS or QA-FAIL. On QA-FAIL you MUST write improvement criteria
@@ -6249,7 +6259,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 |---|---|
 | Severity (default) | medium |
 | Priority | 🟡 รอได้ / วางแผนแก้ (PLANNED) |
-| Automation | planned-auto — วางแผนให้ตรวจอัตโนมัติ (M2) |
+| Automation | flow — ตรวจอัตโนมัติเมื่อมี Flow ที่เจ้าของระบุว่าต้องถูกปฏิเสธการเข้าถึง (docs/FLOWS.md) |
 | OWASP Top 10:2025 | A06:2025 Insecure Design |
 | OWASP Top 10:2021 | A04:2021 Insecure Design |
 | CWE | CWE-840 |
@@ -6264,10 +6274,12 @@ Workflow steps can be skipped, repeated or reordered, or limits bypassed, using 
 
 **EVIDENCE (หลักฐานที่ต้องเก็บ)**
 
-- Fixture-based scenario with bounded state, cleanup and rollback
+- Owner-declared fixture invariants (JSON pointer with >=, <=, ==, != or in) and forbidden transitions, evaluated on the object as exists returns it before cleanup; rule names and declared values only, observed values withheld
 
 **ACCEPTANCE CRITERIA (เกณฑ์ผ่าน)**
 
+- [ ] Every declared invariant holds after the flow's legitimate requests
+- [ ] No declared forbidden transition happened
 - [ ] Each scenario's negative control is rejected and positive control succeeds
 
 **ตรวจซ้ำบนหน้าเว็บจริง (Web recheck)**
@@ -6277,6 +6289,11 @@ Workflow steps can be skipped, repeated or reordered, or limits bypassed, using 
 **แนวทางแก้ (Fix)** — Enforce state machines and limits server-side.
 
 **⚠️ ผลกระทบต่อผู้ใช้จริง / Regression guard** — Encode legitimate edge flows (corrections, re-submission by approver) as positive controls.
+
+**Caveats / False positive**
+
+- NavSentry never invents an invariant: without owner-declared rules the case is NOT_TESTED.
+- Transitions compare the value right after create with the value before cleanup; intermediate states are not seen.
 
 <details><summary>Prompt: VERIFY (ตรวจสอบ)</summary>
 
@@ -6290,15 +6307,19 @@ FACT to test:
 Workflow steps can be skipped, repeated or reordered, or limits bypassed, using only legitimate requests.
 
 Collect EVIDENCE (redact tokens, cookies, PII, internal IPs BEFORE writing anything):
-- Fixture-based scenario with bounded state, cleanup and rollback
+- Owner-declared fixture invariants (JSON pointer with >=, <=, ==, != or in) and forbidden transitions, evaluated on the object as exists returns it before cleanup; rule names and declared values only, observed values withheld
 
 Method:
 1. navsentry validate --config <MANIFEST>  then  navsentry test --config <MANIFEST> --out runs/before
 2. Read runs/before/run.json coverage row "NSC-BIZ-001" and any finding with ruleId "NSC-BIZ-001".
-3. This case is "planned-auto" — NavSentry alone cannot conclude it. Gather the evidence above manually:
+3. Requires a flow with access: denied and a positive control (docs/FLOWS.md); then confirm in a real browser:
    - Walk the workflow in a browser as a normal user
 4. Decide exactly one status: PASS | FAIL | INCONCLUSIVE | NOT_TESTED | ERROR, with a reason.
    Missing evidence is never PASS. Pattern-only evidence stays SUSPECTED until a human confirms.
+
+Known caveats / false positives:
+- NavSentry never invents an invariant: without owner-declared rules the case is NOT_TESTED.
+- Transitions compare the value right after create with the value before cleanup; intermediate states are not seen.
 
 Output: an ISSUE entry (template docs/reports/templates/ISSUE.md) with ID NSC-BIZ-001, status,
 fingerprint(s), evidence list and this checklist:
@@ -6332,6 +6353,8 @@ Steps:
    Required: NSC-BIZ-001 in "Fixed" AND no unexplained "Legitimate-response contract drift".
 
 ACCEPTANCE CRITERIA:
+- [ ] Every declared invariant holds after the flow's legitimate requests
+- [ ] No declared forbidden transition happened
 - [ ] Each scenario's negative control is rejected and positive control succeeds
 - [ ] compare verdict IMPROVED_NO_DRIFT (or every drift row approved by the owner in writing)
 - [ ] Changed files + commit recorded in a FIX entry (template docs/reports/templates/FIX.md)

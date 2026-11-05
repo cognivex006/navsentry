@@ -9,6 +9,10 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 - `safety.mode: safe-validate` was accepted for `environment: staging`, because the check compared the environment name instead of the profile. Every production-profile environment (staging, production, unrecognized) is now limited to observe.
 
 ### Added
+- safe-validate milestone 0.2.0-d (SPEC-0.2.0, development profile only).
+  - **NSC-BIZ-001** moves to `flow` automation. Fixtures may declare `invariants` (JSON pointer with `>=`, `<=`, `==`, `!=` or `in`) and `forbidden_transitions` (pointer, from, to). They are evaluated on each object through `exists` before cleanup. A violation is FAIL; without declared rules the case is NOT_TESTED. Observed values are never recorded.
+  - **NSC-INJ-004:** run marker reflections inside an HTML attribute or `<script>` element are recorded in the new `run.json → observations` and listed in REPORT.md. The case stays NOT_TESTED ("needs an injection payload (active-approved)").
+  - A fill step may use `{{marker}}`.
 - safe-validate milestone 0.2.0-c (SPEC-0.2.0, development profile only). Three cases move to `flow` automation:
   - **NSC-AC-003 modification:** a declared fixture mutation with `object_owner` and `access: denied`, judged against the owner's own mutation.
   - **NSC-AC-006 CSRF:** a new `check: "csrf"` mutation step and a `csrf` key on `allowed_mutations` entries. The step sends a token-less probe, a probe from the reserved origin `https://navsentry-csrf-probe.invalid`, and a same-origin control. Cookie-session actors only.

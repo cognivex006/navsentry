@@ -6,7 +6,10 @@
 import http from "node:http";
 import type { AddressInfo } from "node:net";
 
-/** `vulnerable`: no ownership check on PATCH (AC-003), no CSRF check on cancel (AC-006), logout keeps the session (AUTH-002). */
+/**
+ * `vulnerable`: no ownership check on PATCH (AC-003), no CSRF check on cancel (AC-006), logout keeps the session
+ * (AUTH-002), and PATCH applies any total/status (BIZ-001). `secure` refuses a negative total or a refund of an open order with 422.
+ */
 export type FixtureMode = "secure" | "vulnerable" | "create-reset" | "create-truncated" | "bad-id" | "delete-500" | "stays" | "patch-redirect";
 
 /** Synthetic test credentials (not secrets). */
@@ -48,6 +51,7 @@ export async function startFixtureServer(mode: FixtureMode = "secure"): Promise<
   let pendingHold: http.ServerResponse | undefined;
   const sessions = new Set<string>([FIXTURE_LOGIN.presetCookie.split("=")[1]!]);
   const owners = new Map<string, string>();
+  const data = new Map<string, { note: string; total: number; status: string }>();
   let selfOrigin = "";
   const cookieOf = (h: string | undefined, name: string) => new RegExp(`(?:^|;\\s*)${name}=([^;]+)`).exec(h ?? "")?.[1];
   const ADMIN = new Set(["Bearer sv-fixture-admin"]);
@@ -88,16 +92,35 @@ export async function startFixtureServer(mode: FixtureMode = "secure"): Promise<
         const id = mode === "bad-id" ? ".." : `o${++n}`;
         objects.add(id);
         owners.set(id, q.headers.authorization ?? cookieOf(q.headers.cookie, "sid") ?? "");
+        let note = "";
+        try { note = String((JSON.parse(body) as { note?: unknown }).note ?? ""); } catch { /* no note */ }
+        data.set(id, { note, total: 10, status: "open" });
         if (mode === "create-truncated") { res.writeHead(201, { "content-type": "application/json", "content-length": "200" }); res.write(`{"id":"${id}"`); setTimeout(() => res.socket?.destroy(), 20); return; }
         return json(res, 201, { id });
       }
       const m = path.match(/^\/api\/orders\/([^/]+)$/);
-      if (m && q.method === "GET") return objects.has(m[1]!) ? json(res, 200, { id: m[1], note: "x" }) : json(res, 404, { error: "not found" });
+      const view = path.match(/^\/ui\/orders\/([A-Za-z0-9_-]+)$/);
+      if (view && objects.has(view[1]!)) {
+        const note = (data.get(view[1]!)?.note ?? "").replace(/[^A-Za-z0-9-]/g, "");
+        return html(`<!doctype html><title>Order</title><h1>Order</h1><div title="${note}">Order note</div><script>var note = "${note}";</script>`);
+      }
+      const show = (id: string) => ({ id, ...(data.get(id) ?? { note: "x", total: 0, status: "open" }) });
+      if (m && q.method === "GET") return objects.has(m[1]!) ? json(res, 200, show(m[1]!)) : json(res, 404, { error: "not found" });
       if (m && q.method === "PATCH") {
         if (mode === "patch-redirect") return res.writeHead(307, { location: "/api/undeclared" }).end();
         const who = q.headers.authorization ?? cookieOf(q.headers.cookie, "sid") ?? "";
         if (mode !== "vulnerable" && objects.has(m[1]!) && owners.get(m[1]!) !== who && !ADMIN.has(who)) return json(res, 403, { error: "forbidden" });
-        return objects.has(m[1]!) ? json(res, 200, { id: m[1], note: "x" }) : json(res, 404, { error: "not found" });
+        if (!objects.has(m[1]!)) return json(res, 404, { error: "not found" });
+        let patch: { total?: unknown; status?: unknown } = {};
+        try { patch = JSON.parse(body); } catch { /* empty patch */ }
+        const cur = data.get(m[1]!);
+        if (cur) {
+          const total = typeof patch.total === "number" ? patch.total : cur.total;
+          const status = typeof patch.status === "string" ? patch.status : cur.status;
+          if (mode !== "vulnerable" && (total < 0 || (cur.status === "open" && status === "refunded"))) return json(res, 422, { error: "rule" });
+          Object.assign(cur, { total, status });
+        }
+        return json(res, 200, show(m[1]!));
       }
       const cancel = path.match(/^\/api\/orders\/([^/]+)\/cancel$/);
       if (cancel && q.method === "POST") {

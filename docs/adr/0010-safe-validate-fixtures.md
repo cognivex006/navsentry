@@ -64,3 +64,13 @@ Evidence: `test/safe-validate-b.test.ts` covers SPEC-0.2.0 tests 2 (browser), 12
 4. Form-encoded fixture mutations: an entry with `content_type: application/x-www-form-urlencoded` receives the step's flat JSON body form-encoded.
 
 Evidence: `test/safe-validate-c.test.ts` runs SPEC-0.2.0 tests 8–10 against vulnerable and secure fixture variants on 127.0.0.1.
+
+## Addendum — 0.2.0-d (2026-11-05)
+1. **NSC-BIZ-001.** Fixtures may declare `invariants` (a JSON pointer with `>=`, `<=`, `==`, `!=` or `in`) and `forbidden_transitions` (pointer, from, to).
+   - Before cleanup, the lifecycle reads each object through `exists` as `cleanup_actor` and evaluates the rules.
+   - Transition start values are captured from the `exists` read right after create.
+   - Observed values stay in memory; reports show rule names and declared values only.
+   - Without any rule the case is NOT_TESTED. NavSentry never invents an invariant.
+2. **NSC-INJ-004.** HTML responses are scanned for the run marker. A reflection inside a tag or a `<script>` element becomes `run.json → observations` (context, count, URL), and REPORT.md lists it under *Marker reflections*. The case is always NOT_TESTED with the reason "needs an injection payload (active-approved)". A fill step may use `{{marker}}`.
+
+Evidence: `test/safe-validate-d.test.ts` runs SPEC-0.2.0 tests 11 and 14 on 127.0.0.1. With 0.2.0-d, every SPEC-0.2.0 acceptance test (1–15) has a test.
