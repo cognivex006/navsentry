@@ -4,6 +4,8 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-05
+
 ### Fixed
 - safe-validate review fixes: a `logout` step on a fixture `cleanup_actor` is now refused at runtime as well as by lint, so cleanup always keeps its session. Lint now requires `fixture_create` to run as the fixture `owner_actor` (previously only a runtime ERROR). Browser login flows now stop on the first signal like other flows.
 - Threat model IDs were duplicated: the console-output and visual-driver rows reused TM-30 and TM-31 from the analyzer rows. They are now TM-36 and TM-37.
