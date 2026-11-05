@@ -12,7 +12,8 @@ import { randomBytes } from "node:crypto";
 import { closeSync, existsSync, lstatSync, mkdirSync, openSync, readFileSync, readdirSync, realpathSync, rmdirSync, statSync, unlinkSync, writeFileSync, writeSync } from "node:fs";
 import { hostname } from "node:os";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
-import type { WorkspaceResult } from "./types.js";
+import { readPending } from "./fixtures/lifecycle.js";
+import type { PendingFixture, WorkspaceResult } from "./types.js";
 
 export const STATE_DIR = ".navsentry";
 export const INPUT_DIR = "navsentry";
@@ -162,11 +163,13 @@ export function releaseWorkDir(w: WorkDir): void {
 export interface SweepResult {
   removed: string[];
   preserved: { dir: string; reason: string }[];
+  /** safe-validate (SPEC-0.2.0 §6.2): pending fixture intents read from stale dirs before removal. Reported, never acted on. */
+  pendingFixtures: (PendingFixture & { workDir: string })[];
 }
 
 /** Removes only same-host work directories whose ownership is proven stale (§7.2 step 3). */
 export function sweepStale(root: string, opts: { dryRun?: boolean; self?: Lock } = {}): SweepResult {
-  const out: SweepResult = { removed: [], preserved: [] };
+  const out: SweepResult = { removed: [], preserved: [], pendingFixtures: [] };
   const base = join(root, STATE_DIR, "work");
   const st = lstatSync(base, { throwIfNoEntry: false });
   if (!st) return out;
@@ -178,6 +181,7 @@ export function sweepStale(root: string, opts: { dryRun?: boolean; self?: Lock }
     if (!ds.isDirectory() || ds.isSymbolicLink()) { out.preserved.push({ dir: name, reason: "not a plain directory" }); continue; }
     const s = staleness(dir, opts.self);
     if (!s.stale) { out.preserved.push({ dir: name, reason: s.reason }); continue; }
+    for (const e of readPending(dir)) out.pendingFixtures.push({ ...e, workDir: name });
     if (opts.dryRun) { out.removed.push(name); continue; }
     try {
       // Re-verify just before the mutation.
@@ -275,7 +279,7 @@ export interface RunWorkspace {
 }
 
 /** Sweeps stale work, snapshots the tree, creates this run's work dir, and arms signal cleanup. */
-export function beginRun(projectDir: string, runId: string, ignore: string[]): RunWorkspace {
+export function beginRun(projectDir: string, runId: string, ignore: string[], opts: { coordinatedSignals?: boolean } = {}): RunWorkspace {
   const root = projectRoot(projectDir);
   ensureStateDir(root);
   const sweep = sweepStale(root);
@@ -286,8 +290,11 @@ export function beginRun(projectDir: string, runId: string, ignore: string[]): R
     try { releaseWorkDir(work); } catch { /* reported on the next run's sweep */ }
     process.exit(sig === "SIGINT" ? 130 : 143);
   };
-  process.once("SIGINT", onSignal);
-  process.once("SIGTERM", onSignal);
+  // safe-validate runs use the SignalCoordinator instead: cleanup must run before the exit (SPEC-0.2.0 §6.2).
+  if (!opts.coordinatedSignals) {
+    process.once("SIGINT", onSignal);
+    process.once("SIGTERM", onSignal);
+  }
   const dispose = () => { process.off("SIGINT", onSignal); process.off("SIGTERM", onSignal); };
   return { root, work, before, sweep, ignore, authorized: new Set(), dispose };
 }

@@ -109,6 +109,29 @@ export function globToRegExp(glob: string): RegExp {
   return new RegExp(`^${re}$`);
 }
 
+/** One placeholder value in a mutation path (SPEC-0.2.0 §3.3): never ".", "..", empty, or anything URL-special. */
+export const MUTATION_ID = /^[A-Za-z0-9_-]{1,128}$/;
+
+/** Validates an identifier from a create response or a run variable before it is put in a path. */
+export function validMutationId(v: unknown): string | undefined {
+  const s = typeof v === "number" && Number.isSafeInteger(v) && v >= 0 ? String(v) : v;
+  return typeof s === "string" && MUTATION_ID.test(s) ? s : undefined;
+}
+
+/** A path template with `{{id}}` segments as an anchored matcher for one id-shaped segment each. */
+export function templateRegExp(template: string): RegExp {
+  const esc = template.split("{{id}}").map((x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("[A-Za-z0-9_-]{1,128}");
+  return new RegExp(`^${esc}$`);
+}
+
+/** Fills `{{id}}` with a validated id. Throws on an invalid id so no URL is ever built from one. */
+export function fillTemplate(template: string, id: string | undefined): string {
+  if (!template.includes("{{id}}")) return template;
+  const ok = validMutationId(id);
+  if (!ok) throw new Error("identifier rejected by the safe-validate id rule");
+  return template.split("{{id}}").join(ok);
+}
+
 export class ScopeGate {
   private readonly origins: Set<string>;
   private readonly allowed: RegExp[];
@@ -124,8 +147,33 @@ export class ScopeGate {
     this.privateHosts = new Set(manifest.network.allow_private.map((a) => a.host));
   }
 
+  /**
+   * safe-validate (SPEC-0.2.0 §3.3, S13): a non-observe request is allowed only when it matches a declared
+   * entry exactly. Same URL, origin, path-glob and address checks as `checkRequest`; then the method must
+   * equal the entry's and the *parsed, normalised* pathname must match the entry's template with one whole
+   * segment per `{{id}}`. `checkRequest` itself keeps refusing every non-observe method.
+   */
+  checkMutation(rawUrl: string, method: HttpMethod, entry: { method: string; path: string }): Decision {
+    if (this.manifest.safety.mode !== "safe-validate" || this.manifest.profile !== "development") return deny("mutations need safety.mode safe-validate in the development profile");
+    if (method !== entry.method) return deny(`method ${method} does not match the declared ${entry.method}`);
+    const base = this.checkPath(rawUrl);
+    if (!base.allowed) return base;
+    const path = new URL(rawUrl).pathname;
+    if (!templateRegExp(entry.path).test(path)) return deny(`path ${path} does not match the declared template ${entry.path}`);
+    return ALLOW;
+  }
+
   /** Static (pre-DNS) check of a URL + method. */
   checkRequest(rawUrl: string, method: HttpMethod): Decision {
+    if (!this.methods.has(method)) {
+      const d = this.checkPath(rawUrl);
+      return d.allowed ? deny(`method ${method} is not in safety.allowed_methods`) : d;
+    }
+    return this.checkPath(rawUrl);
+  }
+
+  /** URL, origin, path-glob and literal-address checks shared by observe and mutation requests. */
+  private checkPath(rawUrl: string): Decision {
     let u: URL;
     try {
       u = new URL(rawUrl);
@@ -135,7 +183,6 @@ export class ScopeGate {
     if (u.protocol !== "https:" && u.protocol !== "http:") return deny(`scheme ${u.protocol} is not allowed`);
     if (u.username || u.password) return deny("URLs with embedded credentials are not allowed");
     if (!this.origins.has(u.origin)) return deny(`origin ${u.origin} is not in targets.origins`);
-    if (!this.methods.has(method)) return deny(`method ${method} is not in safety.allowed_methods`);
     // Ambiguous encodings can bypass path rules on some servers; refuse rather than guess.
     if (/%2e|%2f|%5c|%00/i.test(u.pathname)) return deny("encoded dot, slash, backslash or NUL in path");
     const path = u.pathname;

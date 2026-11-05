@@ -7,7 +7,7 @@ import { SECURITY_HEADERS } from "../contract.js";
 import { Redactor } from "../redact.js";
 import { ScopeGate } from "../scope.js";
 import { classify, flowHash, requestTemplate } from "./classify.js";
-import { UI_ACTIONS, type FlowDoc, type FlowStep } from "./parse.js";
+import { MUTATION_METHODS, UI_ACTIONS, type FlowDoc, type FlowStep } from "./parse.js";
 
 export const VAR_SENTINEL = "navsentry-var";
 const PLACEHOLDER = /^\{\{([a-z][a-zA-Z0-9_]{0,31})\}\}$/;
@@ -86,6 +86,13 @@ function lintDoc(doc: FlowDoc, m: Manifest, gate: ScopeGate, red: Redactor, E: s
     for (const d of s.depends_on ?? []) if (!seen.has(d)) at(L, "/depends_on", `${d} is not an earlier step`);
     seen.add(s.id);
     literal(L, "/title", s.title);
+    if (s.action === "fixture_create") {
+      // safe-validate (SPEC-0.2.0 §4.2): the fixture must be declared in the manifest; the id becomes a variable.
+      if (m.safety.mode !== "safe-validate") at(L, "/action", "fixture_create needs safety.mode safe-validate");
+      else if (!s.fixture || !m.fixtures[s.fixture]) at(L, "/fixture", `fixture "${s.fixture}" is not declared in the manifest fixtures`);
+      if (s.as) defined.add(s.as);
+      continue;
+    }
     const ui = UI_ACTIONS.has(s.action);
     if (ui) {
       if (s.request) at(L, "/request", "UI actions take target, not request");
@@ -97,7 +104,26 @@ function lintDoc(doc: FlowDoc, m: Manifest, gate: ScopeGate, red: Redactor, E: s
       if (s.target || s.value) at(L, "/target", "http/navigate steps take request, not target/value");
       if (!s.request) { at(L, "/request", "required"); continue; }
       const r = s.request;
-      if (!m.safety.allowed_methods.includes(r.method)) at(L, "/request/method", `${r.method} is not in the manifest safety.allowed_methods`);
+      const mutation = MUTATION_METHODS.has(r.method);
+      if (mutation) {
+        // S13 at lint time: the step must match one declared allowed_mutations entry exactly.
+        const fx = s.fixture ? m.fixtures[s.fixture] : undefined;
+        if (m.safety.mode !== "safe-validate") at(L, "/request/method", `${r.method} needs safety.mode safe-validate`);
+        else if (!fx) at(L, "/fixture", `fixture "${s.fixture}" is not declared in the manifest fixtures`);
+        else {
+          const tpl = r.path.split("/").map((seg) => (PLACEHOLDER.test(seg) ? "{{id}}" : seg)).join("/");
+          const entry = fx.allowed_mutations.find((e) => e.method === r.method && e.path === tpl);
+          if (!entry) at(L, "/request", `${r.method} ${tpl} matches no allowed_mutations entry of fixture "${s.fixture}"`);
+          else if (origin) {
+            const d = gate.checkMutation(new URL(fillPath(r.path, () => "x"), origin).toString(), r.method, entry);
+            if (!d.allowed) at(L, "/request/path", `out of scope: ${d.reason}`);
+          }
+        }
+        if (s.follow_redirects) at(L, "/follow_redirects", "mutation steps never follow redirects (SPEC-0.2.0 §3.3)");
+        if (s.action !== "http") at(L, "/action", "mutations are http steps");
+        if (r.query && Object.keys(r.query).length) at(L, "/request/query", "mutation steps take no query; put values in the body");
+      } else if (!m.safety.allowed_methods.includes(r.method)) at(L, "/request/method", `${r.method} is not in the manifest safety.allowed_methods`);
+      if (s.fixture && !mutation) at(L, "/fixture", "only on fixture_create and mutation steps");
       if (s.action === "navigate" && r.method !== "GET") at(L, "/request/method", "navigate is always GET");
       if (s.action === "navigate" && r.accept) at(L, "/request/accept", "navigate always accepts HTML");
       if (s.action === "http" && (r.accept as string) === "html") at(L, "/request/accept", "use a navigate step for HTML page loads");
@@ -108,7 +134,7 @@ function lintDoc(doc: FlowDoc, m: Manifest, gate: ScopeGate, red: Redactor, E: s
         else if (!PLACEHOLDER.test(v)) literal(L, `/request/query/${k}`, v);
       }
       for (const seg of r.path.split("/")) if (RISKY.test(seg)) warn(L, `path segment "${seg}" suggests a side effect on GET; confirm with the owner`);
-      check(L, "/request/path", fillPath(r.path, () => VAR_SENTINEL), r.method);
+      if (!mutation) check(L, "/request/path", fillPath(r.path, () => VAR_SENTINEL), r.method as "GET");
       const e = s.expect;
       if (!e || !Object.keys(e).length) at(L, "/expect", "an http/navigate step needs at least one expectation");
       if (e) {
@@ -116,7 +142,7 @@ function lintDoc(doc: FlowDoc, m: Manifest, gate: ScopeGate, red: Redactor, E: s
           if (SECURITY_HEADERS.has(hn) || FORBIDDEN_EXPECT_HEADERS.has(hn)) at(L, "/expect", `header "${hn}" is covered by the security checks, not by functional expectations`);
         }
         const bodyAssert = e.json || e.shape || e.text_present || e.text_absent || e.content_type;
-        if (r.method !== "GET" && bodyAssert) at(L, "/expect", "HEAD/OPTIONS steps support only status, headers and access");
+        if ((r.method === "HEAD" || r.method === "OPTIONS") && bodyAssert) at(L, "/expect", "HEAD/OPTIONS steps support only status, headers and access");
         if (e.access && r.method === "OPTIONS") at(L, "/expect/access", "access expectations need GET or HEAD");
         if (e.deny_status && e.access !== "denied") at(L, "/expect/deny_status", "only with access: denied");
         if (e.redirect_to) {

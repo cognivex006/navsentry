@@ -43,6 +43,15 @@ export interface HttpRequestSpec {
    * run's work directory. `budget` is the shared on-disk spool budget (capture.max_work_bytes).
    */
   spool?: { path: string; budget: { used: number; max: number } };
+  /**
+   * safe-validate only (SPEC-0.2.0 §3.3): the declared entry this non-observe request must match;
+   * the adapter then checks `ScopeGate.checkMutation` instead of `checkRequest`.
+   */
+  mutation?: { method: string; path: string };
+  /** Request body (mutations only). Its sha256 is recorded, never its content. */
+  body?: { contentType: string; data: Buffer };
+  /** Cleanup request: draws a slot held by `Budget.reserve`. */
+  fromReserve?: true;
 }
 
 /** In-memory raw response. Never persisted; only the redacted ObservedRequest is. */

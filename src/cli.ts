@@ -33,6 +33,8 @@ import { FLOW_ID, FlowError, loadFlowFiles, type FlowDoc } from "./flow/parse.js
 import { renderFlowSection, renderJunit, renderTestMarkdown, validateFlowRunResult } from "./report/flow-render.js";
 import type { Manifest } from "./config.js";
 import type { AnalyzerResult, CodeInventory, Engine, FlowRunResult, RunResult, ScanMode } from "./types.js";
+import type { FixtureLifecycle } from "./fixtures/lifecycle.js";
+import { SignalCoordinator } from "./fixtures/signals.js";
 import { WorkspaceError, authorize, cleanCache, beginRun, endRun, projectRoot, releaseWorkDir, sweepStale, workspaceStatus } from "./workspace.js";
 import { allAdapters } from "./transports/registry.js";
 import { ScopeGate } from "./scope.js";
@@ -229,15 +231,19 @@ interface RunOpts { analyze?: { extractors: string[]; draftsDir?: string }; asse
 async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<number> {
   for (const w of o.warnings ?? []) process.stderr.write(`warning: ${w}\n`);
   const runId = randomUUID();
-  const ws = beginRun(arg(argv, "--project") ?? process.cwd(), runId, m.workspace.ignore);
+  // safe-validate: signals go through the coordinator so cleanup runs before the exit (SPEC-0.2.0 §6.2).
+  const sv = m.safety.mode === "safe-validate";
+  const ws = beginRun(arg(argv, "--project") ?? process.cwd(), runId, m.workspace.ignore, { coordinatedSignals: sv });
+  const coord = sv ? new SignalCoordinator((code, lines) => { for (const l of lines) process.stderr.write(`${l}\n`); process.stderr.write("second signal: cleanup skipped; fixtures.pending.json kept for the next run's sweep\n"); process.exit(code); }).install() : undefined;
   let res: Awaited<ReturnType<typeof executeTest>>;
   const analyzer: AnalyzerResult | undefined = o.analyze ? { engine: "node-page-model", pages: 0, withheld: 0, incomplete: 0, includeText: m.analyzer.include_text, extractors: [], refused: [] } : undefined;
   let specs: ExtractorSpec[] = [];
   if (o.analyze && analyzer) specs = loadExtractors(ws.root, ws.work.path, o.analyze.draftsDir, analyzer);
   try {
-    res = await executeTest(m, { ...(o.analyze ? { analyze: { extractors: specs } } : {}), runId, ...(o.flows ? { flows: o.flows, flowsOnly: !!o.flowsOnly } : {}), ...(o.scanMode ? { scanMode: o.scanMode } : {}), ...(o.engine ? { engine: o.engine } : {}), ...(o.urls ? { urls: o.urls } : {}), ...(o.spider ? { spider: true } : {}), ...(o.browser ? { browser: {} } : {}),
+    res = await executeTest(m, { ...(sv ? { fixtureWorkDir: ws.work.path, onFixtures: (l: FixtureLifecycle) => coord!.attach(l), pendingFromPreviousRuns: ws.sweep.pendingFixtures } : {}), ...(o.analyze ? { analyze: { extractors: specs } } : {}), runId, ...(o.flows ? { flows: o.flows, flowsOnly: !!o.flowsOnly } : {}), ...(o.scanMode ? { scanMode: o.scanMode } : {}), ...(o.engine ? { engine: o.engine } : {}), ...(o.urls ? { urls: o.urls } : {}), ...(o.spider ? { spider: true } : {}), ...(o.browser ? { browser: {} } : {}),
       ...(o.assets ? { assets: true, workDir: ws.work.path, cacheDir: join(ws.root, ".navsentry", "cache", "assets") } : {}) });
   } catch (e) {
+    coord?.dispose();
     ws.dispose();
     try { releaseWorkDir(ws.work); } catch { /* reported by the next run's sweep */ }
     throw e;
@@ -271,6 +277,7 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
   }
   if (o.notTested?.length) { r.incompleteReasons.push(...o.notTested); if (r.executionStatus === "COMPLETE") r.executionStatus = "PARTIAL"; }
   for (const p of ws.sweep.preserved) r.incompleteReasons.push(`work directory preserved during sweep: ${p.reason}`);
+  if (ws.sweep.pendingFixtures.length) r.incompleteReasons.push(`${ws.sweep.pendingFixtures.length} fixture intent(s) from an interrupted run may be leftovers (see run.json fixtures.pendingFromPreviousRuns); NavSentry deleted nothing`);
   const outArg = arg(argv, "--out");
   const out = outArg ? resolve(outArg) : join(ws.root, ".navsentry", "runs", r.runId);
   mkdirSync(out, { recursive: true });
@@ -307,6 +314,9 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
   if (r.workspace.status === "FAIL") process.stderr.write(`WORKSPACE_DIRTY: created=${r.workspace.created.length} modified=${r.workspace.modified.length} deleted=${r.workspace.deleted.length} cleanup=${r.workspace.cleanup}\n`);
   print(`REPORT: ${join(out, "REPORT.md")}`);
   if (flowRun) print(`TEST-REPORT: ${join(out, "TEST-REPORT.md")}`);
+  for (const x of r.fixtures?.leftovers ?? []) process.stderr.write(`LEFTOVER ${x.fixture} ${x.displayId}: ${x.manualAction}\n`);
+  coord?.dispose();
+  if (coord?.signal) return coord.signal === "SIGINT" ? 130 : 143;
   return exitCode(r, flowRun);
 }
 

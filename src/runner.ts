@@ -1,5 +1,6 @@
 /** Plan (zero network) and execute (observe mode) runs. */
-import { createHash, randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { FixtureLifecycle, RequestRefused } from "./fixtures/lifecycle.js";
 import { Budget, BudgetExceeded, ByteBudget } from "./budget.js";
 import { CASES, getCase } from "./catalog.js";
 import * as P from "./checks/passive.js";
@@ -193,6 +194,14 @@ export interface ExecuteOptions {
   cacheDir?: string;
   /** `--engine playwright` (M1b): UI steps run in the browser engine; never a silent fallback (S6). */
   browser?: { probe?: () => PlaywrightProbe };
+  /** safe-validate: directory for `fixtures.pending.json` (the run work dir); creates are refused without it. */
+  fixtureWorkDir?: string;
+  /** Called once the fixture lifecycle exists, so the CLI's signal coordinator can stop it. */
+  onFixtures?: (l: FixtureLifecycle) => void;
+  /** Pending intents found by the sweep in stale work dirs (reported, never deleted). */
+  pendingFromPreviousRuns?: NonNullable<RunResult["fixtures"]>["pendingFromPreviousRuns"];
+  /** Tests only: delay before the single cleanup retry. */
+  fixtureRetryDelayMs?: number;
 }
 
 export async function executeRun(m: Manifest, opts: ExecuteOptions = {}): Promise<RunResult> {
@@ -232,6 +241,23 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
   };
   const runId = opts.runId ?? randomUUID();
   const chains: RedirectChain[] = [];
+  // safe-validate (SPEC-0.2.0 §3.5, §4.2): a per-run marker and the fixture lifecycle.
+  const marker = m.safety.mode === "safe-validate" ? `nsv-${randomBytes(8).toString("hex")}` : undefined;
+  const fixtures = marker ? new FixtureLifecycle({
+    manifest: m, budget, marker, origin: m.targets.origins[0]!, actors: new Map(usable.map((a) => [a.name, a.headers])),
+    send: async (spec) => {
+      try {
+        const ex = await http.send({ ...spec, headers: { ...spec.headers, "x-navsentry-run": runId } });
+        exchanges.push(ex);
+        return ex;
+      } catch (e) {
+        if (e instanceof ScopeDenied) throw new RequestRefused(e.message);
+        throw e;
+      }
+    },
+    ...(opts.fixtureWorkDir ? { workDir: opts.fixtureWorkDir } : {}), ...(opts.fixtureRetryDelayMs !== undefined ? { retryDelayMs: opts.fixtureRetryDelayMs } : {}),
+  }) : undefined;
+  if (fixtures) opts.onFixtures?.(fixtures);
 
   /**
    * GETs a URL and follows redirects hop by hop (≤ MAX_REDIRECTS), re-checking scope for every hop.
@@ -395,7 +421,9 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
         displayUrl: (u) => redactor.url(u),
         securityChecks: (ex, actor, url) => perExchange(ex, actor, url).filter((c) => !disabled.has(c.ruleId)),
         ...(flowBrowser ? { browser: flowBrowser } : {}),
+        ...(fixtures ? { fixtures, marker: marker! } : {}),
         send: async (q) => {
+          if (fixtures?.stopped) throw new BudgetExceeded(`stopped: ${fixtures.stopped}`);
           try {
             const ex = await http.send({ method: q.method, url: q.url, displayUrl: q.displayUrl, actor: q.actor, flow: q.flow, headers: { ...q.headers, "x-navsentry-run": runId } });
             exchanges.push(ex);
@@ -413,6 +441,12 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
     }
   }
 
+  // S14: cleanup runs at normal end, after failures and exhaustion, and on the first signal (≤ 30 s then).
+  if (fixtures) {
+    try { await fixtures.cleanupAll(fixtures.stopped ? 30_000 : undefined); } catch (e) { incomplete.push(`fixture cleanup aborted: ${(e as Error).message}`); fixtures.abandon(); }
+    if (fixtures.stopped) incomplete.push(`stopped: ${fixtures.stopped}`);
+    if (fixtures.leftovers.length) incomplete.push(`fixtures: ${fixtures.leftovers.length} leftover(s) not cleaned and verified gone (see run.json fixtures.leftovers)`);
+  }
   await engine?.close();
   budget.close();
   if (flowOutcome && opts.flows) applyConsoleSilent(flowOutcome.flows, opts.flows, inspector ? inspector.summary.perStep : undefined);
@@ -487,7 +521,7 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
     environment: m.environment,
     mode: m.safety.mode,
     scope: { origins: m.targets.origins, allowedPaths: m.targets.allowed_paths, deniedPaths: m.targets.denied_paths },
-    executionStatus: hardFail ? "FAILED" : incomplete.length ? "PARTIAL" : "COMPLETE",
+    executionStatus: hardFail || (fixtures?.leftovers.length ?? 0) > 0 ? "FAILED" : incomplete.length ? "PARTIAL" : "COMPLETE",
     incompleteReasons: [...new Set(incomplete)],
     transports,
     requests: exchanges.map((e) => e.record),
@@ -506,6 +540,7 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
     ...(assets ? { assets } : {}),
     ...(consoleResult ? { console: consoleResult } : {}),
     knowledge: kn.knowledge,
+    ...(fixtures ? { marker: marker!, fixtures: fixtures.summary(opts.pendingFromPreviousRuns ?? []), mutations: fixtures.mutations } : {}),
   };
   if (!opts.flows || !flowOutcome) return { run, proposals: kn.proposals, ...(clientFindings ? { clientFindings } : {}), ...(pageModels ? { pageModels } : {}) };
   for (const f of flowOutcome.flows) {

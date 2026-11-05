@@ -17,7 +17,9 @@ export const MAX_TEXT_MARKERS = 10;
 export const MAX_POINTER_DEPTH = 16;
 
 export const UI_ACTIONS: ReadonlySet<FlowAction> = new Set(["click", "fill", "select", "submit", "see", "wait_for"]);
-const ACTIONS: FlowAction[] = ["http", "navigate", "click", "fill", "select", "submit", "see", "wait_for"];
+const ACTIONS: FlowAction[] = ["http", "navigate", "click", "fill", "select", "submit", "see", "wait_for", "fixture_create"];
+/** safe-validate (SPEC-0.2.0 §4.1): methods allowed only on a step bound to a declared fixture. */
+export const MUTATION_METHODS: ReadonlySet<string> = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const SECRETISH_KEYS = /^(password|passwd|secret|token|api[_-]?key|cookie|authorization)$/i;
 const ENV_NAME = /^[A-Z][A-Z0-9_]{0,63}$/;
 export const VAR_NAME = /^[a-z][a-zA-Z0-9_]{0,31}$/;
@@ -53,7 +55,9 @@ export interface Expect {
 }
 
 export interface FlowRequest {
-  method: "GET" | "HEAD" | "OPTIONS";
+  method: "GET" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH" | "DELETE";
+  /** safe-validate fixture mutations only (SPEC-0.2.0 §4.1). */
+  body?: { json: Record<string, unknown> };
   path: string;
   query?: Record<string, string>;
   accept?: "json" | "text" | "any";
@@ -72,6 +76,10 @@ export interface FlowStep {
   extract?: Record<string, Extract>;
   object_owner?: string;
   depends_on?: string[];
+  /** safe-validate: the declared fixture this step creates or mutates (SPEC-0.2.0 §4). */
+  fixture?: string;
+  /** fixture_create: the variable that receives the created id. */
+  as?: string;
   /** Raw JSON object as written, used for hashing. */
   raw: Record<string, unknown>;
   line: number;
@@ -362,7 +370,7 @@ function parseExpect(c: Ctx, v: unknown): Expect | undefined {
 }
 
 function parseStep(c: Ctx, o: Obj, heading: string | undefined): FlowStep | undefined {
-  keys(c, o, ["id", "title", "action", "actor", "request", "target", "value", "follow_redirects", "expect", "extract", "object_owner", "depends_on"], "");
+  keys(c, o, ["id", "title", "action", "actor", "request", "target", "value", "follow_redirects", "expect", "extract", "object_owner", "depends_on", "fixture", "as"], "");
   const id = str(c, o.id, "/id", 4, true, STEP_ID);
   const title = str(c, o.title, "/title", 120) ?? heading ?? id ?? "";
   const action = o.action as FlowAction;
@@ -372,9 +380,11 @@ function parseStep(c: Ctx, o: Obj, heading: string | undefined): FlowStep | unde
   if (o.request !== undefined) {
     if (!isObj(o.request)) err(c, "/request", "must be an object");
     else {
-      keys(c, o.request, ["method", "path", "query", "accept"], "/request");
+      keys(c, o.request, ["method", "path", "query", "accept", "body"], "/request");
       const m = o.request.method as FlowRequest["method"];
-      if (!["GET", "HEAD", "OPTIONS"].includes(m)) err(c, "/request/method", "only GET, HEAD and OPTIONS are allowed in this release");
+      const mutation = MUTATION_METHODS.has(m);
+      if (!["GET", "HEAD", "OPTIONS"].includes(m) && !mutation) err(c, "/request/method", "GET, HEAD, OPTIONS, or POST/PUT/PATCH/DELETE on a fixture step");
+      else if (mutation && typeof o.fixture !== "string") err(c, "/request/method", `${m} needs "fixture": a step may change state only on a declared fixture (safe-validate)`);
       const path = str(c, o.request.path, "/request/path", 500, true);
       const req: FlowRequest = { method: m, path: path ?? "/" };
       if (o.request.query !== undefined) {
@@ -392,8 +402,29 @@ function parseStep(c: Ctx, o: Obj, heading: string | undefined): FlowStep | unde
         if (!["json", "text", "any", "html"].includes(o.request.accept as string)) err(c, "/request/accept", "json | text | any");
         else req.accept = o.request.accept as "json";
       }
+      if (o.request.body !== undefined) {
+        const b = o.request.body;
+        if (!mutation) err(c, "/request/body", "a body is allowed only on a fixture mutation step");
+        else if (!isObj(b) || Object.keys(b).join() !== "json" || !isObj(b.json)) err(c, "/request/body", '{"json": {...}}');
+        else if (JSON.stringify(b.json).length > 4096) err(c, "/request/body", "at most 4096 bytes");
+        else req.body = { json: b.json as Record<string, unknown> };
+      }
       step.request = req;
     }
+  }
+  if (o.fixture !== undefined) {
+    const fx = str(c, o.fixture, "/fixture", 32, true, /^[a-z][a-z0-9_-]{0,31}$/);
+    if (fx) step.fixture = fx;
+  }
+  if (o.as !== undefined) {
+    if (action !== "fixture_create") err(c, "/as", 'only on "fixture_create"');
+    const v = str(c, o.as, "/as", 32, true, VAR_NAME);
+    if (v) step.as = v;
+  }
+  if (action === "fixture_create") {
+    if (typeof o.fixture !== "string") err(c, "/fixture", "fixture_create needs a fixture name");
+    if (typeof o.as !== "string") err(c, "/as", "fixture_create needs a variable name for the created id");
+    if (o.request !== undefined || o.target !== undefined) err(c, "/request", "fixture_create takes fixture and as, not request or target");
   }
   if (o.target !== undefined) {
     if (!isObj(o.target)) err(c, "/target", "must be an object");

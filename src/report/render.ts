@@ -33,6 +33,24 @@ export function renderMarkdown(r: RunResult, lang: "en" | "th" = "en"): string {
     if (f.limitations.length) out.push("**Limitations:**", ...f.limitations.map((a) => `- ${a}`), "");
     out.push(`Agent prompt: see \`docs/cases/CASE-CATALOG.md#${f.ruleId.toLowerCase()}\``, "");
   }
+  if (r.fixtures) {
+    // safe-validate (SPEC-0.2.0 §7): fixtures, cleanup, leftovers with the exact manual action, and mutations.
+    const fx = r.fixtures;
+    out.push("## Fixtures and cleanup", "", `- Marker: \`${fx.marker}\` · Created: ${fx.created} · Cleaned: ${fx.cleaned} · Verified gone: ${fx.verifiedGone} · Non-observe requests: ${fx.mutationsUsed}/${fx.mutationsMax}`, "");
+    if (fx.leftovers.length) {
+      out.push("**Leftovers: remove these yourself. NavSentry never improvises a delete.**", "", "| Fixture | Id | Status | Reason | Manual action |", "|---|---|---|---|---|");
+      for (const x of fx.leftovers) out.push(`| ${esc(x.fixture)} | \`${esc(x.displayId)}\` | ${x.status} | ${esc(x.reason)} | ${esc(x.manualAction)} |`);
+      out.push("");
+    } else out.push("No leftovers.", "");
+    if (fx.pendingFromPreviousRuns?.length) {
+      out.push("**Possible leftovers from an interrupted run (reported, nothing deleted):**", "");
+      for (const p of fx.pendingFromPreviousRuns) out.push(`- ${esc(p.fixture)} ${p.id ? `\`${esc(p.id)}\`` : "(id unknown)"} · state ${p.state} · marker \`${p.marker}\``);
+      out.push("");
+    }
+    out.push("## Mutations", "", "| Method | Path | Entry | Actor | Status | Body sha256 |", "|---|---|---|---|---|---|");
+    for (const x of r.mutations ?? []) out.push(`| ${x.method} | \`${esc(x.path)}\` | ${esc(x.entry)} | ${esc(x.actor)} | ${x.status ?? esc(x.error ?? "—")} | ${x.bodySha256 ? `\`${x.bodySha256.slice(0, 16)}…\`` : "—"} |`);
+    out.push("");
+  }
   out.push(`## ${t.coverage}`, "", "| Case | Title | Status | Targets | Reason |", "|---|---|---|---|---|");
   for (const c of r.coverage) out.push(`| ${c.ruleId} | ${esc(CASE_BY_ID.get(c.ruleId)?.titleEn ?? "")} | ${c.status} | ${c.targets} | ${esc(c.reason ?? "")} |`);
   out.push("", `## ${t.transports}`, "", "| Transport | Available | Usable | Version | Reason |", "|---|---|---|---|---|");
