@@ -392,7 +392,7 @@ export const FLOW_FORMAT_VERSION = "1";
 export const FLOW_RESULT_SCHEMA_VERSION = "1";
 
 export type TestLevel = "integration" | "e2e";
-export type FlowAction = "http" | "navigate" | "click" | "fill" | "select" | "submit" | "see" | "wait_for" | "fixture_create";
+export type FlowAction = "http" | "navigate" | "click" | "fill" | "select" | "submit" | "see" | "wait_for" | "fixture_create" | "logout";
 export type FlowStatus = "PASS" | "FAIL" | "INCOMPLETE" | "ERROR" | "NOT_TESTED";
 export type FunctionalResult = "PASS" | "FAIL" | "INCOMPLETE";
 

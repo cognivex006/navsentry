@@ -56,3 +56,11 @@ Several M2 cases cannot be tested in observe mode, because each one needs the ta
 5. **Approval hashing (§4.5).** `bindManifest` adds the canonical JSON of the referenced fixture entries, `auth_endpoints`, the actor login configuration and the referenced login flow's hash to `flowHash`. Flows that use none of them keep their earlier hash. `flow approve --config` is required for flows that use fixtures.
 
 Evidence: `test/safe-validate-b.test.ts` covers SPEC-0.2.0 tests 2 (browser), 12, 13 and 15 on 127.0.0.1, with the real Chromium headless shell for the browser cases.
+
+## Addendum — 0.2.0-c (2026-11-05)
+1. **NSC-AC-003, modification**, reuses the access post-pass. A fixture mutation with `object_owner` and `access: denied` is judged against the owner's identical mutation, which is the positive control. Whether the cross-actor change took effect is not compared, because no body values are recorded.
+2. **NSC-AC-006.** An `allowed_mutations` entry may declare `csrf` (token cookie name and header name). A `check: "csrf"` step sends the token-less probe and the cross-origin probe (`https://navsentry-csrf-probe.invalid`, owner decision D7) before the same-origin control, because the control may change the object. Every request is a declared fixture mutation (S13) and counts against `max_mutations`. Header-token actors are NOT_TESTED, and nothing is sent for them.
+3. **NSC-AUTH-002.** A `logout` step sends the authenticated read, then `auth_endpoints.logout`, then the read with the pre-logout session. The actor is removed for the rest of the run. Lint refuses a logout of any fixture's `cleanup_actor`, so cleanup keeps its session.
+4. Form-encoded fixture mutations: an entry with `content_type: application/x-www-form-urlencoded` receives the step's flat JSON body form-encoded.
+
+Evidence: `test/safe-validate-c.test.ts` runs SPEC-0.2.0 tests 8–10 against vulnerable and secure fixture variants on 127.0.0.1.

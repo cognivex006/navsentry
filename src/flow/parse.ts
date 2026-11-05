@@ -17,7 +17,7 @@ export const MAX_TEXT_MARKERS = 10;
 export const MAX_POINTER_DEPTH = 16;
 
 export const UI_ACTIONS: ReadonlySet<FlowAction> = new Set(["click", "fill", "select", "submit", "see", "wait_for"]);
-const ACTIONS: FlowAction[] = ["http", "navigate", "click", "fill", "select", "submit", "see", "wait_for", "fixture_create"];
+const ACTIONS: FlowAction[] = ["http", "navigate", "click", "fill", "select", "submit", "see", "wait_for", "fixture_create", "logout"];
 /** safe-validate (SPEC-0.2.0 §4.1): methods allowed only on a step bound to a declared fixture. */
 export const MUTATION_METHODS: ReadonlySet<string> = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const SECRETISH_KEYS = /^(password|passwd|secret|token|api[_-]?key|cookie|authorization)$/i;
@@ -80,6 +80,8 @@ export interface FlowStep {
   fixture?: string;
   /** fixture_create: the variable that receives the created id. */
   as?: string;
+  /** safe-validate mutation steps: `"csrf"` runs the NSC-AC-006 probes (SPEC-0.2.0 §5.2). */
+  check?: "csrf";
   /** Raw JSON object as written, used for hashing. */
   raw: Record<string, unknown>;
   line: number;
@@ -372,7 +374,7 @@ function parseExpect(c: Ctx, v: unknown): Expect | undefined {
 }
 
 function parseStep(c: Ctx, o: Obj, heading: string | undefined): FlowStep | undefined {
-  keys(c, o, ["id", "title", "action", "actor", "request", "target", "value", "follow_redirects", "expect", "extract", "object_owner", "depends_on", "fixture", "as"], "");
+  keys(c, o, ["id", "title", "action", "actor", "request", "target", "value", "follow_redirects", "expect", "extract", "object_owner", "depends_on", "fixture", "as", "check"], "");
   const id = str(c, o.id, "/id", 4, true, STEP_ID);
   const title = str(c, o.title, "/title", 120) ?? heading ?? id ?? "";
   const action = o.action as FlowAction;
@@ -422,6 +424,10 @@ function parseStep(c: Ctx, o: Obj, heading: string | undefined): FlowStep | unde
     if (action !== "fixture_create") err(c, "/as", 'only on "fixture_create"');
     const v = str(c, o.as, "/as", 32, true, VAR_NAME);
     if (v) step.as = v;
+  }
+  if (o.check !== undefined) {
+    if (o.check !== "csrf") err(c, "/check", '"csrf"');
+    else step.check = "csrf";
   }
   if (action === "fixture_create") {
     if (typeof o.fixture !== "string") err(c, "/fixture", "fixture_create needs a fixture name");
