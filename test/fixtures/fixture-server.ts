@@ -6,7 +6,8 @@
 import http from "node:http";
 import type { AddressInfo } from "node:net";
 
-export type FixtureMode = "secure" | "create-reset" | "create-truncated" | "bad-id" | "delete-500" | "stays" | "patch-redirect";
+/** `vulnerable`: no ownership check on PATCH (AC-003), no CSRF check on cancel (AC-006), logout keeps the session (AUTH-002). */
+export type FixtureMode = "secure" | "vulnerable" | "create-reset" | "create-truncated" | "bad-id" | "delete-500" | "stays" | "patch-redirect";
 
 /** Synthetic test credentials (not secrets). */
 export const FIXTURE_LOGIN = { user: "alice", password: "pw-correct-horse-battery", presetCookie: "sid=preset-session-cookie-0001" } as const;
@@ -46,6 +47,10 @@ export async function startFixtureServer(mode: FixtureMode = "secure"): Promise<
   let onHeld: (() => void) | undefined;
   let pendingHold: http.ServerResponse | undefined;
   const sessions = new Set<string>([FIXTURE_LOGIN.presetCookie.split("=")[1]!]);
+  const owners = new Map<string, string>();
+  let selfOrigin = "";
+  const cookieOf = (h: string | undefined, name: string) => new RegExp(`(?:^|;\\s*)${name}=([^;]+)`).exec(h ?? "")?.[1];
+  const ADMIN = new Set(["Bearer sv-fixture-admin"]);
   const json = (res: http.ServerResponse, status: number, body: object) => res.writeHead(status, { "content-type": "application/json" }).end(JSON.stringify(body));
   const server = http.createServer((q, res) => {
     const path = new URL(q.url ?? "/", "http://x").pathname;
@@ -64,10 +69,16 @@ export async function startFixtureServer(mode: FixtureMode = "secure"): Promise<
         if (c.user !== FIXTURE_LOGIN.user || c.password !== FIXTURE_LOGIN.password) return json(res, 401, { error: "bad credentials" });
         const sid = `sess-${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
         sessions.add(sid);
-        return res.writeHead(200, { "content-type": "application/json", "set-cookie": `sid=${sid}; Path=/; HttpOnly` }).end(JSON.stringify({ ok: true }));
+        const csrf = `csrf-${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+        return res.writeHead(200, { "content-type": "application/json", "set-cookie": [`sid=${sid}; Path=/; HttpOnly`, `csrf_token=${csrf}; Path=/`] }).end(JSON.stringify({ ok: true }));
+      }
+      if (q.method === "POST" && path === "/api/session/logout") {
+        const sid = cookieOf(q.headers.cookie, "sid");
+        if (sid && mode !== "vulnerable") sessions.delete(sid);
+        return json(res, 200, { ok: true });
       }
       if (path === "/api/me") {
-        const sid = /(?:^|;s*)sid=([^;]+)/.exec(q.headers.cookie ?? "")?.[1];
+        const sid = cookieOf(q.headers.cookie, "sid");
         return sid && sessions.has(sid) ? json(res, 200, { user: "alice" }) : json(res, 401, { error: "no session" });
       }
       if (q.method === "POST" && path === "/api/echo") return json(res, 200, { ok: true });
@@ -76,6 +87,7 @@ export async function startFixtureServer(mode: FixtureMode = "secure"): Promise<
         if (mode === "create-reset") { objects.add(`o${++n}`); q.socket.destroy(); return; }
         const id = mode === "bad-id" ? ".." : `o${++n}`;
         objects.add(id);
+        owners.set(id, q.headers.authorization ?? cookieOf(q.headers.cookie, "sid") ?? "");
         if (mode === "create-truncated") { res.writeHead(201, { "content-type": "application/json", "content-length": "200" }); res.write(`{"id":"${id}"`); setTimeout(() => res.socket?.destroy(), 20); return; }
         return json(res, 201, { id });
       }
@@ -83,7 +95,18 @@ export async function startFixtureServer(mode: FixtureMode = "secure"): Promise<
       if (m && q.method === "GET") return objects.has(m[1]!) ? json(res, 200, { id: m[1], note: "x" }) : json(res, 404, { error: "not found" });
       if (m && q.method === "PATCH") {
         if (mode === "patch-redirect") return res.writeHead(307, { location: "/api/undeclared" }).end();
+        const who = q.headers.authorization ?? cookieOf(q.headers.cookie, "sid") ?? "";
+        if (mode !== "vulnerable" && objects.has(m[1]!) && owners.get(m[1]!) !== who && !ADMIN.has(who)) return json(res, 403, { error: "forbidden" });
         return objects.has(m[1]!) ? json(res, 200, { id: m[1], note: "x" }) : json(res, 404, { error: "not found" });
+      }
+      const cancel = path.match(/^\/api\/orders\/([^/]+)\/cancel$/);
+      if (cancel && q.method === "POST") {
+        const sid = cookieOf(q.headers.cookie, "sid");
+        if (!sid || !sessions.has(sid)) return json(res, 401, { error: "no session" });
+        const token = cookieOf(q.headers.cookie, "csrf_token");
+        const origin = q.headers.origin;
+        if (mode !== "vulnerable" && (!token || q.headers["x-csrf-token"] !== token || (origin !== undefined && origin !== selfOrigin))) return json(res, 403, { error: "csrf" });
+        return objects.has(cancel[1]!) ? json(res, 200, { id: cancel[1], status: "cancelled" }) : json(res, 404, { error: "not found" });
       }
       const d = path.match(/^\/api\/test-fixtures\/orders\/([^/]+)$/);
       if (d && q.method === "DELETE") {
@@ -98,6 +121,7 @@ export async function startFixtureServer(mode: FixtureMode = "secure"): Promise<
   });
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
   const port = (server.address() as AddressInfo).port;
+  selfOrigin = `http://127.0.0.1:${port}`;
   return {
     origin: `http://127.0.0.1:${port}`,
     log,

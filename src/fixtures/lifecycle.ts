@@ -261,10 +261,10 @@ export class FixtureLifecycle {
   }
 
   /** One declared `allowed_mutations` request from an http step (§4.1). Never retried, never redirected. */
-  async mutate(fixture: string, entry: EndpointEntry, url: string, displayUrl: string, actor: string, headers: Record<string, string>, body: Buffer | undefined, flow: { id: string; step: string; deniedProbe?: true }): Promise<Exchange> {
+  async mutate(fixture: string, entry: EndpointEntry, url: string, displayUrl: string, actor: string, headers: Record<string, string>, body: Buffer | undefined, flow: { id: string; step: string; deniedProbe?: true }, contentType = "application/json"): Promise<Exchange> {
     if (this.stopReason) throw new BudgetExceeded(`stopped: ${this.stopReason}`);
     this.countMutation();
-    const ex = await this.o.send({ method: entry.method, url, displayUrl, actor, headers, flow, mutation: entry, ...(body ? { body: { contentType: "application/json", data: body } } : {}) });
+    const ex = await this.o.send({ method: entry.method, url, displayUrl, actor, headers, flow, mutation: entry, ...(body ? { body: { contentType, data: body } } : {}) });
     this.record(entry, `fixtures.${fixture}.allowed_mutations`, actor, ex, ex.record.requestBodySha256);
     return ex;
   }

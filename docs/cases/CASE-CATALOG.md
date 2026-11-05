@@ -287,7 +287,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 |---|---|
 | Severity (default) | high |
 | Priority | 🔴 ต้องแก้ทันที (IMMEDIATE) |
-| Automation | flow — ตรวจอัตโนมัติเมื่อมี Flow ที่เจ้าของระบุว่าต้องถูกปฏิเสธการเข้าถึง (docs/FLOWS.md) (M2 (modification)) |
+| Automation | flow — ตรวจอัตโนมัติเมื่อมี Flow ที่เจ้าของระบุว่าต้องถูกปฏิเสธการเข้าถึง (docs/FLOWS.md) |
 | OWASP Top 10:2025 | A01:2025 Broken Access Control |
 | OWASP Top 10:2021 | A01:2021 Broken Access Control |
 | CWE | CWE-639, CWE-284 |
@@ -320,7 +320,8 @@ An actor can read or modify an object owned by another actor by changing an iden
 **Caveats / False positive**
 
 - UI hiding alone NEVER proves authorization.
-- 0.1.2 verifies read access only (flow step with object_owner and access: denied); modification needs safe-validate (M2).
+- Read access: a flow step with object_owner and access: denied. Modification (safe-validate, 0.2.0-c): the same step as a declared fixture mutation, with the owner's own mutation as the positive control.
+- Whether actor B's change took effect is not compared: NavSentry does not record response body values.
 
 <details><summary>Prompt: VERIFY (ตรวจสอบ)</summary>
 
@@ -346,7 +347,8 @@ Method:
 
 Known caveats / false positives:
 - UI hiding alone NEVER proves authorization.
-- 0.1.2 verifies read access only (flow step with object_owner and access: denied); modification needs safe-validate (M2).
+- Read access: a flow step with object_owner and access: denied. Modification (safe-validate, 0.2.0-c): the same step as a declared fixture mutation, with the owner's own mutation as the positive control.
+- Whether actor B's change took effect is not compared: NavSentry does not record response body values.
 
 Output: an ISSUE entry (template docs/reports/templates/ISSUE.md) with ID NSC-AC-003, status,
 fingerprint(s), evidence list and this checklist:
@@ -920,7 +922,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 |---|---|
 | Severity (default) | medium |
 | Priority | 🟡 รอได้ / วางแผนแก้ (PLANNED) |
-| Automation | planned-auto — วางแผนให้ตรวจอัตโนมัติ (M2) |
+| Automation | flow — ตรวจอัตโนมัติเมื่อมี Flow ที่เจ้าของระบุว่าต้องถูกปฏิเสธการเข้าถึง (docs/FLOWS.md) |
 | OWASP Top 10:2025 | A01:2025 Broken Access Control |
 | OWASP Top 10:2021 | A01:2021 Broken Access Control |
 | CWE | CWE-352 |
@@ -935,20 +937,27 @@ Cookie-authenticated state-changing requests are accepted without an anti-CSRF t
 
 **EVIDENCE (หลักฐานที่ต้องเก็บ)**
 
-- Safe fixture mutation attempted cross-site under safe-validate authorization; response status
+- Three requests on a declared fixture mutation with a cookie session (safe-validate): without the token; with the token from Origin https://navsentry-csrf-probe.invalid and no Referer; same-origin with the token (control). Statuses and response contracts only
 
 **ACCEPTANCE CRITERIA (เกณฑ์ผ่าน)**
 
-- [ ] Cross-site fixture mutation is rejected
-- [ ] Same-site legitimate mutation succeeds
+- [ ] The request without the token is rejected (401, 403, 419, 422 or a redirect to the login page)
+- [ ] The cross-origin request is rejected
+- [ ] The same-origin request with the token succeeds (positive control)
 
 **ตรวจซ้ำบนหน้าเว็บจริง (Web recheck)**
 
 - [ ] Submit forms normally: still works
+- [ ] Re-run the flow with `check: "csrf"` → NSC-AC-006 PASS
 
 **แนวทางแก้ (Fix)** — Use framework anti-forgery tokens and/or verify Origin/Sec-Fetch-Site; set SameSite=Lax.
 
 **⚠️ ผลกระทบต่อผู้ใช้จริง / Regression guard** — API clients using bearer tokens (not cookies) should be exempted correctly; test mobile and integration clients.
+
+**Caveats / False positive**
+
+- Only cookie-session actors (login or cookie_env) and allowed_mutations entries with csrf are tested; header-token actors are NOT_TESTED.
+- The probes run before the control because the control may change the object; a 2xx probe with a failed control is INCONCLUSIVE.
 
 <details><summary>Prompt: VERIFY (ตรวจสอบ)</summary>
 
@@ -962,15 +971,20 @@ FACT to test:
 Cookie-authenticated state-changing requests are accepted without an anti-CSRF token, origin check or SameSite protection.
 
 Collect EVIDENCE (redact tokens, cookies, PII, internal IPs BEFORE writing anything):
-- Safe fixture mutation attempted cross-site under safe-validate authorization; response status
+- Three requests on a declared fixture mutation with a cookie session (safe-validate): without the token; with the token from Origin https://navsentry-csrf-probe.invalid and no Referer; same-origin with the token (control). Statuses and response contracts only
 
 Method:
 1. navsentry validate --config <MANIFEST>  then  navsentry test --config <MANIFEST> --out runs/before
 2. Read runs/before/run.json coverage row "NSC-AC-006" and any finding with ruleId "NSC-AC-006".
-3. This case is "planned-auto" — NavSentry alone cannot conclude it. Gather the evidence above manually:
+3. Requires a flow with access: denied and a positive control (docs/FLOWS.md); then confirm in a real browser:
    - Submit forms normally: still works
+   - Re-run the flow with `check: "csrf"` → NSC-AC-006 PASS
 4. Decide exactly one status: PASS | FAIL | INCONCLUSIVE | NOT_TESTED | ERROR, with a reason.
    Missing evidence is never PASS. Pattern-only evidence stays SUSPECTED until a human confirms.
+
+Known caveats / false positives:
+- Only cookie-session actors (login or cookie_env) and allowed_mutations entries with csrf are tested; header-token actors are NOT_TESTED.
+- The probes run before the control because the control may change the object; a 2xx probe with a failed control is INCONCLUSIVE.
 
 Output: an ISSUE entry (template docs/reports/templates/ISSUE.md) with ID NSC-AC-006, status,
 fingerprint(s), evidence list and this checklist:
@@ -1004,8 +1018,9 @@ Steps:
    Required: NSC-AC-006 in "Fixed" AND no unexplained "Legitimate-response contract drift".
 
 ACCEPTANCE CRITERIA:
-- [ ] Cross-site fixture mutation is rejected
-- [ ] Same-site legitimate mutation succeeds
+- [ ] The request without the token is rejected (401, 403, 419, 422 or a redirect to the login page)
+- [ ] The cross-origin request is rejected
+- [ ] The same-origin request with the token succeeds (positive control)
 - [ ] compare verdict IMPROVED_NO_DRIFT (or every drift row approved by the owner in writing)
 - [ ] Changed files + commit recorded in a FIX entry (template docs/reports/templates/FIX.md)
 ```
@@ -1021,6 +1036,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
    (or a documented, owner-approved DISMISSED/Exception).
 2. On the real web page / endpoint:
    - [ ] Submit forms normally: still works
+   - [ ] Re-run the flow with `check: "csrf"` → NSC-AC-006 PASS
 3. Regression: main user flows still work and compare shows no unexplained contract drift.
 4. Verdict QA-PASS or QA-FAIL. On QA-FAIL you MUST write improvement criteria
    (template docs/reports/templates/QA.md): failed acceptance item, expected vs observed (redacted),
@@ -1164,7 +1180,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 |---|---|
 | Severity (default) | medium |
 | Priority | 🟡 รอได้ / วางแผนแก้ (PLANNED) |
-| Automation | planned-auto — วางแผนให้ตรวจอัตโนมัติ (M2) |
+| Automation | flow — ตรวจอัตโนมัติเมื่อมี Flow ที่เจ้าของระบุว่าต้องถูกปฏิเสธการเข้าถึง (docs/FLOWS.md) |
 | OWASP Top 10:2025 | A07:2025 Authentication Failures |
 | OWASP Top 10:2021 | A07:2021 Identification and Authentication Failures |
 | CWE | CWE-613 |
@@ -1179,7 +1195,7 @@ A session cookie or token captured before logout still authorizes requests after
 
 **EVIDENCE (หลักฐานที่ต้องเก็บ)**
 
-- Test actor: status of a protected request with the pre-logout credential, after logout
+- A `logout` flow step (safe-validate): the authenticated read before logout (positive control), the declared auth_endpoints.logout request, then the same read with the pre-logout session; statuses and response contracts only
 
 **ACCEPTANCE CRITERIA (เกณฑ์ผ่าน)**
 
@@ -1194,6 +1210,11 @@ A session cookie or token captured before logout still authorizes requests after
 
 **⚠️ ผลกระทบต่อผู้ใช้จริง / Regression guard** — Multi-tab and multi-device behavior must be decided explicitly (log out one vs all).
 
+**Caveats / False positive**
+
+- The logged-out actor cannot be a fixture cleanup_actor (lint error); later steps of that actor are NOT_TESTED.
+- A 2xx with a different contract than before logout (a login page) is INCONCLUSIVE, not FAIL.
+
 <details><summary>Prompt: VERIFY (ตรวจสอบ)</summary>
 
 ```text
@@ -1206,15 +1227,19 @@ FACT to test:
 A session cookie or token captured before logout still authorizes requests after logout.
 
 Collect EVIDENCE (redact tokens, cookies, PII, internal IPs BEFORE writing anything):
-- Test actor: status of a protected request with the pre-logout credential, after logout
+- A `logout` flow step (safe-validate): the authenticated read before logout (positive control), the declared auth_endpoints.logout request, then the same read with the pre-logout session; statuses and response contracts only
 
 Method:
 1. navsentry validate --config <MANIFEST>  then  navsentry test --config <MANIFEST> --out runs/before
 2. Read runs/before/run.json coverage row "NSC-AUTH-002" and any finding with ruleId "NSC-AUTH-002".
-3. This case is "planned-auto" — NavSentry alone cannot conclude it. Gather the evidence above manually:
+3. Requires a flow with access: denied and a positive control (docs/FLOWS.md); then confirm in a real browser:
    - Logout in browser, replay the old cookie with a REST client: 401
 4. Decide exactly one status: PASS | FAIL | INCONCLUSIVE | NOT_TESTED | ERROR, with a reason.
    Missing evidence is never PASS. Pattern-only evidence stays SUSPECTED until a human confirms.
+
+Known caveats / false positives:
+- The logged-out actor cannot be a fixture cleanup_actor (lint error); later steps of that actor are NOT_TESTED.
+- A 2xx with a different contract than before logout (a login page) is INCONCLUSIVE, not FAIL.
 
 Output: an ISSUE entry (template docs/reports/templates/ISSUE.md) with ID NSC-AUTH-002, status,
 fingerprint(s), evidence list and this checklist:

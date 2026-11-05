@@ -16,6 +16,35 @@ import { fillPath, flowOrigin, placeholders, topoOrder } from "./lint.js";
 import { MUTATION_METHODS, UI_ACTIONS, type FlowDoc, type FlowStep, type UiTarget } from "./parse.js";
 
 export const MAX_FLOW_REDIRECTS = 5;
+/** NSC-AC-006 cross-site probe origin (SPEC-0.2.0 §5.2, owner decision D7): reserved, never resolvable. */
+export const CSRF_PROBE_ORIGIN = "https://navsentry-csrf-probe.invalid";
+/** Statuses that count as "rejected" for the CSRF and logout probes (§5.2, §5.3). */
+const REJECTED = new Set([401, 403, 419, 422]);
+
+/** Same media type and JSON shape: the response a legitimate caller gets. */
+function sameContract(a: Exchange, b: Exchange): boolean {
+  const c1 = a.record.contract, c2 = b.record.contract;
+  return !!c1 && !!c2 && c1.contentType === c2.contentType && (c1.jsonShapeHash ?? "") === (c2.jsonShapeHash ?? "");
+}
+
+function cookieValue(header: string | undefined, name: string): string | undefined {
+  for (const part of (header ?? "").split(";")) {
+    const i = part.indexOf("=");
+    if (i > 0 && part.slice(0, i).trim() === name) return part.slice(i + 1).trim();
+  }
+  return undefined;
+}
+
+/** Flat JSON object → application/x-www-form-urlencoded; nested values are refused. */
+function formBody(json: Buffer): { data?: Buffer; error?: string } {
+  const o = JSON.parse(json.toString("utf8")) as Record<string, unknown>;
+  const q = new URLSearchParams();
+  for (const [k, v] of Object.entries(o)) {
+    if (v !== null && typeof v === "object") return { error: "a form body takes flat string, number or boolean values" };
+    q.set(k, v === null ? "" : String(v));
+  }
+  return { data: Buffer.from(q.toString(), "utf8") };
+}
 const SAFE_VALUE = /^[A-Za-z0-9._~-]{1,128}$/;
 const ACCEPT = { json: "application/json", text: "text/plain, */*;q=0.1", any: "*/*", html: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8" } as const;
 
@@ -89,7 +118,7 @@ function uiReason(s: FlowStep): string {
 export function manualLine(s: FlowStep): string {
   const t = s.target;
   const what = !t ? "" : "role" in t ? `${t.role} “${t.name}”` : "label" in t ? `field “${t.label}”` : "text" in t ? `text “${t.text}”` : `element [data-testid=${t.test_id}]`;
-  const verb = { click: "click", select: "select an option in", fill: "fill", submit: "submit", see: "check that you can see", wait_for: "wait until you can see", http: "request", navigate: "open", fixture_create: "create the declared fixture" }[s.action];
+  const verb = { click: "click", select: "select an option in", fill: "fill", submit: "submit", see: "check that you can see", wait_for: "wait until you can see", http: "request", navigate: "open", fixture_create: "create the declared fixture", logout: "log out, then repeat the read with the old session:" }[s.action];
   const value = s.value ? ` with the value of variable ${s.value.var} (not shown)` : "";
   return `${s.id} — as ${s.actor}: ${verb} ${what}${value}`;
 }
@@ -191,6 +220,48 @@ async function runDoc(doc: FlowDoc, ctx: FlowContext, budget: { exhausted?: stri
       u.searchParams.set(k, ph ? vars.get(ph[1] as string)! : v);
       du.searchParams.set(k, v);
     }
+    if (s.action === "logout") {
+      // NSC-AUTH-002 (SPEC-0.2.0 §5.3): an authenticated read, logout, then the same read with the pre-logout session.
+      res.securityCase = "NSC-AUTH-002";
+      const entry = ctx.manifest.auth_endpoints.logout;
+      if (!ctx.fixtures || !entry) { skip("logout needs safe-validate and auth_endpoints.logout"); continue; }
+      const target = `${r.method} ${du.toString()}`;
+      const flowRef = { id: doc.header.id, step: s.id };
+      const read = () => ctx.send({ method: r.method as FlowSendRequest["method"], url: u.toString(), displayUrl: du.toString(), actor: s.actor, headers: { ...actorHeaders, accept: ACCEPT[(r.accept as keyof typeof ACCEPT) ?? "any"] ?? ACCEPT.any, "x-navsentry-flow": `${doc.header.id}/${s.id}` }, flow: flowRef });
+      const report = (status: CheckStatus, summary: string, observation: string) => checks.push({ ruleId: "NSC-AUTH-002", status, target, transport: "direct-http", summary, observations: [observation, `flow ${doc.header.id} step ${s.id}`], requestIds: [...res.requestIds], ...(status === "INCONCLUSIVE" ? { reason: observation } : {}), ...(approved ? {} : { basis: "draft-flow" as const }) });
+      try {
+        const before = await read();
+        if (!before) { skip("denied by scope (see run.json denials)"); continue; }
+        res.requestIds.push(before.record.id);
+        const bs = before.raw?.status ?? 0;
+        if (bs < 200 || bs >= 300) { res.status = "INCONCLUSIVE"; res.reason = `the authenticated read returned ${bs}; no positive control`; report("INCONCLUSIVE", "session after logout inconclusive", res.reason); continue; }
+        const lurl = new URL(entry.path, origin).toString();
+        const out = await ctx.fixtures.sendDeclared("auth_endpoints.logout", entry, { method: entry.method, url: lurl, displayUrl: lurl, actor: s.actor, headers: { ...actorHeaders, accept: "application/json" }, flow: flowRef });
+        res.requestIds.push(out.record.id);
+        // The actor is logged out from here on; later steps for it are NOT_TESTED.
+        ctx.actors.delete(s.actor);
+        ctx.actorSkipReasons.set(s.actor, `logged out in flow ${doc.header.id} step ${s.id}`);
+        const ls = out.raw?.status ?? 0;
+        if (ls < 200 || ls >= 400) { res.status = "INCONCLUSIVE"; res.reason = `logout returned ${ls || out.record.error}`; report("INCONCLUSIVE", "session after logout inconclusive", res.reason); continue; }
+        const after = await read();
+        if (!after) { skip("denied by scope (see run.json denials)"); continue; }
+        res.requestIds.push(after.record.id);
+        const as = after.raw?.status ?? 0;
+        const toLogin = !!doc.header.login_path && as >= 300 && as < 400 && !!after.raw?.redirectLocation && new URL(after.raw.redirectLocation, origin).pathname === doc.header.login_path;
+        let a: AssertionResult;
+        if (as === 401 || as === 403 || toLogin) a = { kind: "access", status: "PASS", expected: "pre-logout session rejected", observed: toLogin ? `redirect to ${doc.header.login_path}` : `status ${as}` };
+        else if (as >= 200 && as < 300) a = sameContract(after, before) ? { kind: "access", status: "FAIL", expected: "pre-logout session rejected", observed: `status ${as}, same contract as before logout` } : { kind: "access", status: "INCONCLUSIVE", expected: "pre-logout session rejected", observed: `status ${as} with a different contract than before logout` };
+        else a = { kind: "access", status: "INCONCLUSIVE", expected: "pre-logout session rejected", observed: `status ${as}` };
+        res.assertions = [{ kind: "status", status: "PASS", expected: "authenticated read 2xx before logout", observed: `status ${bs}` }, a];
+        res.status = worst(res.assertions.map((x) => x.status));
+        report(a.status, a.status === "FAIL" ? `${getCase("NSC-AUTH-002").titleEn}: the pre-logout session still works` : a.status === "PASS" ? "pre-logout session rejected after logout" : "session after logout inconclusive", a.observed);
+      } catch (e) {
+        if (e instanceof BudgetExceeded) { skip(e.message); continue; }
+        if (e instanceof RequestRefused) { skip("denied by scope (see run.json denials)"); continue; }
+        throw e;
+      }
+      continue;
+    }
     if (ctx.browser && s.action === "navigate") {
       try {
         const nav = await ctx.browser.navigate(s.actor, u.toString(), { id: doc.header.id, step: s.id });
@@ -219,14 +290,60 @@ async function runDoc(doc: FlowDoc, ctx: FlowContext, budget: { exhausted?: stri
       if (badId) { res.status = "ERROR"; res.reason = `variable ${badId} rejected by the safe-validate id rule`; continue; }
       let body: Buffer | undefined;
       if (r.body) {
-        if ((entry.content_type ?? "application/json") !== "application/json") { res.status = "ERROR"; res.reason = `http steps send JSON; the entry declares ${entry.content_type}`; continue; }
-        const b = fillBody(r.body.json, (n) => (n === "marker" ? ctx.marker : vars.get(n)));
+        const filled = fillBody(r.body.json, (n) => (n === "marker" ? ctx.marker : vars.get(n)));
+        const b = filled.data && entry.content_type === "application/x-www-form-urlencoded" ? formBody(filled.data) : filled;
         if (b.error) { res.status = "ERROR"; res.reason = b.error; continue; }
         if (b.data!.length > (entry.max_body_bytes ?? 4096)) { res.status = "ERROR"; res.reason = `body exceeds max_body_bytes (${entry.max_body_bytes})`; continue; }
         body = b.data;
       }
+      const contentType = entry.content_type ?? "application/json";
+      if (s.check === "csrf") {
+        // NSC-AC-006 (SPEC-0.2.0 §5.2). The two probes run before the control, because the control may change the object.
+        res.securityCase = "NSC-AC-006";
+        const target = `${r.method} ${du.toString()}`;
+        const report = (status: CheckStatus, summary: string, observations: string[], ids: string[]) => {
+          checks.push({ ruleId: "NSC-AC-006", status, target, transport: "direct-http", summary, observations: [...observations, `flow ${doc.header.id} step ${s.id}`], requestIds: ids, ...(status === "INCONCLUSIVE" || status === "NOT_TESTED" ? { reason: observations[0] ?? summary } : {}), ...(approved ? {} : { basis: "draft-flow" as const }) });
+        };
+        const cfg = entry.csrf;
+        if (!cfg) { res.status = "ERROR"; res.reason = "check csrf needs an allowed_mutations entry with csrf"; continue; }
+        if (!actorHeaders.cookie || actorHeaders.authorization) { skip("CSRF needs a cookie session"); report("NOT_TESTED", "CSRF not tested", ["CSRF needs a cookie session (login or cookie_env actor)"], []); continue; }
+        const token = cookieValue(actorHeaders.cookie, cfg.token_from.cookie);
+        if (!token) { res.status = "INCONCLUSIVE"; res.reason = `no ${cfg.token_from.cookie} cookie in the session`; report("INCONCLUSIVE", "CSRF token not available", [res.reason], []); continue; }
+        const base = { ...actorHeaders, accept, "x-navsentry-flow": `${doc.header.id}/${s.id}` };
+        const flowRef = { id: doc.header.id, step: s.id };
+        const sent: Exchange[] = [];
+        try {
+          for (const h of <Record<string, string>[]>[{ origin, referer: `${origin}/` }, { [cfg.send_as.header]: token, origin: CSRF_PROBE_ORIGIN }, { [cfg.send_as.header]: token, origin, referer: `${origin}/` }]) {
+            const x = await ctx.fixtures.mutate(s.fixture!, entry, u.toString(), du.toString(), s.actor, { ...base, ...h }, body, flowRef, contentType);
+            res.requestIds.push(x.record.id);
+            sent.push(x);
+          }
+        } catch (e) {
+          if (e instanceof BudgetExceeded || e instanceof RequestRefused) { skip(e instanceof RequestRefused ? "denied by scope (see run.json denials)" : e.message); report("NOT_TESTED", "CSRF probes not completed", [res.reason ?? "not completed"], res.requestIds); continue; }
+          throw e;
+        }
+        const [noToken, foreign, control] = sent as [Exchange, Exchange, Exchange];
+        const st = (x: Exchange) => x.raw?.status ?? 0;
+        const toLogin = (x: Exchange) => !!doc.header.login_path && st(x) >= 300 && st(x) < 400 && !!x.raw?.redirectLocation && new URL(x.raw.redirectLocation, origin).pathname === doc.header.login_path;
+        const controlOk = st(control) >= 200 && st(control) < 300;
+        const judge = (name: string, x: Exchange): AssertionResult => {
+          if (REJECTED.has(st(x)) || toLogin(x)) return { kind: "access", status: "PASS", expected: `${name} rejected`, observed: `status ${st(x)}` };
+          if (st(x) >= 200 && st(x) < 300) {
+            if (!controlOk) return { kind: "access", status: "INCONCLUSIVE", expected: `${name} rejected`, observed: `status ${st(x)}; the same-origin control did not succeed (${st(control)})` };
+            return sameContract(x, control) ? { kind: "access", status: "FAIL", expected: `${name} rejected`, observed: `status ${st(x)}, same contract as the same-origin control` } : { kind: "access", status: "INCONCLUSIVE", expected: `${name} rejected`, observed: `status ${st(x)} with a different contract than the control` };
+          }
+          return { kind: "access", status: "INCONCLUSIVE", expected: `${name} rejected`, observed: `status ${st(x)}` };
+        };
+        const a1 = judge("request without the token", noToken), a2 = judge(`request from ${CSRF_PROBE_ORIGIN}`, foreign);
+        const ctl: AssertionResult = { kind: "access", status: controlOk ? "PASS" : "INCONCLUSIVE", expected: "same-origin request with the token succeeds", observed: `status ${st(control)}` };
+        res.assertions = [a1, a2, ctl];
+        res.status = worst(res.assertions.map((a) => a.status));
+        const overall = worst([a1.status, a2.status, ...(controlOk ? [] : ["INCONCLUSIVE" as const])]);
+        report(overall, overall === "FAIL" ? `${getCase("NSC-AC-006").titleEn}: a cross-site or token-less request was accepted` : overall === "PASS" ? "cross-site and token-less requests rejected" : "CSRF result inconclusive", [a1.observed, a2.observed, ctl.observed], res.requestIds);
+        continue;
+      }
       try {
-        ex = await ctx.fixtures.mutate(s.fixture!, entry, u.toString(), du.toString(), s.actor, { ...actorHeaders, accept, "x-navsentry-flow": `${doc.header.id}/${s.id}` }, body, { id: doc.header.id, step: s.id, ...(s.expect?.access === "denied" ? { deniedProbe: true as const } : {}) });
+        ex = await ctx.fixtures.mutate(s.fixture!, entry, u.toString(), du.toString(), s.actor, { ...actorHeaders, accept, "x-navsentry-flow": `${doc.header.id}/${s.id}` }, body, { id: doc.header.id, step: s.id, ...(s.expect?.access === "denied" ? { deniedProbe: true as const } : {}) }, contentType);
         res.requestIds.push(ex.record.id);
         if (!ex.record.error) checks.push(...ctx.securityChecks(ex, s.actor, u.toString()));
       } catch (e) {

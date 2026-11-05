@@ -1,6 +1,6 @@
 # SPEC 0.2.0 — M2 safe-validate: login actors, fixture mutations and cleanup
 
-- Status: **ACCEPTED** · Drafted: 2026-11-04 · Review: round 1 done 2026-11-04, 22 findings resolved ([§13](#13-review-log)) · Owner decisions D1–D9: decided 2026-11-04 with the recommended options ([§12](#12-owner-decisions)) · Implementation: 0.2.0-a merged (tests 1–7); 0.2.0-b on `feat/0.2.0-b` (tests 2 browser, 12, 13, 15)
+- Status: **ACCEPTED** · Drafted: 2026-11-04 · Review: round 1 done 2026-11-04, 22 findings resolved ([§13](#13-review-log)) · Owner decisions D1–D9: decided 2026-11-04 with the recommended options ([§12](#12-owner-decisions)) · Implementation: 0.2.0-a and 0.2.0-b merged (tests 1–7, 12, 13, 15); 0.2.0-c on `feat/0.2.0-c` (tests 8–10)
 - Related: [DEV-PLAN](../DEV-PLAN.md) M2 · [SPEC-0.1.2](SPEC-0.1.2-FLOW-TEST-CASES.md) §16 · [SPEC-0.1.3](SPEC-0.1.3-SCAN-MODES-AND-WORKSPACE.md) · ADR-0004, ADR-0008, ADR-0009 · TM-03
 - Cases: NSC-AC-002, NSC-AC-003 (modification), NSC-AC-006, NSC-AUTH-002, NSC-BIZ-001, NSC-INJ-004 (reflection only)
 - No code may be written for a milestone below until this spec is ACCEPTED and its owner decisions are recorded.

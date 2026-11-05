@@ -49,7 +49,7 @@ Examples: [examples/flows/](../examples/flows/) (Integration with access control
 | Key | Rules |
 |---|---|
 | `id` | `S1`, `S2`, … unique within the flow |
-| `action` | `http`, `navigate`, `click`, `fill`, `select`, `submit`, `see`, `wait_for`, `fixture_create` (safe-validate) |
+| `action` | `http`, `navigate`, `click`, `fill`, `select`, `submit`, `see`, `wait_for`, `fixture_create` and `logout` (safe-validate) |
 | `actor` | Must be listed in the header's `actors` |
 | `request` | `http`/`navigate` only: `{method, path, query?, accept?}`. `path` starts with `/` and contains no query string, `..`, backslash or encoded separators. A `{{var}}` placeholder must be a whole path segment or a whole query value. `accept` is `json`, `text` or `any`; `navigate` always sends an HTML `Accept`. Custom headers are not supported: credentials come only from manifest actors. |
 | `target` | UI actions only: exactly one of `{role, name}`, `{label}`, `{text}`, `{test_id}` |
@@ -61,6 +61,7 @@ Examples: [examples/flows/](../examples/flows/) (Integration with access control
 | `depends_on` | Earlier step IDs that must pass before this step runs |
 | `fixture` | safe-validate only: the declared fixture that a `fixture_create` or mutation step uses |
 | `as` | `fixture_create` only: the variable that receives the created id |
+| `check` | Mutation steps only: `"csrf"` runs the NSC-AC-006 probes instead of one request (see [Security checks](#security-checks-in-safe-validate-020-c)). The step takes no `expect`. |
 | `request.body` | Mutation steps only: `{"json": {...}}`, at most 4096 bytes. A string value that is exactly `{{name}}` takes a run variable or `{{marker}}`. Any other `{{` is an error. |
 
 ### Expectations (`expect`)
@@ -166,6 +167,30 @@ Each redirect hop is a new request and is matched again, so a 307 to an undeclar
 
 ### Approval covers the manifest entries
 A flow that uses a fixture or a login actor is approved together with the entries it relies on: the referenced fixture entries, `auth_endpoints` and the referenced login flow. Editing any of them invalidates the approval. Run `navsentry flow approve --flows <file> --by <name> --config <manifest>`; without `--config`, approving a flow that uses fixtures exits 3.
+
+## Security checks in safe-validate (0.2.0-c)
+
+**NSC-AC-003, modification.** Use the access steps you already know on a declared fixture mutation. The owner's own mutation (`access: allowed`) is the positive control. The other actor's identical mutation is `object_owner` + `access: denied`. A 2xx with the control's contract is FAIL, and with an approved flow the finding is VALIDATED. If the positive control did not pass, the result is INCONCLUSIVE. NavSentry does not compare whether the other actor's change took effect, because it does not record response body values.
+
+```json
+{ "id": "S2", "action": "http", "actor": "reader_a", "fixture": "orders", "request": { "method": "PATCH", "path": "/api/orders/{{o}}", "body": { "json": { "note": "{{marker}}" } } }, "expect": { "access": "allowed" } }
+{ "id": "S3", "action": "http", "actor": "reader_b", "fixture": "orders", "object_owner": "reader_a", "request": { "method": "PATCH", "path": "/api/orders/{{o}}", "body": { "json": { "note": "{{marker}}" } } }, "expect": { "access": "denied", "deny_status": [403, 404] } }
+```
+
+**NSC-AC-006, CSRF.** Mark an `allowed_mutations` entry with `csrf`, for example `{"token_from": {"cookie": "csrf_token"}, "send_as": {"header": "x-csrf-token"}}`. A step with `"check": "csrf"` then sends three requests with the actor's cookie session, all counted against `max_mutations`:
+1. without the token, from the same origin;
+2. with the token, `Origin: https://navsentry-csrf-probe.invalid` and no `Referer`;
+3. with the token, from the same origin (the control; it runs last because it may change the object).
+
+Rejected means 401, 403, 419, 422 or a redirect to `login_path`. A 2xx probe with the control's contract is FAIL. Header-token actors are NOT_TESTED ("CSRF needs a cookie session") and nothing is sent. Entries may declare `content_type: application/x-www-form-urlencoded`. The step's JSON body must then be flat, and it is sent form-encoded.
+
+**NSC-AUTH-002, session after logout.** `auth_endpoints.logout` must be declared. The step's `request` is an authenticated GET or HEAD:
+
+```json
+{ "id": "S5", "action": "logout", "actor": "reader_c", "request": { "method": "GET", "path": "/api/me" } }
+```
+
+The step sends the read (it must return 2xx, the positive control), then the logout, then the same read with the pre-logout session. A 401, a 403 or a redirect to `login_path` is PASS. A 2xx with the same contract is FAIL. After this step the actor is logged out, so its later steps are NOT_TESTED. Logging out a fixture's `cleanup_actor` is a lint error.
 
 ## Drafts from an OpenAPI document (0.1.3)
 `navsentry flow import --openapi openapi.json --config <manifest> --out navsentry/flows/drafts` turns documented GET operations into draft integration flows. A protected operation (`security` set) becomes a pair: an authenticated actor `access: allowed` and anonymous `access: denied`. Path and required query parameters become variables with `env` references such as `NAVSENTRY_VAR_ORDER_ID`: set them to test values before running. The document is a contract claim, not observed behaviour, so review every step. IMPORT.md lists every operation that was not encoded and why.

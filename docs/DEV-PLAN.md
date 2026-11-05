@@ -20,6 +20,7 @@ Principle: each milestone ships working, tested behavior — never empty interfa
 | **M1b+** Browser follow-ups | Headful mode, DOM checks (CSP violations, cookie visibility, framing), YAML manifests (governed dependency); live discovery moved to 0.1.3-a2 | ⏳ | QA-AT-04 passes on Linux headless; out-of-scope subresource blocked test |
 | **0.2.0-a** safe-validate foundations | Fixture and auth-endpoint config, `checkMutation`, id rules, Budget cleanup reserve and window, pending intents, cleanup and leftovers, signal coordinator, http mutation steps, reports ([ADR-0010](adr/0010-safe-validate-fixtures.md)) | ✅ done (feat/0.2.0-a) | SPEC-0.2.0 tests 1–7; gate PASS |
 | **0.2.0-b** Logins and browser mutations | http and browser login actors, `cookie_env`, browser `postData` matching through `checkMutation`, `fill`/`select`/`submit` in safe-validate, approval hashing of fixture/auth/login entries | ✅ done (feat/0.2.0-b) | SPEC-0.2.0 tests 2, 12, 13, 15; gate PASS |
+| **0.2.0-c** Safe-validate security checks | NSC-AC-003 modification, NSC-AC-006 CSRF (`check: "csrf"`, reserved probe origin), NSC-AUTH-002 (`logout` step), form-encoded fixture mutations | ✅ done (feat/0.2.0-c) | SPEC-0.2.0 tests 8–10; gate PASS |
 | **M2** Authenticated validation | Login flows from env credentials, per-actor isolated contexts, scenarios as flow-format extensions (login actions, safe-validate mutation steps with cleanup, `session-lifecycle`, `csrf`, `reflected-marker`), fixtures with positive/negative controls, cleanup | ⏳ | NSC-AC-002/003/006, NSC-AUTH-002, NSC-INJ-004 automated; QA-AT-07 passes |
 | **M3** CLI transports | curl and PowerShell execution (7 and 5.1), parity tests vs direct-http, Windows + Linux runs, visual provider interface contract (still unavailable by default) | ⏳ | identical findings across transports on the fixture; PRM-SAFE-001 closed |
 | **M4** Reporting & interop | HTML report, resumable large runs with integrity manifest, ASVS 5.0 requirement IDs verified, DevSift correlation adapter (versioned, read-only) | ⏳ | schema v1 stable; correlation sample |
@@ -29,7 +30,7 @@ Principle: each milestone ships working, tested behavior — never empty interfa
 1. Owner: remove `workflow` scope from the GitHub CLI token; enable private vulnerability reporting in repository settings.
 2. Run `npm test` on Linux and Node 22/24; update [TESTING.md](TESTING.md#platform-matrix).
 3. More reviewed client-library records (STA-LIBVULN recognises jQuery banners today) and other library banners, each with primary-source verification and independent review.
-4. M2: [SPEC-0.2.0](specs/SPEC-0.2.0-M2-SAFE-VALIDATE.md) ACCEPTED 2026-11-04; 0.2.0-a and 0.2.0-b done. Next: 0.2.0-c (NSC-AC-003 modification, NSC-AC-006 CSRF, NSC-AUTH-002 session after logout; tests 8–10).
+4. M2: [SPEC-0.2.0](specs/SPEC-0.2.0-M2-SAFE-VALIDATE.md) ACCEPTED 2026-11-04; 0.2.0-a, 0.2.0-b and 0.2.0-c done. Next: 0.2.0-d (NSC-BIZ-001 owner-declared invariants, NSC-INJ-004 marker reflection as an observation; tests 11 and 14).
 
 ## Risks
 | Risk | Mitigation |

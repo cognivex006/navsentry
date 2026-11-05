@@ -105,6 +105,20 @@ function lintDoc(doc: FlowDoc, m: Manifest, gate: ScopeGate, red: Redactor, E: s
       if (s.as) defined.add(s.as);
       continue;
     }
+    if (s.action === "logout") {
+      // NSC-AUTH-002 (SPEC-0.2.0 §5.3): request is the authenticated read repeated after logout.
+      if (m.safety.mode !== "safe-validate") at(L, "/action", "logout needs safety.mode safe-validate");
+      else if (!m.auth_endpoints.logout) at(L, "/action", "logout needs auth_endpoints.logout in the manifest");
+      if (s.actor === "anonymous") at(L, "/actor", "logout needs an authenticated actor");
+      const cleaners = Object.entries(m.fixtures).filter(([, f]) => f.cleanup_actor === s.actor).map(([n]) => n);
+      if (cleaners.length) at(L, "/actor", `${s.actor} is the cleanup_actor of ${cleaners.join(", ")}; logging it out would leave fixtures behind`);
+      if (s.expect || s.extract || s.target || s.value || s.fixture) at(L, "/action", "a logout step takes only request (the read to repeat)");
+      if (!s.request) at(L, "/request", "required: the authenticated read to repeat after logout");
+      else if (s.request.method !== "GET" && s.request.method !== "HEAD") at(L, "/request/method", "the repeated read is GET or HEAD");
+      else check(L, "/request/path", fillPath(s.request.path, () => VAR_SENTINEL), s.request.method);
+      for (const v of placeholders(s)) if (!defined.has(v)) at(L, "/request", `variable {{${v}}} is used before it is defined`);
+      continue;
+    }
     const ui = UI_ACTIONS.has(s.action);
     if (ui) {
       if (s.request) at(L, "/request", "UI actions take target, not request");
@@ -126,16 +140,24 @@ function lintDoc(doc: FlowDoc, m: Manifest, gate: ScopeGate, red: Redactor, E: s
           const tpl = r.path.split("/").map((seg) => (PLACEHOLDER.test(seg) ? "{{id}}" : seg)).join("/");
           const entry = fx.allowed_mutations.find((e) => e.method === r.method && e.path === tpl);
           if (!entry) at(L, "/request", `${r.method} ${tpl} matches no allowed_mutations entry of fixture "${s.fixture}"`);
-          else if (origin) {
-            const d = gate.checkMutation(new URL(fillPath(r.path, () => "x"), origin).toString(), r.method, entry);
-            if (!d.allowed) at(L, "/request/path", `out of scope: ${d.reason}`);
+          else {
+            if (s.check === "csrf" && !entry.csrf) at(L, "/check", "check csrf needs an allowed_mutations entry with csrf");
+            if (origin) {
+              const d = gate.checkMutation(new URL(fillPath(r.path, () => "x"), origin).toString(), r.method, entry);
+              if (!d.allowed) at(L, "/request/path", `out of scope: ${d.reason}`);
+            }
           }
+        }
+        if (s.check === "csrf") {
+          const a = m.actors[s.actor];
+          if (!a?.login && !a?.cookie_env) warn(L, `${s.id}: ${s.actor} is not a cookie-session actor; the CSRF check will be NOT_TESTED`);
         }
         if (s.follow_redirects) at(L, "/follow_redirects", "mutation steps never follow redirects (SPEC-0.2.0 §3.3)");
         if (s.action !== "http") at(L, "/action", "mutations are http steps");
         if (r.query && Object.keys(r.query).length) at(L, "/request/query", "mutation steps take no query; put values in the body");
       } else if (!m.safety.allowed_methods.includes(r.method)) at(L, "/request/method", `${r.method} is not in the manifest safety.allowed_methods`);
       if (s.fixture && !mutation) at(L, "/fixture", "only on fixture_create and mutation steps");
+      if (s.check && !mutation) at(L, "/check", "only on mutation steps");
       if (s.action === "navigate" && r.method !== "GET") at(L, "/request/method", "navigate is always GET");
       if (s.action === "navigate" && r.accept) at(L, "/request/accept", "navigate always accepts HTML");
       if (s.action === "http" && (r.accept as string) === "html") at(L, "/request/accept", "use a navigate step for HTML page loads");
@@ -148,7 +170,8 @@ function lintDoc(doc: FlowDoc, m: Manifest, gate: ScopeGate, red: Redactor, E: s
       for (const seg of r.path.split("/")) if (RISKY.test(seg)) warn(L, `path segment "${seg}" suggests a side effect on GET; confirm with the owner`);
       if (!mutation) check(L, "/request/path", fillPath(r.path, () => VAR_SENTINEL), r.method as "GET");
       const e = s.expect;
-      if (!e || !Object.keys(e).length) at(L, "/expect", "an http/navigate step needs at least one expectation");
+      if ((!e || !Object.keys(e).length) && s.check !== "csrf") at(L, "/expect", "an http/navigate step needs at least one expectation");
+      if (e && s.check === "csrf") at(L, "/expect", "a csrf step judges its own probes; remove expect");
       if (e) {
         for (const hn of [...(e.headers_present ?? []), ...(e.headers_absent ?? [])]) {
           if (SECURITY_HEADERS.has(hn) || FORBIDDEN_EXPECT_HEADERS.has(hn)) at(L, "/expect", `header "${hn}" is covered by the security checks, not by functional expectations`);

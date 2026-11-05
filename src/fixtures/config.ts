@@ -14,6 +14,8 @@ export interface EndpointEntry {
   content_type?: string;
   max_body_bytes?: number;
   body?: { json: Record<string, unknown> };
+  /** NSC-AC-006 (SPEC-0.2.0 §5.2): where the anti-CSRF token comes from and how it is sent. allowed_mutations only. */
+  csrf?: { token_from: { cookie: string }; send_as: { header: string } };
 }
 
 export interface FixtureDecl {
@@ -39,12 +41,12 @@ const MUTATION: MutationMethod[] = ["POST", "PUT", "PATCH", "DELETE"];
 const MAX_BODY_TEMPLATE = 4096;
 
 function keys(o: Obj, allowed: string[], where: string, p: string[]): void {
-  for (const k of Object.keys(o)) if (!allowed.includes(k)) p.push(`${where}.${k}: ${k === "csrf" ? "CSRF probes arrive in milestone 0.2.0-c" : "unknown key"}`);
+  for (const k of Object.keys(o)) if (!allowed.includes(k)) p.push(`${where}.${k}: ${k === "csrf" ? "csrf is allowed only on allowed_mutations entries" : "unknown key"}`);
 }
 
-function endpoint(v: unknown, where: string, p: string[], o: { methods: (MutationMethod | "GET")[]; placeholder: boolean; status?: boolean; body?: boolean; bodyRules?: boolean; extract?: boolean }): EndpointEntry | undefined {
+function endpoint(v: unknown, where: string, p: string[], o: { methods: (MutationMethod | "GET")[]; placeholder: boolean; status?: boolean; body?: boolean; bodyRules?: boolean; extract?: boolean; csrf?: boolean }): EndpointEntry | undefined {
   if (!isObj(v)) { p.push(`${where}: must be an object`); return undefined; }
-  keys(v, ["method", "path", ...(o.status ? ["expect_status"] : []), ...(o.body ? ["body"] : []), ...(o.bodyRules ? ["content_type", "max_body_bytes"] : []), ...(o.extract ? ["extract"] : [])], where, p);
+  keys(v, ["method", "path", ...(o.status ? ["expect_status"] : []), ...(o.body ? ["body"] : []), ...(o.bodyRules ? ["content_type", "max_body_bytes"] : []), ...(o.extract ? ["extract"] : []), ...(o.csrf ? ["csrf"] : [])], where, p);
   const method = v.method as EndpointEntry["method"];
   if (!o.methods.includes(method)) p.push(`${where}.method: one of ${o.methods.join(", ")}`);
   const path = v.path;
@@ -63,8 +65,17 @@ function endpoint(v: unknown, where: string, p: string[], o: { methods: (Mutatio
     else if (!stringLeaves(v.body.json)) p.push(`${where}.body: leaves must be strings, numbers, booleans or null`);
     else e.body = { json: v.body.json };
   }
+  if (o.csrf && v.csrf !== undefined) {
+    const c = v.csrf as Record<string, unknown>;
+    const tf = isObj(c) ? c.token_from : undefined, sa = isObj(c) ? c.send_as : undefined;
+    const NAME_RE = /^[A-Za-z0-9_-]{1,64}$/;
+    if (!isObj(c) || Object.keys(c).sort().join() !== "send_as,token_from" || !isObj(tf) || Object.keys(tf).join() !== "cookie" || typeof tf.cookie !== "string" || !NAME_RE.test(tf.cookie) || !isObj(sa) || Object.keys(sa).join() !== "header" || typeof sa.header !== "string" || !NAME_RE.test(sa.header))
+      p.push(`${where}.csrf: {"token_from": {"cookie": "<name>"}, "send_as": {"header": "<name>"}}`);
+    else e.csrf = { token_from: { cookie: tf.cookie as string }, send_as: { header: (sa.header as string).toLowerCase() } };
+  }
   if (o.bodyRules) {
     if (v.content_type !== undefined && (typeof v.content_type !== "string" || !/^[a-z]+\/[a-z0-9.+-]+$/.test(v.content_type))) p.push(`${where}.content_type: a media type such as application/json`);
+    else if (!["application/json", "application/x-www-form-urlencoded"].includes((v.content_type as string | undefined) ?? "application/json")) p.push(`${where}.content_type: application/json or application/x-www-form-urlencoded`);
     else e.content_type = (v.content_type as string | undefined) ?? "application/json";
     if (v.max_body_bytes !== undefined && (!Number.isInteger(v.max_body_bytes) || (v.max_body_bytes as number) < 1 || (v.max_body_bytes as number) > 65536)) p.push(`${where}.max_body_bytes: 1–65536`);
     else e.max_body_bytes = (v.max_body_bytes as number | undefined) ?? MAX_BODY_TEMPLATE;
@@ -107,7 +118,7 @@ export function parseFixtures(raw: unknown, actors: string[], p: string[]): Reco
     const muts: EndpointEntry[] = [];
     if (f.allowed_mutations !== undefined) {
       if (!Array.isArray(f.allowed_mutations) || f.allowed_mutations.length > 20) p.push(`${w}.allowed_mutations: an array of at most 20 entries`);
-      else f.allowed_mutations.forEach((m, i) => { const e = endpoint(m, `${w}.allowed_mutations[${i}]`, p, { methods: MUTATION, placeholder: true, bodyRules: true }); if (e) muts.push(e); });
+      else f.allowed_mutations.forEach((m, i) => { const e = endpoint(m, `${w}.allowed_mutations[${i}]`, p, { methods: MUTATION, placeholder: true, bodyRules: true, csrf: true }); if (e) muts.push(e); });
     }
     if (create && extract && exists && cleanup && typeof owner === "string" && typeof cleanupActor === "string")
       out[name] = { owner_actor: owner, cleanup_actor: cleanupActor, create: { ...create, extract }, exists, cleanup, ...(verify ? { verify_gone: verify } : {}), allowed_mutations: muts };
