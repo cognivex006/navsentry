@@ -225,6 +225,9 @@ async function runDoc(doc: FlowDoc, ctx: FlowContext, budget: { exhausted?: stri
       res.securityCase = "NSC-AUTH-002";
       const entry = ctx.manifest.auth_endpoints.logout;
       if (!ctx.fixtures || !entry) { skip("logout needs safe-validate and auth_endpoints.logout"); continue; }
+      // Runtime guard behind the lint rule: a cleanup actor keeps its session, or fixtures would be left behind.
+      const cleaners = Object.entries(ctx.manifest.fixtures).filter(([, f]) => f.cleanup_actor === s.actor).map(([n]) => n);
+      if (cleaners.length) { res.status = "ERROR"; res.reason = `${s.actor} is the cleanup_actor of ${cleaners.join(", ")}; logout refused`; continue; }
       const target = `${r.method} ${du.toString()}`;
       const flowRef = { id: doc.header.id, step: s.id };
       const read = () => ctx.send({ method: r.method as FlowSendRequest["method"], url: u.toString(), displayUrl: du.toString(), actor: s.actor, headers: { ...actorHeaders, accept: ACCEPT[(r.accept as keyof typeof ACCEPT) ?? "any"] ?? ACCEPT.any, "x-navsentry-flow": `${doc.header.id}/${s.id}` }, flow: flowRef });

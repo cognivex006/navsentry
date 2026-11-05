@@ -104,6 +104,7 @@ function lintDoc(doc: FlowDoc, m: Manifest, gate: ScopeGate, red: Redactor, E: s
       // safe-validate (SPEC-0.2.0 §4.2): the fixture must be declared in the manifest; the id becomes a variable.
       if (m.safety.mode !== "safe-validate") at(L, "/action", "fixture_create needs safety.mode safe-validate");
       else if (!s.fixture || !m.fixtures[s.fixture]) at(L, "/fixture", `fixture "${s.fixture}" is not declared in the manifest fixtures`);
+      else if (s.actor !== m.fixtures[s.fixture]!.owner_actor) at(L, "/actor", `fixture "${s.fixture}" is created by its owner_actor ${m.fixtures[s.fixture]!.owner_actor}`);
       if (s.as) defined.add(s.as);
       continue;
     }
