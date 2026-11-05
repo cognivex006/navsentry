@@ -4,6 +4,13 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 
 ## [Unreleased]
 
+### Added
+- `examples/manifest.local-demo.json` and `manifest.local-demo-secure.json` for the bundled demo app (`node dist/scripts/demo.js serve`), so every scan mode, `compare` and the visual driver can be tried without a real target. README gains *Scan modes at a glance*, *Computer Use (visual driver)* and *Try it locally*.
+
+### Fixed
+- Docs out of step with 0.2.0: case counts (57 cases, 26 automated), coverage classes, the transport table and Computer Use boundary (the visual driver is usable in development), M2 status, exit code 4 in the flow exit table, test-suite list, GATE-09/10 and report artifacts.
+- The consumer skill now says the visual driver also needs `visual-computer-use` and `playwright-browser` in `transports.order`, that `browse start` stays running in the background, and that loopback targets need an owner-confirmed `network.allow_private` entry. Exit codes are a readable list, and the stale "mutations wait for M2" note is replaced by safe-validate guidance.
+
 ## [0.2.0] - 2026-11-05
 
 ### Fixed

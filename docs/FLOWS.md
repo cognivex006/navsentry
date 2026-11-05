@@ -288,10 +288,13 @@ navsentry test --config manifest.json --flows navsentry/flows --out runs/before
 
 | Code | Meaning |
 |---|---|
+| 0 | No findings in tested scope |
 | 1 | Security findings, or a functional FAIL |
-| 2 | The run is incomplete. This includes any E2E flow with UI steps in this release. |
-| 0 | Otherwise |
+| 2 | The run is incomplete or FAILED. This includes an E2E flow with UI steps on the http engine, and safe-validate leftovers. |
 | 3 | Invalid manifest or flows (detected before any request) |
+| 4 | Workspace dirty (a leftover or unexpected change in the project) |
+
+When several apply: 3 > 4 > 1 > 2 > 0.
 
 ## Fix verification
 ```bash

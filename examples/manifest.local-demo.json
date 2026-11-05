@@ -1,0 +1,63 @@
+{
+  "version": "1",
+  "project": "navsentry-local-demo",
+  "environment": "local",
+  "authorization": {
+    "acknowledged": true,
+    "owner": "local-tester"
+  },
+  "targets": {
+    "origins": [
+      "http://127.0.0.1:4173"
+    ],
+    "allowed_paths": [
+      "/**"
+    ],
+    "denied_paths": [
+      "/admin/**"
+    ],
+    "seed_paths": [
+      "/",
+      "/api/profile",
+      "/api/error",
+      "/api/token",
+      "/go-out"
+    ]
+  },
+  "network": {
+    "allow_private": [
+      {
+        "host": "127.0.0.1",
+        "approved_by": "local-tester",
+        "reason": "local disposable NavSentry demo app (demo.js serve)"
+      }
+    ]
+  },
+  "safety": {
+    "mode": "observe",
+    "max_requests": 200,
+    "max_requests_per_second": 5,
+    "max_duration_seconds": 300,
+    "concurrency": 1
+  },
+  "transports": {
+    "order": [
+      "direct-http",
+      "playwright-browser",
+      "visual-computer-use"
+    ],
+    "visual_computer_use": true
+  },
+  "checks": {
+    "disabled": []
+  },
+  "report": {
+    "language": "th",
+    "formats": [
+      "json",
+      "markdown",
+      "sarif"
+    ],
+    "evidence": "redacted-only"
+  }
+}
