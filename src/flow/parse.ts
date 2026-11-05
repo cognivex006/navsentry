@@ -136,6 +136,8 @@ export interface FlowDoc {
   headerBlock: { start: number; end: number };
   /** Resolved `requires` (set by loadFlowFiles; missing IDs are lint errors). */
   deps?: FlowDoc[];
+  /** Canonical manifest entries the flow depends on (fixtures, auth endpoints, logins); set by `bindManifest`. */
+  bindings?: string;
 }
 
 export class FlowError extends Error {

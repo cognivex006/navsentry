@@ -80,6 +80,13 @@ export class Redactor {
     this.preserve = new Set(preserve);
   }
 
+  /** Adds a secret learned during the run (a session cookie from a login, SPEC-0.2.0 S17). */
+  addSecret(v: string): void {
+    if (v.length < 4 || this.literals.includes(v)) return;
+    this.literals.push(v);
+    this.literals.sort((a, b) => b.length - a.length);
+  }
+
   text(input: string): { text: string; outcome: RedactionOutcome } {
     let out = input;
     let count = 0;

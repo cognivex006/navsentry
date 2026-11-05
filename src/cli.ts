@@ -26,7 +26,7 @@ import { renderJson, renderMarkdown, renderSarif, securityResult, validateRunRes
 import { executeTest, planRun } from "./runner.js";
 import { analyzeRun } from "./flow/analyze.js";
 import { approveText, initTemplate } from "./flow/author.js";
-import { classify } from "./flow/classify.js";
+import { bindManifest, classify } from "./flow/classify.js";
 import { manualLine } from "./flow/execute.js";
 import { lintFlows } from "./flow/lint.js";
 import { FLOW_ID, FlowError, loadFlowFiles, type FlowDoc } from "./flow/parse.js";
@@ -77,7 +77,7 @@ Story flows (Markdown test cases; zero network):
   navsentry flow import --openapi <spec.json> --config <manifest.json> --out <dir>   (local OpenAPI JSON → drafts)
   navsentry inventory --config <manifest.json> [--project <dir>] [--out <dir>]   (development: read-only code inventory)
   navsentry flow lint --config <manifest.json> --flows <path>
-  navsentry flow approve --flows <file> --by <name> [--reference <ref>] [--root <flows-dir>]   (owner action)
+  navsentry flow approve --flows <file> --by <name> [--config <manifest>] [--reference <ref>] [--root <flows-dir>]   (owner action; --config is required for flows that use fixtures)
   navsentry flow show --flows <file>
 
 Exit: 0 no findings · 1 findings · 2 incomplete · 3 usage/config error · 4 workspace dirty
@@ -664,6 +664,11 @@ async function flowCommand(argv: string[]): Promise<number> {
       if (!doc) throw new UsageError("--flows must be inside --root (default: its own directory)");
       const missing = doc.header.requires.filter((id) => !doc.deps?.some((x) => x.header.id === id));
       if (missing.length) throw new UsageError(`cannot approve: required flow(s) ${missing.join(", ")} not found in ${root}`);
+      // SPEC-0.2.0 §4.5: fixture and login entries are part of the approved content.
+      const cfg = arg(rest, "--config");
+      if (cfg) bindManifest(docs, loadManifest(cfg));
+      else if (docs.some((d) => d.steps.some((s) => s.fixture))) throw new UsageError("this flow set uses fixtures: pass --config <manifest> so the approval covers the fixture entries");
+      if (cfg) print(`approving with manifest entries: ${doc.bindings ? Object.keys(JSON.parse(doc.bindings)).join(", ") : "none"}`);
       const ref = arg(rest, "--reference");
       writeFileSync(path, approveText(doc, by, new Date().toISOString().slice(0, 10), ref));
       print(`approved ${doc.header.id} by ${by}; editing the flow invalidates this approval`);

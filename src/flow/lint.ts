@@ -6,7 +6,7 @@ import type { Manifest } from "../config.js";
 import { SECURITY_HEADERS } from "../contract.js";
 import { Redactor } from "../redact.js";
 import { ScopeGate } from "../scope.js";
-import { classify, flowHash, requestTemplate } from "./classify.js";
+import { bindManifest, classify, flowHash, requestTemplate } from "./classify.js";
 import { MUTATION_METHODS, UI_ACTIONS, type FlowDoc, type FlowStep } from "./parse.js";
 
 export const VAR_SENTINEL = "navsentry-var";
@@ -73,6 +73,18 @@ function lintDoc(doc: FlowDoc, m: Manifest, gate: ScopeGate, red: Redactor, E: s
   }
 
   const defined = new Set([...Object.keys(h.vars), ...Object.keys(h.imports)]);
+  // A login flow (SPEC-0.2.0 §4.3) receives the actor's credentials as {{username}} and {{password}}, for fill steps only.
+  const loginActors = Object.entries(m.actors).filter(([, a]) => a.login && "flow" in a.login && a.login.flow === h.id).map(([n]) => n);
+  if (loginActors.length) {
+    defined.add("username");
+    defined.add("password");
+    if (m.safety.mode !== "safe-validate") at(h.line, "/id", "login flows need safety.mode safe-validate");
+    for (const s of doc.steps) {
+      if (!loginActors.includes(s.actor)) at(s.line, "/actor", `a login flow's steps run as its login actor (${loginActors.join(", ")})`);
+      if (!["navigate", "fill", "submit", "see", "wait_for", "click"].includes(s.action)) at(s.line, "/action", "login flows use navigate, fill, submit, click, see and wait_for only");
+      if (s.action === "fill" && s.value && !["username", "password"].includes(s.value.var)) at(s.line, "/value", "login flows fill only {{username}} and {{password}}");
+    }
+  }
   for (const n of Object.keys(h.imports)) if (n in h.vars) at(h.line, `/imports/${n}`, "collides with a local variable of the same name");
   const seen = new Set<string>();
   const cls = classify(doc);
@@ -171,6 +183,7 @@ function lintDoc(doc: FlowDoc, m: Manifest, gate: ScopeGate, red: Redactor, E: s
 }
 
 export function lintFlows(docs: FlowDoc[], m: Manifest): LintResult {
+  bindManifest(docs, m);
   const gate = new ScopeGate(m);
   const red = new Redactor();
   const errors: string[] = [];

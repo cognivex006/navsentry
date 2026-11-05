@@ -15,15 +15,15 @@ import type { Exchange } from "./types.js";
 import type { UiTarget } from "../flow/parse.js";
 
 /** Minimal structural types of the playwright-core API used here (it is an optional peer). */
-interface PwRequest { url(): string; method(): string; headers(): Record<string, string>; resourceType(): string; isNavigationRequest(): boolean; frame(): { parentFrame(): unknown } }
+interface PwRequest { postDataBuffer(): Buffer | null; url(): string; method(): string; headers(): Record<string, string>; resourceType(): string; isNavigationRequest(): boolean; frame(): { parentFrame(): unknown } }
 interface PwRoute { request(): PwRequest; fulfill(o: { status: number; headers: Record<string, string>; body: Buffer }): Promise<void>; abort(code?: string): Promise<void> }
 interface PwWebSocketRoute { url(): string; close(o?: { code?: number; reason?: string }): Promise<void> }
 interface PwMouse { click(x: number, y: number): Promise<void>; wheel(dx: number, dy: number): Promise<void> }
-interface PwLocator { first(): PwLocator; click(o: { timeout: number }): Promise<void>; waitFor(o: { state: "visible"; timeout: number }): Promise<void>; isVisible(): Promise<boolean> }
+interface PwLocator { first(): PwLocator; fill(v: string, o: { timeout: number }): Promise<void>; selectOption(v: string, o: { timeout: number }): Promise<unknown>; click(o: { timeout: number }): Promise<void>; waitFor(o: { state: "visible"; timeout: number }): Promise<void>; isVisible(): Promise<boolean> }
 interface PwConsoleMessage { type(): string; text(): string; location(): { url: string; lineNumber: number } }
 interface PwPage {
   goto(url: string, o: { timeout: number; waitUntil: "load" }): Promise<{ status(): number } | null>;
-  waitForLoadState(s: "load", o: { timeout: number }): Promise<void>;
+  waitForLoadState(s: "load" | "networkidle", o: { timeout: number }): Promise<void>;
   getByRole(role: string, o: { name: string; exact: true }): PwLocator;
   getByLabel(t: string, o: { exact: true }): PwLocator;
   getByText(t: string, o: { exact: true }): PwLocator;
@@ -42,6 +42,7 @@ interface PwContext {
   routeWebSocket(p: string, fn: (ws: PwWebSocketRoute) => Promise<void>): Promise<void>;
   newPage(): Promise<PwPage>;
   close(): Promise<void>;
+  cookies(urls?: string[]): Promise<{ name: string; value: string }[]>;
 }
 interface PwBrowser { newContext(o: Record<string, unknown>): Promise<PwContext>; close(): Promise<void> }
 interface PwChromium { executablePath(): string; launch(o: Record<string, unknown>): Promise<PwBrowser> }
@@ -91,6 +92,12 @@ export interface BrowserEngineOptions {
   /** Records a request the engine refused before sending (WebSocket, non-observe method…). */
   onDenied(url: string, method: string, reason: string): void;
   onConsole?(e: ConsoleEvent): void;
+  /**
+   * safe-validate only (SPEC-0.2.0 §3.3): decides a non-observe browser request. The runner matches a declared
+   * entry with `checkMutation`, checks the content type and body size, and sends it through direct-http.
+   * Without this hook every non-observe request is refused (observe engine, visual driver).
+   */
+  mutate?(req: BrowserRequest & { body: Buffer; contentType: string }): Promise<Exchange | undefined>;
 }
 
 /** Browser builds come from the process's PLAYWRIGHT_BROWSERS_PATH (read once by playwright-core at load). */
@@ -173,7 +180,8 @@ export class BrowserEngine {
     let u: URL;
     try { u = new URL(url); } catch { await route.abort("blockedbyclient"); return; }
     if (u.protocol !== "http:" && u.protocol !== "https:") { await route.abort("blockedbyclient"); return; }
-    if (!OBSERVE_METHODS.has(rq.method())) {
+    const observe = OBSERVE_METHODS.has(rq.method());
+    if (!observe && !this.opts.mutate) {
       // The browser would send a body NavSentry cannot vet; observe mode sends no state-changing request.
       this.opts.onDenied(url, rq.method(), "state-changing browser request refused (observe engine)");
       await route.abort("blockedbyclient");
@@ -184,7 +192,8 @@ export class BrowserEngine {
     Object.assign(headers, this.actorHeaders.get(actor) ?? {});
     let ex: Exchange | undefined;
     try {
-      ex = await this.opts.send({ method: rq.method(), url, actor, headers, resourceType: rq.resourceType(), mainDocument: rq.isNavigationRequest() && rq.frame().parentFrame() === null });
+      const base = { method: rq.method(), url, actor, headers, resourceType: rq.resourceType(), mainDocument: rq.isNavigationRequest() && rq.frame().parentFrame() === null };
+      ex = observe ? await this.opts.send(base) : await this.opts.mutate!({ ...base, body: rq.postDataBuffer() ?? Buffer.alloc(0), contentType: rq.headers()["content-type"] ?? "" });
     } catch {
       // The caller records the reason (budget, transport error); the page just sees a failed load.
       await route.abort("failed");
@@ -213,12 +222,29 @@ export class BrowserEngine {
     }
   }
 
-  /** click | see | wait_for. Returns whether the expectation held; errors are reported, not thrown. */
-  async act(actor: string, action: "click" | "see" | "wait_for", target: UiTarget): Promise<{ ok: boolean; observed: string; error?: string }> {
+  /** Session cookies the actor's context holds for an origin (browser login, SPEC-0.2.0 §4.3). Values stay in memory. */
+  async cookies(actor: string, origin: string): Promise<{ name: string; value: string }[]> {
+    const s = this.contexts.get(actor);
+    return s ? s.ctx.cookies([origin]) : [];
+  }
+
+  /**
+   * click | see | wait_for, and in safe-validate fill | select | submit. Returns whether the expectation held;
+   * errors are reported, not thrown. A filled value is never returned or logged.
+   */
+  async act(actor: string, action: "click" | "see" | "wait_for" | "fill" | "select" | "submit", target: UiTarget, value?: string): Promise<{ ok: boolean; observed: string; error?: string }> {
     const s = this.contexts.get(actor);
     if (!s) return { ok: false, observed: "no page loaded for this actor", error: "a navigate step must run first" };
     const loc = locate(s.page, target);
     try {
+      if (action === "fill") { await loc.fill(value ?? "", { timeout: ACTION_TIMEOUT_MS }); return { ok: true, observed: "filled (value not shown)" }; }
+      if (action === "select") { await loc.selectOption(value ?? "", { timeout: ACTION_TIMEOUT_MS }); return { ok: true, observed: "selected (value not shown)" }; }
+      if (action === "submit") {
+        await loc.click({ timeout: ACTION_TIMEOUT_MS });
+        // A submit may be a navigation or a fetch: wait until the page's requests have settled.
+        await s.page.waitForLoadState("networkidle", { timeout: ACTION_TIMEOUT_MS }).catch(() => undefined);
+        return { ok: true, observed: "submitted" };
+      }
       if (action === "click") {
         await loc.click({ timeout: ACTION_TIMEOUT_MS });
         await s.page.waitForLoadState("load", { timeout: ACTION_TIMEOUT_MS });

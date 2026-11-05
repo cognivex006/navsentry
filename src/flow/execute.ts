@@ -51,11 +51,13 @@ export interface FlowContext {
 export interface FlowBrowser {
   /** Loads a page; `exchange` is the final main-document exchange (after redirects). */
   navigate(actor: string, url: string, flow: { id: string; step: string }): Promise<{ exchange?: Exchange; requestIds: string[]; error?: string }>;
-  act(actor: string, action: "click" | "see" | "wait_for", target: UiTarget, flow: { id: string; step: string }): Promise<{ ok: boolean; observed: string; requestIds: string[]; error?: string }>;
+  act(actor: string, action: "click" | "see" | "wait_for" | "fill" | "select" | "submit", target: UiTarget, flow: { id: string; step: string }, value?: string): Promise<{ ok: boolean; observed: string; requestIds: string[]; error?: string }>;
 }
 
 /** UI actions the observe-mode browser runs; the others may change state and wait for M2. */
 export const BROWSER_ACTIONS: ReadonlySet<string> = new Set(["click", "see", "wait_for"]);
+/** safe-validate (SPEC-0.2.0 §4.4): state-changing UI actions; their requests must still match a declared entry. */
+export const STATEFUL_ACTIONS: ReadonlySet<string> = new Set(["fill", "select", "submit"]);
 
 export interface FlowsOutcome {
   flows: FlowResult[];
@@ -136,7 +138,8 @@ async function runDoc(doc: FlowDoc, ctx: FlowContext, budget: { exhausted?: stri
     const skip = (reason: string) => { res.reason = reason; };
 
     if (chain.blocked) { skip(chain.blocked); continue; }
-    if (UI_ACTIONS.has(s.action) && !(ctx.browser && BROWSER_ACTIONS.has(s.action))) { skip(ctx.browser ? `${s.action} may change state — requires safe-validate (M2)` : uiReason(s)); continue; }
+    const runnable = ctx.browser && (BROWSER_ACTIONS.has(s.action) || (ctx.fixtures && STATEFUL_ACTIONS.has(s.action)));
+    if (UI_ACTIONS.has(s.action) && !runnable) { skip(ctx.browser ? `${s.action} may change state — requires safe-validate (M2)` : uiReason(s)); continue; }
     if (budget.exhausted) { skip("budget exhausted"); continue; }
     const actorHeaders = ctx.actors.get(s.actor);
     if (!actorHeaders) { skip(`actor ${s.actor} not tested: ${ctx.actorSkipReasons.get(s.actor) ?? "not usable"}`); continue; }
@@ -154,9 +157,14 @@ async function runDoc(doc: FlowDoc, ctx: FlowContext, budget: { exhausted?: stri
     }
     if (ctx.browser && UI_ACTIONS.has(s.action)) {
       try {
-        const a = await ctx.browser.act(s.actor, s.action as "click" | "see" | "wait_for", s.target!, { id: doc.header.id, step: s.id });
+        let value: string | undefined;
+        if (s.value) {
+          value = vars.get(s.value.var);
+          if (value === undefined) { skip(varMissing.get(s.value.var) ?? `variable ${s.value.var} has no value`); continue; }
+        }
+        const a = await ctx.browser.act(s.actor, s.action as "click", s.target!, { id: doc.header.id, step: s.id }, value);
         res.requestIds.push(...a.requestIds);
-        const expected = s.action === "click" ? "element clicked" : "element visible";
+        const expected = s.action === "click" ? "element clicked" : s.action === "fill" ? "field filled" : s.action === "select" ? "option selected" : s.action === "submit" ? "form submitted" : "element visible";
         res.assertions = [{ kind: "ui", status: a.error ? "ERROR" : a.ok ? "PASS" : "FAIL", expected, observed: a.observed }];
         res.status = res.assertions[0]!.status;
         if (a.error) res.reason = a.error;
@@ -340,7 +348,8 @@ async function runDoc(doc: FlowDoc, ctx: FlowContext, budget: { exhausted?: stri
  * dependency in a diamond runs once under the one run Budget. A dependent of a flow that is not PASS
  * is NOT_TESTED with "dependency <id> is <status>", never FAIL or PASS (SPEC-0.1.3 §5.5).
  */
-export async function runFlows(docs: FlowDoc[], ctx: FlowContext): Promise<FlowsOutcome> {
+/** `extraImports`: per-flow values that are not exported by any flow (login credentials for login flows, kept in memory). */
+export async function runFlows(docs: FlowDoc[], ctx: FlowContext, extraImports: Map<string, Map<string, string>> = new Map()): Promise<FlowsOutcome> {
   const checks: CheckResult[] = [];
   const budget: { exhausted?: string } = {};
   const flows: FlowResult[] = [];
@@ -360,6 +369,7 @@ export async function runFlows(docs: FlowDoc[], ctx: FlowContext): Promise<Flows
         imports.set(name, v);
       }
     }
+    for (const [k, v] of extraImports.get(d.header.id) ?? []) imports.set(k, v);
     const chain: ChainState = { ...(blocked ? { blocked } : {}), imports, exports: new Map() };
     const res = await runDoc(d, ctx, budget, checks, chain);
     if (blocked) res.reasons = [blocked];

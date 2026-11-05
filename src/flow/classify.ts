@@ -3,6 +3,7 @@
  * Pure functions: no I/O.
  */
 import { createHash } from "node:crypto";
+import type { Manifest } from "../config.js";
 import type { TestLevel } from "../types.js";
 import { UI_ACTIONS, type FlowDoc, type FlowStep } from "./parse.js";
 
@@ -71,7 +72,7 @@ export function stepHash(s: FlowStep): string {
  */
 export function flowHash(doc: FlowDoc, seen: ReadonlySet<string> = new Set()): string {
   const { review: _review, ...rest } = doc.header.raw;
-  const own = sha([canonical(rest), ...doc.steps.map((s) => canonical(s.raw))].join("\n"));
+  const own = sha([canonical(rest), ...doc.steps.map((s) => canonical(s.raw)), ...(doc.bindings ? [`bindings:${doc.bindings}`] : [])].join("\n"));
   if (!doc.header.requires.length) return own;
   const next = new Set([...seen, doc.header.id]);
   const deps = doc.header.requires.map((id) => {
@@ -79,6 +80,33 @@ export function flowHash(doc: FlowDoc, seen: ReadonlySet<string> = new Set()): s
     return `${id}:${!d ? "missing" : next.has(id) ? "cycle" : flowHash(d, next)}`;
   }).sort();
   return sha([own, ...deps].join("\n"));
+}
+
+/**
+ * SPEC-0.2.0 §4.5: a flow that uses a fixture or a login actor is approved together with the manifest entries it
+ * relies on, so editing a fixture entry, `auth_endpoints` or a referenced login flow invalidates the approval.
+ * Flows that use none of them keep their earlier hash. Login flows are bound first so dependents can hash them.
+ */
+export function bindManifest(docs: FlowDoc[], m: Manifest): void {
+  const byId = new Map(docs.map((d) => [d.header.id, d]));
+  const loginFlowIds = new Set(Object.values(m.actors).flatMap((a) => (a.login && "flow" in a.login ? [a.login.flow] : [])));
+  const bind = (d: FlowDoc) => {
+    const fx = [...new Set(d.steps.map((s) => s.fixture).filter((x): x is string => !!x))].sort();
+    const logins = d.header.actors.filter((a) => m.actors[a]?.login).sort();
+    const isLoginFlow = loginFlowIds.has(d.header.id);
+    if (!fx.length && !logins.length && !isLoginFlow) { delete d.bindings; return; }
+    const b: Record<string, unknown> = { fixtures: Object.fromEntries(fx.map((n) => [n, m.fixtures[n] ?? null])) };
+    if (logins.length || isLoginFlow) b.auth_endpoints = m.auth_endpoints;
+    if (logins.length) b.logins = Object.fromEntries(logins.map((a) => {
+      const l = m.actors[a]!.login!;
+      if (!("flow" in l)) return [a, { login: l }];
+      const ref = byId.get(l.flow);
+      return [a, { login: l, flow: !ref ? "missing" : ref === d ? "self" : flowHash(ref) }];
+    }));
+    d.bindings = canonical(b);
+  };
+  for (const d of docs) if (loginFlowIds.has(d.header.id)) bind(d);
+  for (const d of docs) if (!loginFlowIds.has(d.header.id)) bind(d);
 }
 
 export function flowSetHash(docs: FlowDoc[]): string {

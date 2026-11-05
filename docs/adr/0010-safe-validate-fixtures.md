@@ -42,4 +42,17 @@ Several M2 cases cannot be tested in observe mode, because each one needs the ta
 - Plus: write access is as narrow as the owner's declarations, and every write is in run.json with its entry, actor, status and body hash.
 - Plus: a run cannot report COMPLETE while test data may still exist.
 - Minus: a mis-declared fixture endpoint can still touch real data (TM-32). Side effects such as emails, webhooks and audit rows are not cleaned (TM-33).
-- Not in this milestone: login and cookie-session actors, browser mutations, `fill`/`select`/`submit`, approval hashing of fixture entries (0.2.0-b), and the new security checks (0.2.0-c/d). `fixture_verify_gone` is not implemented yet.
+- Not in this ADR's first milestone: the new security checks (0.2.0-c/d). `fixture_verify_gone` is not implemented yet.
+
+## Addendum — 0.2.0-b (2026-11-05)
+1. **Login actors.**
+   - http login sends the declared body once to `auth_endpoints.login`. It counts against `max_mutations` and is never retried. The `set-cookie` values become the actor's session.
+   - A browser login runs the referenced flow first, in the actor's own context, and its cookies then become the session.
+   - Every session cookie value is added to the Redactor's known secrets (S17).
+   - A failed login makes that actor NOT_TESTED. The actor never creates fixtures.
+2. **`cookie_env`** gives a cookie-session actor. It is refused in the production profile.
+3. **Browser non-observe requests** reach direct-http only through the engine's `mutate` hook. The runner matches an `allowed_mutations`, `login` or `logout` entry with `checkMutation`, then requires the entry's content type and size limit. Fixture `create` entries are never offered to the browser. The visual driver passes no hook, so it stays observe-only.
+4. **`fill`, `select` and `submit`** run on the playwright engine in safe-validate. A filled value is never returned or logged.
+5. **Approval hashing (§4.5).** `bindManifest` adds the canonical JSON of the referenced fixture entries, `auth_endpoints`, the actor login configuration and the referenced login flow's hash to `flowHash`. Flows that use none of them keep their earlier hash. `flow approve --config` is required for flows that use fixtures.
+
+Evidence: `test/safe-validate-b.test.ts` covers SPEC-0.2.0 tests 2 (browser), 12, 13 and 15 on 127.0.0.1, with the real Chromium headless shell for the browser cases.
