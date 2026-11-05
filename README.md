@@ -214,6 +214,7 @@ Profiles: `local` and `dev` manifests use the `development` profile; `staging` a
 
 - Zero findings does not mean the application is secure. Injection, access control and business-logic issues need authorized manual testing.
 - Checks run over HTTP and TLS. Browser-based (DOM and visual) checks are reported as `NOT_TESTED`.
+- `safe-validate` (development profile only, 0.2.0-a) changes state only through fixtures that the owner declares, and cleans them up by id. Side effects such as emails or webhooks are not undone, and a run that leaves data behind is `FAILED`. See [docs/FLOWS.md](docs/FLOWS.md#fixtures-and-mutations-safe-validate-020-a).
 
 ## More
 

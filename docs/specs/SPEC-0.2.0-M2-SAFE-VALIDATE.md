@@ -255,6 +255,6 @@ Decided 2026-11-04: the owner accepted every recommended option below.
 ## 14. Implementation readiness checklist
 - [x] Owner answers D1–D9 (2026-11-04, recommended options).
 - [x] Review round 1 recorded in §13 with every finding resolved.
-- [ ] Vulnerable and secure fixture apps designed for §9, with the same response contract for legitimate callers.
-- [ ] ADR for safe-validate, fixtures and `checkMutation`.
-- [ ] Threat model TM-32 to TM-35 merged.
+- [ ] Vulnerable and secure fixture apps designed for §9, with the same response contract for legitimate callers (0.2.0-a: `test/fixtures/fixture-server.ts` covers tests 1–7; the AC/AUTH/BIZ variants come with 0.2.0-c/d).
+- [x] ADR for safe-validate, fixtures and `checkMutation` ([ADR-0010](../adr/0010-safe-validate-fixtures.md)).
+- [x] Threat model TM-32 to TM-35 merged (TM-34 and TM-35 marked as planned).
