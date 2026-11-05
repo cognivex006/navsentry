@@ -192,6 +192,24 @@ Rejected means 401, 403, 419, 422 or a redirect to `login_path`. A 2xx probe wit
 
 The step sends the read (it must return 2xx, the positive control), then the logout, then the same read with the pre-logout session. A 401, a 403 or a redirect to `login_path` is PASS. A 2xx with the same contract is FAIL. After this step the actor is logged out, so its later steps are NOT_TESTED. Logging out a fixture's `cleanup_actor` is a lint error.
 
+## Business invariants and marker reflections (safe-validate, 0.2.0-d)
+
+**NSC-BIZ-001.** The owner declares rules on a fixture. NavSentry never invents one:
+
+```json
+"invariants": [{ "name": "total-not-negative", "pointer": "/total", "op": ">=", "value": 0 },
+               { "name": "known-status", "pointer": "/status", "op": "in", "value": ["open", "cancelled", "refunded"] }],
+"forbidden_transitions": [{ "name": "no-refund-while-open", "pointer": "/status", "from": "open", "to": "refunded" }]
+```
+
+- Before cleanup, NavSentry reads each object through `exists`, as `cleanup_actor`, and evaluates the rules.
+- A transition compares the value right after create with the value before cleanup.
+- A violated rule is FAIL, and all rules holding is PASS. An absent pointer or a non-JSON response is INCONCLUSIVE.
+- Without any declared rule, the case is NOT_TESTED.
+- Only rule names and the declared values are reported. Observed values stay in memory.
+
+**NSC-INJ-004.** The run marker `nsv-<16 hex>` may be put in a create body or filled into a form (`"value": {"var": "marker"}`). When a later HTML response shows it inside a tag (attribute) or a `<script>` element, `run.json → observations` records the context, the count and the URL, and REPORT.md lists them. This is a fact, not a result. The case stays NOT_TESTED, because testing output encoding needs an injection payload (active-approved).
+
 ## Drafts from an OpenAPI document (0.1.3)
 `navsentry flow import --openapi openapi.json --config <manifest> --out navsentry/flows/drafts` turns documented GET operations into draft integration flows. A protected operation (`security` set) becomes a pair: an authenticated actor `access: allowed` and anonymous `access: denied`. Path and required query parameters become variables with `env` references such as `NAVSENTRY_VAR_ORDER_ID`: set them to test values before running. The document is a contract claim, not observed behaviour, so review every step. IMPORT.md lists every operation that was not encoded and why.
 

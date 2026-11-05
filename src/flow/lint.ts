@@ -73,6 +73,8 @@ function lintDoc(doc: FlowDoc, m: Manifest, gate: ScopeGate, red: Redactor, E: s
   }
 
   const defined = new Set([...Object.keys(h.vars), ...Object.keys(h.imports)]);
+  // safe-validate: the run marker (SPEC-0.2.0 §3.5) may be filled into a form, for example to watch its reflection.
+  if (m.safety.mode === "safe-validate") defined.add("marker");
   // A login flow (SPEC-0.2.0 §4.3) receives the actor's credentials as {{username}} and {{password}}, for fill steps only.
   const loginActors = Object.entries(m.actors).filter(([, a]) => a.login && "flow" in a.login && a.login.flow === h.id).map(([n]) => n);
   if (loginActors.length) {

@@ -176,7 +176,7 @@ async function runDoc(doc: FlowDoc, ctx: FlowContext, budget: { exhausted?: stri
     if (dep) { skip(`dependency ${dep} did not pass`); continue; }
     if (s.action === "fixture_create") {
       if (!ctx.fixtures) { skip("fixture_create needs safety.mode safe-validate with declared fixtures"); continue; }
-      const o = await ctx.fixtures.create(s.fixture!, s.actor, { id: doc.header.id, step: s.id });
+      const o = await ctx.fixtures.create(s.fixture!, s.actor, { id: doc.header.id, step: s.id }, approved);
       res.requestIds.push(...o.requestIds);
       res.status = o.status;
       if (o.reason) res.reason = o.reason;
@@ -188,7 +188,7 @@ async function runDoc(doc: FlowDoc, ctx: FlowContext, budget: { exhausted?: stri
       try {
         let value: string | undefined;
         if (s.value) {
-          value = vars.get(s.value.var);
+          value = s.value.var === "marker" && ctx.marker ? ctx.marker : vars.get(s.value.var);
           if (value === undefined) { skip(varMissing.get(s.value.var) ?? `variable ${s.value.var} has no value`); continue; }
         }
         const a = await ctx.browser.act(s.actor, s.action as "click", s.target!, { id: doc.header.id, step: s.id }, value);
