@@ -108,6 +108,14 @@ function lintDoc(doc: FlowDoc, m: Manifest, gate: ScopeGate, red: Redactor, E: s
       if (s.as) defined.add(s.as);
       continue;
     }
+    if (s.action === "fixture_verify_gone") {
+      // SPEC-0.2.0 §4.2: an optional mid-flow check that a fixture object is gone (after a declared delete).
+      if (m.safety.mode !== "safe-validate") at(L, "/action", "fixture_verify_gone needs safety.mode safe-validate");
+      const producer = doc.steps.find((o) => o.action === "fixture_create" && o.as === s.var && o.line < s.line);
+      if (!producer) at(L, "/var", `${s.var} is not created by an earlier fixture_create step`);
+      else if (producer.fixture && m.fixtures[producer.fixture] && !m.fixtures[producer.fixture]!.verify_gone) at(L, "/var", `fixture "${producer.fixture}" declares no verify_gone`);
+      continue;
+    }
     if (s.action === "logout") {
       // NSC-AUTH-002 (SPEC-0.2.0 §5.3): request is the authenticated read repeated after logout.
       if (m.safety.mode !== "safe-validate") at(L, "/action", "logout needs safety.mode safe-validate");

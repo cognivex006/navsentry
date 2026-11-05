@@ -46,7 +46,7 @@ export interface LifecycleOptions {
 }
 
 export interface StepOutcome {
-  status: "PASS" | "ERROR" | "NOT_TESTED";
+  status: "PASS" | "FAIL" | "ERROR" | "NOT_TESTED";
   reason?: string;
   id?: string;
   requestIds: string[];
@@ -367,6 +367,21 @@ export class FixtureLifecycle {
         observations: [...broken.map((x) => `violated ${x} (observed value withheld)`), ...missing, ...held.map((x) => `holds ${x}`)], requestIds: ids, ...(status === "INCONCLUSIVE" ? { reason: missing.join("; ") } : {}) });
     }
     return out;
+  }
+
+  /**
+   * `fixture_verify_gone` (SPEC-0.2.0 §4.2): GETs `verify_gone` as `cleanup_actor` for an id this run created.
+   * Ordinary budget, no retry. The object stays registered: cleanup still runs, and a 404 there counts as done.
+   */
+  async verifyGone(id: string, flow: { id: string; step: string }): Promise<StepOutcome> {
+    const r = this.registered.find((x) => x.id === id);
+    if (!r) return { status: "ERROR", reason: "the id was not created by this run", requestIds: [] };
+    if (!r.decl.verify_gone) return { status: "ERROR", reason: `fixture ${r.fixture} declares no verify_gone`, requestIds: [] };
+    if (this.stopReason) return { status: "NOT_TESTED", reason: `stopped: ${this.stopReason}`, requestIds: [] };
+    const v = await this.observe(r.decl.verify_gone, r.decl.cleanup_actor, id, flow);
+    const ids = v.exchange ? [v.exchange.record.id] : [];
+    if (v.ok) return { status: "PASS", requestIds: ids };
+    return v.status === undefined ? { status: "ERROR", reason: v.why, requestIds: ids } : { status: "FAIL", reason: `object still present: ${v.why}`, requestIds: ids };
   }
 
   /** Sends `entry` (cleanup) or GETs it (verify_gone) with one retry on a network error or 5xx. */

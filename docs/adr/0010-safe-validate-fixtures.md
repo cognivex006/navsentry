@@ -42,7 +42,7 @@ Several M2 cases cannot be tested in observe mode, because each one needs the ta
 - Plus: write access is as narrow as the owner's declarations, and every write is in run.json with its entry, actor, status and body hash.
 - Plus: a run cannot report COMPLETE while test data may still exist.
 - Minus: a mis-declared fixture endpoint can still touch real data (TM-32). Side effects such as emails, webhooks and audit rows are not cleaned (TM-33).
-- Not in this ADR's first milestone: the new security checks (0.2.0-c/d). `fixture_verify_gone` is not implemented yet.
+- Not in this ADR's first milestone: the new security checks (0.2.0-c/d) and `fixture_verify_gone`, which followed after 0.2.0-d.
 
 ## Addendum — 0.2.0-b (2026-11-05)
 1. **Login actors.**

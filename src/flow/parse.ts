@@ -17,7 +17,7 @@ export const MAX_TEXT_MARKERS = 10;
 export const MAX_POINTER_DEPTH = 16;
 
 export const UI_ACTIONS: ReadonlySet<FlowAction> = new Set(["click", "fill", "select", "submit", "see", "wait_for"]);
-const ACTIONS: FlowAction[] = ["http", "navigate", "click", "fill", "select", "submit", "see", "wait_for", "fixture_create", "logout"];
+const ACTIONS: FlowAction[] = ["http", "navigate", "click", "fill", "select", "submit", "see", "wait_for", "fixture_create", "fixture_verify_gone", "logout"];
 /** safe-validate (SPEC-0.2.0 §4.1): methods allowed only on a step bound to a declared fixture. */
 export const MUTATION_METHODS: ReadonlySet<string> = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const SECRETISH_KEYS = /^(password|passwd|secret|token|api[_-]?key|cookie|authorization)$/i;
@@ -82,6 +82,8 @@ export interface FlowStep {
   as?: string;
   /** safe-validate mutation steps: `"csrf"` runs the NSC-AC-006 probes (SPEC-0.2.0 §5.2). */
   check?: "csrf";
+  /** fixture_verify_gone: the variable holding an id created by an earlier fixture_create. */
+  var?: string;
   /** Raw JSON object as written, used for hashing. */
   raw: Record<string, unknown>;
   line: number;
@@ -374,7 +376,7 @@ function parseExpect(c: Ctx, v: unknown): Expect | undefined {
 }
 
 function parseStep(c: Ctx, o: Obj, heading: string | undefined): FlowStep | undefined {
-  keys(c, o, ["id", "title", "action", "actor", "request", "target", "value", "follow_redirects", "expect", "extract", "object_owner", "depends_on", "fixture", "as", "check"], "");
+  keys(c, o, ["id", "title", "action", "actor", "request", "target", "value", "follow_redirects", "expect", "extract", "object_owner", "depends_on", "fixture", "as", "check", "var"], "");
   const id = str(c, o.id, "/id", 4, true, STEP_ID);
   const title = str(c, o.title, "/title", 120) ?? heading ?? id ?? "";
   const action = o.action as FlowAction;
@@ -428,6 +430,15 @@ function parseStep(c: Ctx, o: Obj, heading: string | undefined): FlowStep | unde
   if (o.check !== undefined) {
     if (o.check !== "csrf") err(c, "/check", '"csrf"');
     else step.check = "csrf";
+  }
+  if (o.var !== undefined) {
+    if (action !== "fixture_verify_gone") err(c, "/var", 'only on "fixture_verify_gone"');
+    const v = str(c, o.var, "/var", 32, true, VAR_NAME);
+    if (v) step.var = v;
+  }
+  if (action === "fixture_verify_gone") {
+    if (typeof o.var !== "string") err(c, "/var", "fixture_verify_gone needs the variable of a created fixture");
+    if (o.request !== undefined || o.target !== undefined || o.fixture !== undefined || o.expect !== undefined) err(c, "/var", "fixture_verify_gone takes only var");
   }
   if (action === "fixture_create") {
     if (typeof o.fixture !== "string") err(c, "/fixture", "fixture_create needs a fixture name");
