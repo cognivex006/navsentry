@@ -8,6 +8,26 @@ import type { AddressInfo } from "node:net";
 
 export type FixtureMode = "secure" | "create-reset" | "create-truncated" | "bad-id" | "delete-500" | "stays" | "patch-redirect";
 
+/** Synthetic test credentials (not secrets). */
+export const FIXTURE_LOGIN = { user: "alice", password: "pw-correct-horse-battery", presetCookie: "sid=preset-session-cookie-0001" } as const;
+
+const LOGIN_PAGE = `<!doctype html><title>Login</title><h1>Login</h1>
+<label>Username <input id="u"></label><label>Password <input id="p" type="password"></label>
+<button id="go">Sign in</button><p id="out"></p>
+<script>document.getElementById("go").onclick = async () => {
+  try { const r = await fetch("/api/session", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ user: u.value, password: p.value }) });
+    out.textContent = r.ok ? "Signed in" : "Login refused"; } catch { out.textContent = "Login blocked"; } };</script>`;
+
+const PROBE_PAGE = `<!doctype html><title>Probe</title><h1>Probe</h1>
+<button onclick="go('declared','/api/echo','application/json')">Declared</button>
+<button onclick="go('undeclared','/api/undeclared','application/json')">Undeclared</button>
+<button onclick="go('redirected','/api/echo-redirect','application/json')">Redirected</button>
+<button onclick="go('wrongtype','/api/echo','text/plain')">Wrong type</button>
+<form method="post" action="/api/undeclared-form"><input name="a" value="1"><button>Form post</button></form>
+<ul id="out"></ul>
+<script>async function go(n, u, t) { let v; try { const r = await fetch(u, { method: "POST", headers: { "content-type": t }, body: JSON.stringify({ a: 1 }) }); v = n + ":" + r.status; } catch { v = n + ":blocked"; }
+  const li = document.createElement("li"); li.textContent = v; out.appendChild(li); }</script>`;
+
 export interface FixtureServer {
   origin: string;
   /** Every request seen: "METHOD /path". */
@@ -25,12 +45,33 @@ export async function startFixtureServer(mode: FixtureMode = "secure"): Promise<
   let n = 0;
   let onHeld: (() => void) | undefined;
   let pendingHold: http.ServerResponse | undefined;
+  const sessions = new Set<string>([FIXTURE_LOGIN.presetCookie.split("=")[1]!]);
   const json = (res: http.ServerResponse, status: number, body: object) => res.writeHead(status, { "content-type": "application/json" }).end(JSON.stringify(body));
   const server = http.createServer((q, res) => {
     const path = new URL(q.url ?? "/", "http://x").pathname;
     log.push(`${q.method} ${path}`);
-    q.resume();
+    const chunks: Buffer[] = [];
+    q.on("data", (c: Buffer) => chunks.push(c));
     q.on("end", () => {
+      const body = Buffer.concat(chunks).toString("utf8");
+      const html = (h: string) => res.writeHead(200, { "content-type": "text/html; charset=utf-8" }).end(h);
+      if (path === "/ui/login") return html(LOGIN_PAGE);
+      if (path === "/ui/probe") return html(PROBE_PAGE);
+      if (path === "/ui/autopost") return html("<!doctype html><title>Auto</title><h1>Auto</h1><script>fetch(\"/api/echo\", { method: \"POST\", headers: { \"content-type\": \"application/json\" }, body: \"{}\" }).catch(() => {});</script>");
+      if (q.method === "POST" && path === "/api/session") {
+        let c: { user?: string; password?: string } = {};
+        try { c = JSON.parse(body); } catch { /* refused below */ }
+        if (c.user !== FIXTURE_LOGIN.user || c.password !== FIXTURE_LOGIN.password) return json(res, 401, { error: "bad credentials" });
+        const sid = `sess-${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+        sessions.add(sid);
+        return res.writeHead(200, { "content-type": "application/json", "set-cookie": `sid=${sid}; Path=/; HttpOnly` }).end(JSON.stringify({ ok: true }));
+      }
+      if (path === "/api/me") {
+        const sid = /(?:^|;s*)sid=([^;]+)/.exec(q.headers.cookie ?? "")?.[1];
+        return sid && sessions.has(sid) ? json(res, 200, { user: "alice" }) : json(res, 401, { error: "no session" });
+      }
+      if (q.method === "POST" && path === "/api/echo") return json(res, 200, { ok: true });
+      if (q.method === "POST" && path === "/api/echo-redirect") return res.writeHead(307, { location: "/api/undeclared" }).end();
       if (q.method === "POST" && path === "/api/test-fixtures/orders") {
         if (mode === "create-reset") { objects.add(`o${++n}`); q.socket.destroy(); return; }
         const id = mode === "bad-id" ? ".." : `o${++n}`;

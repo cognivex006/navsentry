@@ -18,6 +18,10 @@ export interface ActorConfig {
   password_env?: string;
   /** Env var holding a full header value, e.g. a test bearer token. Never the value itself. */
   authorization_header_env?: string;
+  /** Env var holding a full Cookie header for a cookie-session actor (development profile only; SPEC-0.2.0 §4.3, S17). */
+  cookie_env?: string;
+  /** safe-validate login (SPEC-0.2.0 §4.3): over http to auth_endpoints.login, or through a referenced browser flow. */
+  login?: { http: "login"; body: { json: Record<string, unknown> } } | { flow: string };
 }
 
 /** Derived from `environment` (SPEC-0.1.3 §4); staging is production-like (owner decision D4). */
@@ -261,10 +265,32 @@ export function parseManifest(input: unknown): Manifest {
       for (const [name, a] of Object.entries(input.actors)) {
         if (!/^[a-z][a-z0-9_-]{0,31}$/.test(name)) p.push(`actors.${name}: invalid actor name`);
         if (!isObj(a)) { p.push(`actors.${name}: must be an object`); continue; }
-        checkKeys(a, ["username_env", "password_env", "authorization_header_env"], `actors.${name}`, p);
-        for (const k of ["username_env", "password_env", "authorization_header_env"] as const) {
+        checkKeys(a, ["username_env", "password_env", "authorization_header_env", "cookie_env", "login"], `actors.${name}`, p);
+        for (const k of ["username_env", "password_env", "authorization_header_env", "cookie_env"] as const) {
           const v = a[k];
           if (v !== undefined && (typeof v !== "string" || !ENV_NAME.test(v))) p.push(`actors.${name}.${k}: must be an UPPER_SNAKE env var name`);
+        }
+        const kinds = ["authorization_header_env", "cookie_env", "login"].filter((k) => a[k] !== undefined);
+        if (kinds.length > 1) p.push(`actors.${name}: use one of authorization_header_env, cookie_env or login`);
+        if (a.cookie_env !== undefined && profile === "production") p.push(`actors.${name}.cookie_env: refused in the production profile (live session cookies, S17)`);
+        if (a.login !== undefined) {
+          const l = a.login;
+          if (!isObj(l)) p.push(`actors.${name}.login: must be an object`);
+          else if ("flow" in l) {
+            checkKeys(l, ["flow"], `actors.${name}.login`, p);
+            if (typeof l.flow !== "string" || !/^[a-z0-9][a-z0-9-]{1,62}$/.test(l.flow)) p.push(`actors.${name}.login.flow: a flow id`);
+          } else {
+            checkKeys(l, ["http", "body"], `actors.${name}.login`, p);
+            if (l.http !== "login") p.push(`actors.${name}.login.http: must be "login" (the auth_endpoints entry)`);
+            const b = l.body;
+            if (!isObj(b) || Object.keys(b).join() !== "json" || !isObj(b.json)) p.push(`actors.${name}.login.body: {"json": {...}}`);
+            else {
+              const leaves = JSON.stringify(b.json).match(/{{[^}]*}}/g) ?? [];
+              if (leaves.some((x) => x !== "{{username}}" && x !== "{{password}}")) p.push(`actors.${name}.login.body: only {{username}} and {{password}} placeholders`);
+              if (JSON.stringify(b.json).length > 4096) p.push(`actors.${name}.login.body: at most 4096 bytes`);
+            }
+          }
+          if (!a.username_env || !a.password_env) p.push(`actors.${name}.login: needs username_env and password_env`);
         }
         actors[name] = a as ActorConfig;
       }
@@ -335,6 +361,11 @@ export function parseManifest(input: unknown): Manifest {
       if (input.auth_endpoints !== undefined) auth_endpoints = parseAuthEndpoints(input.auth_endpoints, p);
       p.push(...fixtureScopeProblems(fixtures, auth_endpoints, allowed_paths, denied_paths));
     }
+  }
+  for (const [name, a] of Object.entries(actors)) {
+    if (!a.login) continue;
+    if (mode !== "safe-validate" || profile !== "development") p.push(`actors.${name}.login: needs safety.mode safe-validate and the development profile`);
+    else if (!auth_endpoints.login) p.push(`actors.${name}.login: declare auth_endpoints.login`);
   }
   if (p.length) throw new ConfigError(p);
   return {

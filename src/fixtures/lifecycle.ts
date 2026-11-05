@@ -238,6 +238,28 @@ export class FixtureLifecycle {
     return { status: "PASS", id, requestIds: ids, exchange: ex };
   }
 
+  /**
+   * Any other declared non-observe request: an http login, or a browser request that matched an entry
+   * (§3.3). Counted against `max_mutations`, recorded with its entry, never retried.
+   */
+  async sendDeclared(kind: string, entry: EndpointEntry, spec: Omit<HttpRequestSpec, "mutation">): Promise<Exchange> {
+    if (this.stopReason) throw new BudgetExceeded(`stopped: ${this.stopReason}`);
+    this.countMutation();
+    const ex = await this.o.send({ ...spec, mutation: entry });
+    this.record(entry, kind, spec.actor, ex, ex.record.requestBodySha256);
+    return ex;
+  }
+
+  /**
+   * Browser non-observe requests (§3.3): the first declared `allowed_mutations`, `login` or `logout` entry that
+   * `checkMutation` matches. `create` is not offered to the browser: a create must register its cleanup.
+   */
+  matchBrowser(url: string, method: string, check: (entry: EndpointEntry) => boolean): { kind: string; entry: EndpointEntry } | undefined {
+    for (const [name, f] of Object.entries(this.o.manifest.fixtures)) for (const e of f.allowed_mutations) if (e.method === method && check(e)) return { kind: `fixtures.${name}.allowed_mutations`, entry: e };
+    for (const k of ["login", "logout"] as const) { const e = this.o.manifest.auth_endpoints[k]; if (e && e.method === method && check(e)) return { kind: `auth_endpoints.${k}`, entry: e }; }
+    return undefined;
+  }
+
   /** One declared `allowed_mutations` request from an http step (§4.1). Never retried, never redirected. */
   async mutate(fixture: string, entry: EndpointEntry, url: string, displayUrl: string, actor: string, headers: Record<string, string>, body: Buffer | undefined, flow: { id: string; step: string; deniedProbe?: true }): Promise<Exchange> {
     if (this.stopReason) throw new BudgetExceeded(`stopped: ${this.stopReason}`);

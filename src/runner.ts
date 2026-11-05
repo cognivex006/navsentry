@@ -1,6 +1,6 @@
 /** Plan (zero network) and execute (observe mode) runs. */
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { FixtureLifecycle, RequestRefused } from "./fixtures/lifecycle.js";
+import { FixtureLifecycle, RequestRefused, fillBody } from "./fixtures/lifecycle.js";
 import { Budget, BudgetExceeded, ByteBudget } from "./budget.js";
 import { CASES, getCase } from "./catalog.js";
 import * as P from "./checks/passive.js";
@@ -14,7 +14,7 @@ import type { Exchange } from "./transports/types.js";
 import { applyConsoleSilent, functionalResult, runFlows, type FlowBrowser } from "./flow/execute.js";
 import { ConsoleInspector } from "./console/detect.js";
 import { BrowserEngine, firstLine, probePlaywright, type BrowserRequest, type ConsoleEvent, type PlaywrightProbe } from "./transports/playwright.js";
-import { classify, flowSetHash } from "./flow/classify.js";
+import { bindManifest, classify, flowSetHash } from "./flow/classify.js";
 import { fillPath, flowOrigin, VAR_SENTINEL } from "./flow/lint.js";
 import { UI_ACTIONS, type FlowDoc } from "./flow/parse.js";
 import { groupKey, pathPattern, scanHtml, urlIdentity } from "./spider/html.js";
@@ -26,7 +26,7 @@ import { SNAPSHOT } from "./knowledge/advisories.js";
 import { evaluateKnowledge } from "./knowledge/evidence.js";
 import type { Snapshot } from "./knowledge/model.js";
 import type { Proposal } from "./knowledge/propose.js";
-import { TOOL_NAME, TOOL_VERSION, REPORT_SCHEMA_VERSION, FLOW_RESULT_SCHEMA_VERSION, type CheckResult, type CheckStatus, type CoverageRow, type Finding, type FlowRunResult, type ClientFinding, type FlowStatus, type RedirectChain, type RunResult, type ScanMode, type SpiderResult, type TestLevel } from "./types.js";
+import { TOOL_NAME, TOOL_VERSION, REPORT_SCHEMA_VERSION, FLOW_RESULT_SCHEMA_VERSION, type CheckResult, type CheckStatus, type CoverageRow, type Finding, type FlowRunResult, type ClientFinding, type FlowStatus, type HttpMethod, type RedirectChain, type RunResult, type ScanMode, type SpiderResult, type TestLevel } from "./types.js";
 
 /** Reserved, non-resolvable origin used to probe CORS reflection (RFC 2606 .invalid). */
 export const CORS_PROBE_ORIGIN = "https://navsentry-cors-probe.invalid";
@@ -81,24 +81,36 @@ interface ActorRuntime {
   headers: Record<string, string>;
 }
 
-export function resolveActors(m: Manifest, env: NodeJS.ProcessEnv): { usable: ActorRuntime[]; skipped: { actor: string; reason: string }[]; secrets: string[] } {
+/** An actor that logs in during a safe-validate run (SPEC-0.2.0 §4.3); credentials stay in memory only. */
+export interface PendingLogin { name: string; login: NonNullable<Manifest["actors"][string]["login"]>; username: string; password: string }
+
+export function resolveActors(m: Manifest, env: NodeJS.ProcessEnv): { usable: ActorRuntime[]; skipped: { actor: string; reason: string }[]; secrets: string[]; logins: PendingLogin[] } {
+  const logins: PendingLogin[] = [];
   const usable: ActorRuntime[] = [{ name: "anonymous", headers: {} }];
   const skipped: { actor: string; reason: string }[] = [];
   const secrets: string[] = [];
   for (const [name, a] of Object.entries(m.actors)) {
     if (name === "anonymous") continue;
-    for (const k of [a.username_env, a.password_env, a.authorization_header_env]) if (k && env[k]) secrets.push(env[k] as string);
+    for (const k of [a.username_env, a.password_env, a.authorization_header_env, a.cookie_env]) if (k && env[k]) secrets.push(env[k] as string);
     const cred = a.authorization_header_env ? /^[A-Za-z][A-Za-z0-9-]*\s+(\S{8,})$/.exec(env[a.authorization_header_env] ?? "")?.[1] : undefined;
     if (cred) secrets.push(cred);
-    if (a.authorization_header_env) {
+    if (a.cookie_env) {
+      const v = env[a.cookie_env];
+      if (v) { usable.push({ name, headers: { cookie: v } }); for (const part of v.split(";")) { const val = part.split("=").slice(1).join("=").trim(); if (val.length >= 8) secrets.push(val); } }
+      else skipped.push({ actor: name, reason: `env ${a.cookie_env} is not set` });
+    } else if (a.login) {
+      const u = env[a.username_env!], pw = env[a.password_env!];
+      if (u && pw) logins.push({ name, login: a.login, username: u, password: pw });
+      else skipped.push({ actor: name, reason: `env ${!u ? a.username_env : a.password_env} is not set` });
+    } else if (a.authorization_header_env) {
       const v = env[a.authorization_header_env];
       if (v) usable.push({ name, headers: { authorization: v } });
       else skipped.push({ actor: name, reason: `env ${a.authorization_header_env} is not set` });
     } else {
-      skipped.push({ actor: name, reason: "username/password login flows are scheduled for M2; provide authorization_header_env with a test token" });
+      skipped.push({ actor: name, reason: "username/password need a login (actors.<name>.login, safe-validate); or provide authorization_header_env with a test token" });
     }
   }
-  return { usable, skipped, secrets };
+  return { usable, skipped, secrets, logins };
 }
 
 export interface PlanOptions {
@@ -109,7 +121,7 @@ export interface PlanOptions {
 
 export function planRun(m: Manifest, env: NodeJS.ProcessEnv = {}, opts: PlanOptions = {}): Plan {
   const gate = new ScopeGate(m);
-  const { usable, skipped } = resolveActors(m, Object.fromEntries(Object.entries(env).map(([k, v]) => [k, v ? "set" : v])));
+  const { usable, skipped, logins } = resolveActors(m, Object.fromEntries(Object.entries(env).map(([k, v]) => [k, v ? "set" : v])));
   const steps: PlannedStep[] = [];
   for (const origin of m.targets.origins) {
     if (origin.startsWith("https:") && !m.checks.disabled.includes("NSC-CRYPT-001")) {
@@ -130,7 +142,7 @@ export function planRun(m: Manifest, env: NodeJS.ProcessEnv = {}, opts: PlanOpti
   const skippedCases = CASES.filter((c) => !auto.has(c.id)).map((c) => ({ id: c.id, automation: c.automation, reason: skipReason(c.automation, c.milestone, m.checks.disabled.includes(c.id)) }));
   const plan: Plan = { project: m.project, mode: m.safety.mode, networkEffects: "none", steps, skippedCases, actorsNotTested: skipped, maxRequests: m.safety.max_requests };
   if (opts.flows) {
-    const usableActors = new Set(usable.map((a) => a.name));
+    const usableActors = new Set([...usable.map((a) => a.name), ...logins.map((l) => l.name)]);
     plan.flows = opts.flows.map((d): PlannedFlow => {
       const c = classify(d);
       const origin = flowOrigin(d, m)!;
@@ -211,13 +223,16 @@ export async function executeRun(m: Manifest, opts: ExecuteOptions = {}): Promis
 /** Runs seeds and flows through one ScopeGate, Budget and Redactor. */
 export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promise<{ run: RunResult; flowRun?: FlowRunResult; clientFindings?: ClientFinding[]; proposals?: Proposal[]; pageModels?: PageModel[] }> {
   const env = opts.env ?? process.env;
+  if (opts.flows) bindManifest(opts.flows, m);
   // Production guards run before any network activity, for every entry point (SPEC-0.1.3 §3.1, S2).
   assertAuthorizationWindow(m, opts.now?.() ?? new Date());
   const startedAt = new Date().toISOString();
   const gate = new ScopeGate(m);
   const budget = new Budget(m.safety.max_requests, m.safety.max_requests_per_second, m.safety.max_duration_seconds * 1000, m.authorization.expires_at ? new Date(m.authorization.expires_at) : undefined);
   const bytes = new ByteBudget(m.capture.max_run_bytes, m.capture.max_wire_bytes);
-  const { usable, skipped, secrets } = resolveActors(m, env);
+  const { usable, skipped, secrets, logins } = resolveActors(m, env);
+  /** Shared by the fixture lifecycle, the browser engine and the flows, so a login updates every one of them. */
+  const actorMap = new Map(usable.map((a) => [a.name, a.headers]));
   assertNoLiveTokens(m, secrets);
   for (const d of opts.flows ?? []) for (const v of Object.values(d.header.vars)) if ("env" in v && env[v.env]) secrets.push(env[v.env] as string);
   const redactor = new Redactor(secrets, m.targets.origins.map((o) => new URL(o).hostname.replace(/^\[|\]$/g, "")));
@@ -244,7 +259,7 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
   // safe-validate (SPEC-0.2.0 §3.5, §4.2): a per-run marker and the fixture lifecycle.
   const marker = m.safety.mode === "safe-validate" ? `nsv-${randomBytes(8).toString("hex")}` : undefined;
   const fixtures = marker ? new FixtureLifecycle({
-    manifest: m, budget, marker, origin: m.targets.origins[0]!, actors: new Map(usable.map((a) => [a.name, a.headers])),
+    manifest: m, budget, marker, origin: m.targets.origins[0]!, actors: actorMap,
     send: async (spec) => {
       try {
         const ex = await http.send({ ...spec, headers: { ...spec.headers, "x-navsentry-run": runId } });
@@ -258,6 +273,40 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
     ...(opts.fixtureWorkDir ? { workDir: opts.fixtureWorkDir } : {}), ...(opts.fixtureRetryDelayMs !== undefined ? { retryDelayMs: opts.fixtureRetryDelayMs } : {}),
   }) : undefined;
   if (fixtures) opts.onFixtures?.(fixtures);
+  const loginFailed = (name: string, why: string) => {
+    actorMap.delete(name);
+    skipped.push({ actor: name, reason: `login failed: ${why}` });
+    incomplete.push(`actor ${name} not tested: login failed: ${why}`);
+  };
+  /** Session cookies from a login; each value becomes a known secret of the Redactor (S17). */
+  const adoptSession = (name: string, pairs: { name: string; value: string }[]): boolean => {
+    const ok = pairs.filter((c) => /^[A-Za-z0-9_.-]{1,128}$/.test(c.name) && c.value);
+    if (!ok.length) return false;
+    for (const c of ok) redactor.addSecret(c.value);
+    const headers = { cookie: ok.map((c) => `${c.name}=${c.value}`).join("; ") };
+    actorMap.set(name, headers);
+    usable.push({ name, headers });
+    return true;
+  };
+  // http logins (SPEC-0.2.0 §4.3): the declared body to auth_endpoints.login; set-cookie becomes the session.
+  for (const l of logins) {
+    if (!("http" in l.login)) continue;
+    const entry = m.auth_endpoints.login;
+    if (!fixtures || !entry) { loginFailed(l.name, "needs safe-validate and auth_endpoints.login"); continue; }
+    const b = fillBody(l.login.body.json, (n) => (n === "username" ? l.username : n === "password" ? l.password : undefined));
+    if (!b.data) { loginFailed(l.name, b.error ?? "body"); continue; }
+    try {
+      const url = new URL(entry.path, m.targets.origins[0]!).toString();
+      const ex = await fixtures.sendDeclared("auth_endpoints.login", entry, { method: entry.method, url, displayUrl: url, actor: l.name, headers: { accept: "application/json" }, body: { contentType: "application/json", data: b.data }, flow: { id: "login", step: l.name } });
+      const st = ex.raw?.status ?? 0;
+      const pairs = (ex.raw?.headers["set-cookie"] ?? []).map((c) => { const kv = c.split(";")[0] ?? ""; const i = kv.indexOf("="); return { name: kv.slice(0, Math.max(0, i)).trim(), value: kv.slice(i + 1).trim() }; }).filter((c) => c.name);
+      if (ex.record.error) loginFailed(l.name, "no response");
+      else if (st < 200 || st >= 300) loginFailed(l.name, `status ${st}`);
+      else if (!adoptSession(l.name, pairs)) loginFailed(l.name, "no session cookie in the response");
+    } catch (e) {
+      loginFailed(l.name, (e as Error).message);
+    }
+  }
 
   /**
    * GETs a URL and follows redirects hop by hop (≤ MAX_REDIRECTS), re-checking scope for every hop.
@@ -382,7 +431,27 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
         }
       };
       try {
-        engine = await BrowserEngine.open({ send: sendBrowser, onDenied: (url, method, reason) => denials.push({ url: redactor.url(url), method, reason }), onConsole }, new Map(usable.map((a) => [a.name, a.headers])));
+        // safe-validate: a non-observe browser request is sent only when it matches a declared entry (S13, §3.3).
+        const mutate = fixtures ? async (q: BrowserRequest & { body: Buffer; contentType: string }): Promise<Exchange | undefined> => {
+          if (!cur || cur.budget) return undefined;
+          const deny = (reason: string) => { denials.push({ url: redactor.url(q.url), method: q.method, reason }); return undefined; };
+          const hit = fixtures.matchBrowser(q.url, q.method, (e) => gate.checkMutation(q.url, q.method as HttpMethod, e).allowed);
+          if (!hit) return deny("browser request matches no declared entry (S13)");
+          const ct = (q.contentType.split(";")[0] ?? "").trim().toLowerCase();
+          if (ct !== (hit.entry.content_type ?? "application/json")) return deny(`content type ${ct || "none"} does not match ${hit.kind} (${hit.entry.content_type})`);
+          if (q.body.length > (hit.entry.max_body_bytes ?? 4096)) return deny(`body of ${q.body.length} bytes exceeds max_body_bytes of ${hit.kind}`);
+          try {
+            const ex = await fixtures.sendDeclared(hit.kind, hit.entry, { method: q.method as HttpMethod, url: q.url, displayUrl: redactor.url(q.url), actor: q.actor, flow: cur.flow, retainBytes: m.capture.max_response_bytes, headers: q.headers, body: { contentType: q.contentType, data: q.body } });
+            cur.ids.push(ex.record.id);
+            if (q.mainDocument && !ex.record.error) cur.doc = ex;
+            return ex;
+          } catch (e) {
+            if (e instanceof RequestRefused) return undefined;
+            if (e instanceof BudgetExceeded) { if (!e.message.startsWith("mutation limit")) cur.budget = e; return deny(e.message); }
+            throw e;
+          }
+        } : undefined;
+        engine = await BrowserEngine.open({ send: sendBrowser, onDenied: (url, method, reason) => denials.push({ url: redactor.url(url), method, reason }), onConsole, ...(mutate ? { mutate } : {}) }, actorMap);
         const eng = engine;
         const finish = () => { const c = cur!; cur = undefined; if (c.budget) throw c.budget; return c; };
         flowBrowser = {
@@ -393,10 +462,10 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
             const c = finish();
             return { requestIds: c.ids, ...(c.doc ? { exchange: c.doc } : {}), ...(!c.doc && r.error && c.ids.length ? { error: r.error } : {}) };
           },
-          act: async (actor, action, target, flow) => {
+          act: async (actor, action, target, flow, value) => {
             cur = { flow, ids: [] };
             lastStep = flow;
-            const r = await eng.act(actor, action, target);
+            const r = await eng.act(actor, action, target, value);
             const c = finish();
             return { ok: r.ok, observed: r.observed, requestIds: c.ids, ...(r.error ? { error: r.error } : {}) };
           },
@@ -408,14 +477,54 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
       }
     }
   }
+  // Browser logins (SPEC-0.2.0 §4.3): the referenced flow runs first in the actor's own context; its cookies become the session.
+  const loginDocs = new Set<string>();
+  let loginOutcome: Awaited<ReturnType<typeof runFlows>> | undefined;
+  if (opts.flows) {
+    const flowLogins = logins.filter((l) => "flow" in l.login) as (PendingLogin & { login: { flow: string } })[];
+    for (const l of flowLogins) loginDocs.add(l.login.flow);
+    const extra = new Map<string, Map<string, string>>();
+    const ready: FlowDoc[] = [];
+    for (const l of flowLogins) {
+      const d = opts.flows.find((x) => x.header.id === l.login.flow);
+      if (!d) { loginFailed(l.name, `login flow ${l.login.flow} is not in the selected flows`); continue; }
+      if (!flowBrowser || !engine || !fixtures) { loginFailed(l.name, "a browser login needs --engine playwright and safe-validate"); continue; }
+      actorMap.set(l.name, {});
+      extra.set(d.header.id, new Map([["username", l.username], ["password", l.password]]));
+      if (!ready.includes(d)) ready.push(d);
+    }
+    if (ready.length) {
+      loginOutcome = await runFlows(ready, {
+        manifest: m, gate, env, actors: actorMap, actorSkipReasons: new Map(), onDenied: (url, method, reason) => denials.push({ url, method, reason }), displayUrl: (u) => redactor.url(u),
+        securityChecks: (ex, actor, url) => perExchange(ex, actor, url).filter((c) => !disabled.has(c.ruleId)), browser: flowBrowser!, fixtures: fixtures!, marker: marker!,
+        send: async (q) => {
+          try {
+            const ex = await http.send({ method: q.method, url: q.url, displayUrl: q.displayUrl, actor: q.actor, flow: q.flow, headers: { ...q.headers, "x-navsentry-run": runId } });
+            exchanges.push(ex);
+            return ex;
+          } catch (e) {
+            if (e instanceof ScopeDenied) return undefined;
+            throw e;
+          }
+        },
+      }, extra);
+      for (const l of flowLogins) {
+        const r = loginOutcome.flows.find((f) => f.id === l.login.flow);
+        if (!r || !actorMap.has(l.name)) continue;
+        if (r.status !== "PASS") { loginFailed(l.name, `login flow ${l.login.flow} is ${r.status}`); continue; }
+        const jar = await engine!.cookies(l.name, m.targets.origins[0]!);
+        if (!adoptSession(l.name, jar)) loginFailed(l.name, "no session cookie after the login flow");
+      }
+    }
+  }
   if (opts.flows) {
     const actorSkipReasons = new Map(skipped.map((x) => [x.actor, x.reason]));
     try {
-      flowOutcome = await runFlows(opts.flows, {
+      flowOutcome = await runFlows(opts.flows.filter((d) => !loginDocs.has(d.header.id)), {
         manifest: m,
         gate,
         env,
-        actors: new Map(usable.map((a) => [a.name, a.headers])),
+        actors: actorMap,
         actorSkipReasons,
         onDenied: (url, method, reason) => denials.push({ url, method, reason }),
         displayUrl: (u) => redactor.url(u),
@@ -434,6 +543,7 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
           }
         },
       });
+      if (loginOutcome) { flowOutcome.flows.unshift(...loginOutcome.flows); flowOutcome.checks.push(...loginOutcome.checks); }
       checks.push(...flowOutcome.checks.filter((c) => !disabled.has(c.ruleId)));
       incomplete.push(...flowOutcome.incomplete);
     } catch (e) {
