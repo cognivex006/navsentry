@@ -4,6 +4,24 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 
 ## [Unreleased]
 
+### Added
+- 0.3.0-c readable reports (SPEC-0.3.0 §4).
+  - **Fixed sections:** every REPORT.md has the same twelve sections in the same order: Summary, Findings, Fix verification, Known vulnerabilities, Coverage, Not tested and limitations, Transports and engine, Requests refused before sending, Redirect chains, Client assets and browser, Knowledge gaps, Run details. A section without data says why.
+  - **Finding cards:** one card per case lists every affected target. Each card says why the problem matters, how to fix it, how to recheck it, when it counts as fixed and what must not break.
+  - **Before/after examples:** every automated case has fix examples for nginx, Express, ASP.NET Core, Spring or front-end builds (`src/fixes.ts`). Reports label them as not executed by NavSentry.
+  - **Self-contained reports:** reports no longer link into NavSentry's catalog docs.
+  - **Action levels:** IMMEDIATE / CAUTION / PLANNED / OPTIONAL / INFO, with colour markers, derived from severity and priority. run.json is unchanged. The summary lists what to do first.
+  - **CVSS:** known vulnerabilities show the advisory's CVSS score, vector and source.
+  - **HTML report:** `REPORT.html` is written beside REPORT.md, as one offline file built from the same Markdown.
+    - Colours by status and level, a level filter, Export Markdown and Print / PDF.
+    - All run text is escaped, and a CSP allows only the file's own hashed style and script.
+    - `navsentry report --format html` renders it from a saved run.
+  - **Terminal colour:** run summaries and `compare` output are coloured, only on a TTY. `NO_COLOR` or `--no-color` turns it off.
+
+### Changed
+- `compare` matches requests by method, path and actor. A changed origin is reported once, instead of listing every request as missing.
+- The sample reports in `docs/samples/` are regenerated in the new format, with HTML versions.
+
 ## [0.2.0] - 2026-11-05
 
 ### Fixed

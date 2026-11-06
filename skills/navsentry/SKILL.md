@@ -40,7 +40,7 @@ Retain the manifest path, approved scope, CLI location, completed commands and e
 2. Write/inspect the JSON manifest (see `examples/manifest.example.json`); credentials only as `*_env` names.
 3. `navsentry validate --config <m>` then `navsentry plan --config <m>` (zero network). Show the user the steps and skipped cases.
 4. With the user's go-ahead: `navsentry test --config <m> --out runs/<label>`.
-5. Give the user the **direct link to `REPORT.md`**, then summarize: execution status, security result, findings by priority (IMMEDIATE / CAUTION / PLANNED), and the NOT_TESTED gaps. Zero findings is never "secure".
+5. Give the user the **direct links to `REPORT.html` and `REPORT.md`**, then summarize: execution status, security result, findings by action level (IMMEDIATE / CAUTION / PLANNED / OPTIONAL / INFO), and the NOT_TESTED gaps. Zero findings is never "secure". Each finding card already holds the fix, before/after examples, recheck and acceptance criteria: quote them instead of inventing a fix, and say that NavSentry does not execute the examples.
 6. For a finding, open its section in `docs/cases/CASE-CATALOG.md` (anchor = lower-case case ID) and use the VERIFY → FIX → RECHECK prompts.
 7. After a fix: run again and `navsentry compare --before … --after …`. Report `Fixed`, `Still failing`, and any **contract drift** (changes legitimate users would notice). Drift needs the owner's approval.
 

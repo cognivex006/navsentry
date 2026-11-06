@@ -6,7 +6,7 @@
       "tool": {
         "driver": {
           "name": "NavSentry",
-          "version": "0.1.2",
+          "version": "0.2.0",
           "informationUri": "https://github.com/cognivex006/navsentry",
           "rules": [
             {
@@ -414,13 +414,13 @@
         }
       },
       "automationDetails": {
-        "id": "navsentry/demo-before/07cab76a-5f94-418d-b373-720b3ca0c67f"
+        "id": "navsentry/demo-before/9a2a09b4-fa92-4433-99d5-aa4fb38b16ad"
       },
       "invocations": [
         {
           "executionSuccessful": true,
-          "startTimeUtc": "2026-11-01T15:00:00.125Z",
-          "endTimeUtc": "2026-11-01T15:00:02.727Z"
+          "startTimeUtc": "2026-11-06T07:07:00.924Z",
+          "endTimeUtc": "2026-11-06T07:07:04.465Z"
         }
       ],
       "results": [

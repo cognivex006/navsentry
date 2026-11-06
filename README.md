@@ -95,7 +95,14 @@ navsentry doctor update --host codex --scope project --project /path/to/your/app
    navsentry test --config my-manifest.json --out runs/before
    ```
 
-   Open `runs/before/REPORT.md`. Findings are grouped by priority: `IMMEDIATE` (fix now), `CAUTION` (fix carefully; may affect legitimate users) and `PLANNED` (can wait).
+   Open `runs/before/REPORT.html` in a browser, or `REPORT.md`; both have the same content. Every report has the same twelve sections. Each finding gets one card per case with the fix, before/after code examples for common stacks, how to recheck and when it counts as fixed. Each card has an action level:
+   - 🔴 `IMMEDIATE`: fix now.
+   - 🟠 `CAUTION`: fix carefully; may affect legitimate users.
+   - 🟡 `PLANNED`: schedule it.
+   - 🔵 `OPTIONAL`: hardening; may be skipped with a recorded reason.
+   - ⚪ `INFO`: observation only.
+
+   The HTML report filters by level, exports Markdown and prints to PDF. Terminal output is coloured when it goes to a terminal; set `NO_COLOR` or pass `--no-color` to turn colour off.
 4. After a fix, run again and compare:
 
    ```bash
@@ -144,7 +151,7 @@ Browse the case catalog:
 navsentry catalog --category CONF
 ```
 
-Example reports: [before](docs/samples/before/REPORT.md), [after](docs/samples/after/REPORT.md), [compare](docs/samples/compare.md).
+Example reports: [before](docs/samples/before/REPORT.md) ([HTML](docs/samples/before/REPORT.html)), [after](docs/samples/after/REPORT.md) ([HTML](docs/samples/after/REPORT.html)), [compare](docs/samples/compare.md).
 
 ### With an AI agent
 
@@ -197,7 +204,7 @@ The previous copy is backed up outside the skills folder. Plugins are owned by t
 | `navsentry inventory --config <m> [--project <dir>]` | Read-only code inventory of a development project (routes, OpenAPI, tests, lockfiles) |
 | `navsentry flow import --openapi <spec.json> --config <m> --out <dir>` | Draft flows from a local OpenAPI JSON document |
 | `navsentry knowledge status\|lookup\|propose` | Offline vulnerability knowledge base and update proposals |
-| `navsentry report --input <run.json> --format markdown\|json\|sarif [--lang en\|th]` | Render a saved run |
+| `navsentry report --input <run.json> --format markdown\|html\|json\|sarif [--lang en\|th]` | Render a saved run |
 | `navsentry compare --before <run.json> --after <run.json>` | Before/after verdict and contract drift |
 | `navsentry catalog [--category <CODE>]` | List catalog cases |
 
