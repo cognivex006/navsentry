@@ -20,6 +20,7 @@
     ".codex-plugin/",
     ".antigravity-plugin/",
     "gemini-extension.json",
+    "extension/",
     "CHANGELOG.md"
   ],
   "engines": {

@@ -232,6 +232,15 @@ The import works like this:
 
 Review the draft, add `see` steps for what must be visible, and let the owner approve it. Replay it with `scan --mode flow --engine playwright` (development profile). `fill` steps run only in safe-validate.
 
+### With screenshots: the NavSentry Recorder extension
+The NavSentry Recorder ([extension/README.md](../extension/README.md), Chrome and Edge, loaded unpacked) records the same journey with a screenshot of each step. You can delete steps, mark where the flow ends and add reviewer notes before saving a `.navrec.zip`. The same command imports it:
+
+```bash
+navsentry flow from-recording --input journey.navrec.zip --out navsentry/flows/drafts
+```
+
+It writes the draft flow, `<id>.RECORDING.md` (each step with its screenshot and note), and `<id>.shots/` with a `.gitignore`. The archive is checked strictly before anything is written: only `recording.json` and `shots/NNNN.jpg|png` are accepted, with no traversal, duplicates or symlinks, size and CRC limits, and every screenshot must match its sha256. Password fields are never photographed, and their fill step uses a `*_PASSWORD` env variable. Notes are shown to the reviewer as data, never copied into the flow.
+
 ## Drafts from an OpenAPI document (0.1.3)
 `navsentry flow import --openapi openapi.json --config <manifest> --out navsentry/flows/drafts` turns documented GET operations into draft integration flows. A protected operation (`security` set) becomes a pair: an authenticated actor `access: allowed` and anonymous `access: denied`. Path and required query parameters become variables with `env` references such as `NAVSENTRY_VAR_ORDER_ID`: set them to test values before running. The document is a contract claim, not observed behaviour, so review every step. IMPORT.md lists every operation that was not encoded and why.
 

@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>NavSentry Recorder — scope</title>
+<link rel="stylesheet" href="ui.css">
+</head>
+<body class="options">
+<h1>NavSentry Recorder — scope</h1>
+<p>Import the NavSentry manifest (<code>navsentry.json</code>) of the application you are authorized to test. Only <code>targets.origins</code> is read; nothing else from the file is kept.</p>
+<p><input id="file" type="file" accept=".json,application/json"></p>
+<p id="msg" class="msg" role="status"></p>
+<h2>Origins in scope</h2>
+<ul id="origins"></ul>
+<p class="hint">The recorder asks the browser for access to one origin at a time, when you press Record on it. It never asks for all sites.</p>
+<script type="module" src="options.js"></script>
+</body>
+</html>

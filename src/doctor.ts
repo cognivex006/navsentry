@@ -84,6 +84,7 @@ export function manifestVersions(root = packageRoot()): ManifestVersion[] {
   optional(".codex-plugin/plugin.json", jsonVersion);
   optional(".antigravity-plugin/plugin.json", jsonVersion);
   optional("gemini-extension.json", jsonVersion);
+  optional("extension/manifest.json", jsonVersion);
   for (const s of SKILLS) add(`skills/${s}/SKILL.md`, skillVersion(join(root, "skills", s, "SKILL.md")));
   optional(".agents/skills/navsentry/SKILL.md", skillVersion);
   return out;
