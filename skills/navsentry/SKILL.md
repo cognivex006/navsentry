@@ -36,6 +36,15 @@ You are helping a user test **their own or explicitly authorized** web applicati
 ## Resume after interruption
 Retain the manifest path, approved scope, CLI location, completed commands and exit codes, report paths, pending case IDs, flows directory and flow set hash, approvals pending and blockers in a local untracked work note without credentials or response bodies. On resume, inspect these artifacts and current authorization before continuing. Reuse an existing run directory only for reading; write new runs to a fresh label. Missing artifacts mean unverified, not completed.
 
+## Agent loop (default)
+Run this end to end after one go-ahead from the user. Prefer the `navsentry_*` MCP tools when they are available; otherwise use the CLI with `--json`.
+1. `navsentry doctor`, then `navsentry plan`. If there is no `navsentry.json` or `--config`, ask the user to run `navsentry init <url>` themselves. Show the plan and ask once: "May I scan these origins?"
+2. `navsentry scan --deep --out runs/<label> --json`. Read the JSON summary, not the terminal text.
+3. `navsentry next --run runs/<label> --json`. Follow suggestions with `network: false` freely. Follow suggestions with `network: true` within the approval you already have, for the same origins. Present `ownerOnly` suggestions to the user as decisions.
+4. If the visual driver is enabled, explore pages and forms the crawl did not reach (see *Computer Use and browser evidence*).
+5. Draft flows with `flow analyze`, lint them, and list the owner questions from ANALYSIS.md.
+6. Report as in step 5 of *Workflow* below. Lead with what to fix first, and give the REPORT.html path.
+
 ## Workflow
 1. `navsentry doctor` — show what is usable and whether installed skills/plugins match the CLI version. UNAVAILABLE is not a failure; do not install or update anything without the user's approval.
 2. Write/inspect the JSON manifest (see `examples/manifest.example.json`); credentials only as `*_env` names.

@@ -43,6 +43,9 @@ import { SessionRefused, sendCommand, startSession } from "./visual/session.js";
 import { renderVisualSession } from "./visual/report.js";
 import { renderHtml } from "./report/html.js";
 import { paint } from "./report/color.js";
+import { nextSteps, renderNext } from "./next.js";
+import { runMcpServer } from "./mcp.js";
+import { fileURLToPath } from "node:url";
 import { DEFAULT_MANIFEST, INIT_ENVIRONMENTS, InitError, askInit, buildInitManifest, type InitEnvironment } from "./init.js";
 import { createInterface } from "node:readline/promises";
 
@@ -77,6 +80,11 @@ Usage:
   navsentry report --input <run.json|flows.json> --format markdown|html|json|sarif|junit [--lang en|th]   (--no-color on any command)
   navsentry compare --before <dir|run.json> --after <dir|run.json>   (reads flows.json beside run.json)
   navsentry catalog [--category <CODE>]
+
+For agents:
+  navsentry next --run <dir|run.json> [--json]   (zero network: actions by level, gaps, next commands)
+  navsentry mcp   local MCP server over stdio (no listener); tools run this CLI with every safety gate
+  --json on test, scan and compare prints a machine-readable summary instead of text
 
 Story flows (Markdown test cases; zero network):
   navsentry flow init --id <id> --title <title> [--story <text>] [--level auto|integration|e2e] --out <dir>
@@ -167,6 +175,19 @@ export async function main(argv: string[]): Promise<number> {
         return await scan(rest);
       case "init":
         return await initCommand(rest);
+      case "mcp":
+        return await runMcpServer({ cliPath: fileURLToPath(import.meta.url) });
+      case "next": {
+        // Zero network: reads run.json (and flows.json beside it) and lists the next steps.
+        const p = need(rest, "--run");
+        const runFile = statSync(p).isDirectory() ? join(p, "run.json") : p;
+        const r = validateRunResult(JSON.parse(readFileSync(runFile, "utf8")));
+        const fp = join(dirname(runFile), "flows.json");
+        const fr = existsSync(fp) ? validateFlowRunResult(JSON.parse(readFileSync(fp, "utf8"))) : undefined;
+        const n = nextSteps(r, fr, dirname(resolve(runFile)), securityResult(r));
+        print(rest.includes("--json") ? JSON.stringify(n, null, 2) : paint(renderNext(n)));
+        return 0;
+      }
       case "workspace":
         return workspaceCommand(rest);
       case "knowledge":
@@ -203,7 +224,7 @@ export async function main(argv: string[]): Promise<number> {
         const fb = join(dirname(bp), "flows.json"), fa = join(dirname(ap), "flows.json");
         const flows = existsSync(fb) && existsSync(fa) ? { before: validateFlowRunResult(JSON.parse(readFileSync(fb, "utf8"))), after: validateFlowRunResult(JSON.parse(readFileSync(fa, "utf8"))) } : undefined;
         const c = compareRuns(b, a, flows);
-        print(paint(renderCompareMarkdown(c)));
+        print(rest.includes("--json") ? JSON.stringify({ kind: "navsentry-compare", ...c }, null, 2) : paint(renderCompareMarkdown(c)));
         return c.verdict === "REGRESSED" || c.verdict === "IMPROVED_WITH_DRIFT" || c.verdict === "DRIFT_ONLY" || c.verdict === "FUNCTIONAL_REGRESSION" ? 1 : 0;
       }
       case "catalog": {
@@ -334,11 +355,17 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
   }
   write();
   const sec = securityResult(r);
-  print(paint(`execution=${r.executionStatus} security=${sec} findings=${r.findings.length} requests=${r.budget.requestsUsed}${flowRun ? ` functional=${flowRun.functionalResult} flows=${flowRun.flows.length}` : ""} workspace=${r.workspace.status}`));
   if (r.workspace.status === "FAIL") process.stderr.write(`WORKSPACE_DIRTY: created=${r.workspace.created.length} modified=${r.workspace.modified.length} deleted=${r.workspace.deleted.length} cleanup=${r.workspace.cleanup}\n`);
-  print(paint(`REPORT: ${join(out, "REPORT.md")}`));
-  if (m.report.formats.includes("markdown")) print(paint(`HTML: ${join(out, "REPORT.html")}`));
-  if (flowRun) print(`TEST-REPORT: ${join(out, "TEST-REPORT.md")}`);
+  if (argv.includes("--json")) {
+    // Machine-readable summary for agents (SPEC-0.3.0 §3.2): paths, counts by level, gaps and next commands.
+    const n = nextSteps(r, flowRun, out, sec);
+    print(JSON.stringify({ ...n, kind: "navsentry-run-summary", exitCode: exitCode(r, flowRun), findings: r.findings.length, requests: r.budget.requestsUsed, workspace: r.workspace.status, ...(flowRun ? { functionalResult: flowRun.functionalResult, flows: flowRun.flows.length, testReport: join(out, "TEST-REPORT.md") } : {}), runJson: join(out, "run.json") }, null, 2));
+  } else {
+    print(paint(`execution=${r.executionStatus} security=${sec} findings=${r.findings.length} requests=${r.budget.requestsUsed}${flowRun ? ` functional=${flowRun.functionalResult} flows=${flowRun.flows.length}` : ""} workspace=${r.workspace.status}`));
+    print(paint(`REPORT: ${join(out, "REPORT.md")}`));
+    if (m.report.formats.includes("markdown")) print(paint(`HTML: ${join(out, "REPORT.html")}`));
+    if (flowRun) print(`TEST-REPORT: ${join(out, "TEST-REPORT.md")}`);
+  }
   for (const x of r.fixtures?.leftovers ?? []) process.stderr.write(`LEFTOVER ${x.fixture} ${x.displayId}: ${x.manualAction}\n`);
   coord?.dispose();
   if (coord?.signal) return coord.signal === "SIGINT" ? 130 : 143;

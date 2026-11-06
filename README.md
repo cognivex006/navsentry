@@ -179,12 +179,20 @@ Example reports: [before](docs/samples/before/REPORT.md) ([HTML](docs/samples/be
 
 Ask in the agent chat, for example:
 
-- "Use navsentry to plan an observe run for our staging manifest."
-- "Run navsentry and summarize REPORT.md by priority."
+- "Use navsentry to scan our app and tell me what to fix first."
+- "Explore the site with the navsentry visual driver and summarize what you find."
 - "Compare the before and after navsentry runs and list any contract drift."
 - "Check my navsentry installation and versions."
 
-The agent reads results as data and asks before running a scan or changing an installation.
+The agent runs the whole loop itself: plan, scan, read the summary, explore, draft flows, and report. It asks you once before sending traffic, and leaves authorization, flow approval and manifest changes to you.
+
+For the smoothest loop, register the local MCP server once. It gives the agent NavSentry tools directly and returns screenshots as images.
+
+```bash
+claude mcp add navsentry -- navsentry mcp
+```
+
+For Codex, see [docs/AGENT-INTEGRATIONS.md](docs/AGENT-INTEGRATIONS.md#mcp-server-claude-code-codex-and-other-mcp-hosts). Without MCP, `navsentry scan --json` and `navsentry next --run <dir>` give agents the same information.
 
 ## Version doctor
 

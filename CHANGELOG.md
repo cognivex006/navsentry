@@ -5,6 +5,14 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Added
+- 0.3.0-b agent-first use (SPEC-0.3.0 §3.2, owner decision D1):
+  - **`--json`:** `test`, `scan` and `compare` accept `--json` and print a machine-readable summary: report paths, counts by action level, gaps and next commands.
+  - **`navsentry next --run <dir>`:** lists actions by level, gaps (NOT_TESTED, sampled-out pages, incomplete flows) and the next commands, with zero network. Each command is marked as sending traffic or not, and owner decisions are marked as such.
+  - **`navsentry mcp`:** a local MCP server over stdio, with no dependency and no listener. Its tools cover doctor, plan, scan, next, compare, flow analyze/lint, knowledge lookup and the visual driver; screenshots come back as images.
+    - Every tool runs the CLI as a child process, so all refusals and safety gates apply.
+    - There is no tool for init, flow approval, workspace cleanup, installation updates or manifest edits.
+    - Threat model TM-38.
+  - **Agent loop in the consumer skill:** after one go-ahead, the agent runs plan → scan → next → explore → draft flows → report.
 - 0.3.0-a (SPEC-0.3.0 §3.1, §8): `navsentry init <url>` writes `navsentry.json` after you confirm authorization and name an owner on an interactive terminal (refused without a TTY, so an agent cannot answer for you). Staging and production also ask for the reference and expiry, loopback and private hosts need a separate approval, and cloud metadata addresses are refused. An existing manifest is never overwritten.
 - Commands use `./navsentry.json` when `--config` is omitted, and say so on stderr.
 - `navsentry scan` without `--mode` scans the seed page; `scan --deep` is spider with `--analyze`.
