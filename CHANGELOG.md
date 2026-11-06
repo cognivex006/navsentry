@@ -5,6 +5,10 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Added
+- 0.3.0-a (SPEC-0.3.0 §3.1, §8): `navsentry init <url>` writes `navsentry.json` after you confirm authorization and name an owner on an interactive terminal (refused without a TTY, so an agent cannot answer for you). Staging and production also ask for the reference and expiry, loopback and private hosts need a separate approval, and cloud metadata addresses are refused. An existing manifest is never overwritten.
+- Commands use `./navsentry.json` when `--config` is omitted, and say so on stderr.
+- `navsentry scan` without `--mode` scans the seed page; `scan --deep` is spider with `--analyze`.
+- Demo v2: `node dist/scripts/demo.js serve [--variant vulnerable|secure]` serves a linked demo shop (products, search, sign-in form) on one origin, so before/after compare shows only real changes. `examples/demo/` has a manifest and two approved flows, and [docs/TOUR.md](docs/TOUR.md) walks through every mode.
 - 0.3.0-c readable reports (SPEC-0.3.0 §4).
   - **Fixed sections:** every REPORT.md has the same twelve sections in the same order: Summary, Findings, Fix verification, Known vulnerabilities, Coverage, Not tested and limitations, Transports and engine, Requests refused before sending, Redirect chains, Client assets and browser, Knowledge gaps, Run details. A section without data says why.
   - **Finding cards:** one card per case lists every affected target. Each card says why the problem matters, how to fix it, how to recheck it, when it counts as fixed and what must not break.
@@ -19,6 +23,8 @@ All notable changes to this project are documented here. Format: [Keep a Changel
   - **Terminal colour:** run summaries and `compare` output are coloured, only on a TTY. `NO_COLOR` or `--no-color` turns it off.
 
 ### Changed
+- `serve` now starts one demo shop on port 4173 instead of two fixtures on 4173 and 4174.
+- The lint warning for E2E flows with UI steps points to `--engine playwright` instead of saying the browser transport does not exist.
 - `compare` matches requests by method, path and actor. A changed origin is reported once, instead of listing every request as missing.
 - The sample reports in `docs/samples/` are regenerated in the new format, with HTML versions.
 

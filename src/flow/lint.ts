@@ -91,7 +91,7 @@ function lintDoc(doc: FlowDoc, m: Manifest, gate: ScopeGate, red: Redactor, E: s
   const seen = new Set<string>();
   const cls = classify(doc);
   if (h.level !== "auto" && h.level !== cls.level) at(h.line, "/level", `declared ${h.level} but derived ${cls.level}: ${cls.levelReasons.join("; ")}`);
-  if (cls.level === "e2e" && doc.steps.some((s) => UI_ACTIONS.has(s.action))) warn(h.line, "E2E flow with UI steps will be INCOMPLETE until the browser transport exists (M1b)");
+  if (cls.level === "e2e" && doc.steps.some((s) => UI_ACTIONS.has(s.action))) warn(h.line, "E2E flow with UI steps is INCOMPLETE on the http engine; run it with `scan --mode flow --engine playwright` (development profile)");
 
   for (const s of doc.steps) {
     const L = s.line;

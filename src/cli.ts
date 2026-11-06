@@ -43,6 +43,8 @@ import { SessionRefused, sendCommand, startSession } from "./visual/session.js";
 import { renderVisualSession } from "./visual/report.js";
 import { renderHtml } from "./report/html.js";
 import { paint } from "./report/color.js";
+import { DEFAULT_MANIFEST, INIT_ENVIRONMENTS, InitError, askInit, buildInitManifest, type InitEnvironment } from "./init.js";
+import { createInterface } from "node:readline/promises";
 
 const HELP = `navsentry ${TOOL_VERSION} — Navigate. Validate. Secure.
 Authorized targets only. Default mode is observe (GET/HEAD/OPTIONS + TLS handshake).
@@ -51,14 +53,17 @@ Usage:
   navsentry doctor [--host claude|codex|gemini|antigravity|agy] [--project <dir>] [--json]
   navsentry doctor update --host <host> --scope user|project [--project <dir>] [--dry-run]
   navsentry integrations
+  navsentry init <url> [--environment local|dev|staging|production] [--lang en|th] [--out <file>]
+                 asks you (on a terminal) to confirm authorization, then writes navsentry.json.
+                 Every command below uses ./navsentry.json when --config is omitted.
   navsentry validate --config <manifest.json>
   navsentry plan --config <manifest.json> [--flows <path>] [--flows-only] [--include-drafts]   (zero network)
   navsentry discover --config <manifest.json> --dry-run
   navsentry test --config <manifest.json> [--out <dir>] [--profile safe] [--env development|production] [--project <dir>]
                  [--flows <path>] [--flows-only] [--include-drafts] [--only <id,...>] [--level integration|e2e] [--junit]
-  navsentry scan --config <manifest.json> --mode page|spider|flow [--engine http|playwright|analyzer] [--analyze [--extractors <dir>]]
+  navsentry scan [--config <manifest.json>] [--mode page|spider|flow] [--deep] [--engine http|playwright|analyzer] [--analyze [--extractors <dir>]]
                  [--env development|production] [--url <in-scope URL>] [--flows <path>] [--out <dir>] [--project <dir>]
-                 page without --url scans the seed paths, like test; flow equals test --flows <path> --flows-only.
+                 no --mode means page; --deep means spider with --analyze. page without --url scans the seed paths, like test; flow equals test --flows <path> --flows-only.
                  spider crawls from the seed paths, grouping pages by template; scan --engine computer-use exits 3: use browse.
   navsentry browse start --config <manifest.json> --url <in-scope URL> [--actor <name>] [--idle-seconds <n>] [--out <dir>] [--project <dir>]
   navsentry browse screenshot|status|end --session <id> [--project <dir>]
@@ -98,6 +103,17 @@ function need(argv: string[], name: string): string {
 
 class UsageError extends Error {}
 
+/** `--config <m>`, or `./navsentry.json` when it exists (SPEC-0.3.0 §3.1, owner decision D2). */
+function configPath(argv: string[]): string {
+  if (argv.includes("--config")) return need(argv, "--config");
+  const def = resolve(DEFAULT_MANIFEST);
+  if (existsSync(def)) {
+    process.stderr.write(`using ${DEFAULT_MANIFEST} in the current directory\n`);
+    return def;
+  }
+  throw new UsageError(`missing --config (or create ${DEFAULT_MANIFEST} here with \`navsentry init <url>\`)`);
+}
+
 const print = (s: string) => process.stdout.write(s.endsWith("\n") ? s : s + "\n");
 
 export async function main(argv: string[]): Promise<number> {
@@ -122,7 +138,7 @@ export async function main(argv: string[]): Promise<number> {
         return 0;
       }
       case "validate": {
-        const m = loadManifest(need(rest, "--config"));
+        const m = loadManifest(configPath(rest));
         print(`OK manifest: project=${m.project} environment=${m.environment} mode=${m.safety.mode} origins=${m.targets.origins.join(",")}`);
         return 0;
       }
@@ -131,7 +147,7 @@ export async function main(argv: string[]): Promise<number> {
       case "plan":
       case "discover": {
         if (cmd === "discover" && !rest.includes("--dry-run")) throw new UsageError("live discovery is `navsentry scan --mode spider` (0.1.3); `discover --dry-run` stays the zero-network plan");
-        const m = loadManifest(need(rest, "--config"));
+        const m = loadManifest(configPath(rest));
         assertEnv(m, rest);
         const sel = arg(rest, "--flows") ? selectFlows(m, rest) : undefined;
         const plan = planRun(m, process.env, sel ? { flows: sel.docs, flowsOnly: rest.includes("--flows-only"), warnings: sel.warnings } : {});
@@ -141,7 +157,7 @@ export async function main(argv: string[]): Promise<number> {
       case "test": {
         const profile = arg(rest, "--profile");
         if (profile && profile !== "safe") throw new UsageError("only --profile safe is supported");
-        const m = loadManifest(need(rest, "--config"));
+        const m = loadManifest(configPath(rest));
         assertEnv(m, rest);
         if (rest.includes("--flows-only") && !arg(rest, "--flows")) throw new UsageError("--flows-only needs --flows");
         const sel = arg(rest, "--flows") ? selectFlows(m, rest) : undefined;
@@ -149,6 +165,8 @@ export async function main(argv: string[]): Promise<number> {
       }
       case "scan":
         return await scan(rest);
+      case "init":
+        return await initCommand(rest);
       case "workspace":
         return workspaceCommand(rest);
       case "knowledge":
@@ -330,8 +348,12 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
 const ENGINE_TRANSPORT: Record<Engine, string> = { http: "direct-http", playwright: "playwright-browser", "computer-use": "visual-computer-use" };
 
 /** `scan` (SPEC-0.1.3 §3). Every invalid combination exits 3 before any I/O. */
-async function scan(argv: string[]): Promise<number> {
-  const mode = need(argv, "--mode");
+async function scan(argvIn: string[]): Promise<number> {
+  let argv = argvIn;
+  const deep = argv.includes("--deep");
+  if (deep && argv.includes("--mode") && arg(argv, "--mode") !== "spider") throw new UsageError("--deep means --mode spider --analyze; it cannot be combined with another mode");
+  if (deep && !argv.includes("--analyze")) argv = [...argv, "--analyze"];
+  const mode = argv.includes("--mode") ? need(argv, "--mode") : deep ? "spider" : "page";
   if (mode !== "page" && mode !== "spider" && mode !== "flow") throw new UsageError("--mode must be page, spider or flow");
   const rawEngine = arg(argv, "--engine") ?? "http";
   if (rawEngine === "computer-use") throw new UsageError("--engine computer-use does not drive a host-owned browser (S1 cannot be enforced there); use `navsentry browse start` (visual driver on the playwright engine, ADR-0009)");
@@ -344,7 +366,7 @@ async function scan(argv: string[]): Promise<number> {
   if (analyze && mode === "flow") throw new UsageError("--analyze applies only to --mode page and spider");
   if (arg(argv, "--extractors") !== undefined && !analyze) throw new UsageError("--extractors needs --analyze");
   if (engine === "playwright" && mode !== "flow") throw new UsageError(`--engine playwright is not offered for --mode ${mode} (SPEC-0.1.3 §2, owner decision D7)`);
-  const m = loadManifest(need(argv, "--config"));
+  const m = loadManifest(configPath(argv));
   assertEnv(m, argv);
   if (!m.transports.order.includes(ENGINE_TRANSPORT[engine])) throw new UsageError(`--engine ${rawEngine} needs transport ${ENGINE_TRANSPORT[engine]} in the manifest transports.order; a flag never overrides manifest policy`);
   if (engine === "playwright" && m.profile === "production") throw new UsageError("--engine playwright is development only");
@@ -376,7 +398,7 @@ async function browseCommand(argv: string[]): Promise<number> {
   const rest = argv.slice(1);
   const project = arg(rest, "--project") ?? process.cwd();
   if (sub === "start") {
-    const m = loadManifest(need(rest, "--config"));
+    const m = loadManifest(configPath(rest));
     assertEnv(m, rest);
     let url: string;
     try { url = new URL(need(rest, "--url")).toString(); } catch { throw new UsageError("--url must be an absolute http(s) URL"); }
@@ -431,7 +453,7 @@ async function browseCommand(argv: string[]): Promise<number> {
  * It runs inside a managed workspace, so any change to the project tree fails with exit 4.
  */
 function inventoryCommand(argv: string[]): number {
-  const m = loadManifest(need(argv, "--config"));
+  const m = loadManifest(configPath(argv));
   if (m.profile !== "development") throw new UsageError("inventory reads project code and is available for the development profile only (environment local or dev)");
   const runId = randomUUID();
   const ws = beginRun(arg(argv, "--project") ?? process.cwd(), runId, m.workspace.ignore);
@@ -619,7 +641,7 @@ async function flowCommand(argv: string[]): Promise<number> {
       return 0;
     }
     case "lint": {
-      const m = loadManifest(need(rest, "--config"));
+      const m = loadManifest(configPath(rest));
       const { docs, warnings } = loadLinted(m, need(rest, "--flows"));
       for (const w of warnings) print(`warning: ${w}`);
       for (const d of docs) {
@@ -629,7 +651,7 @@ async function flowCommand(argv: string[]): Promise<number> {
       return 0;
     }
     case "analyze": {
-      const m = loadManifest(need(rest, "--config"));
+      const m = loadManifest(configPath(rest));
       const run = validateRunResult(JSON.parse(readFileSync(need(rest, "--from-run"), "utf8")));
       if (run.scope.origins.some((o) => !m.targets.origins.includes(o))) throw new UsageError("run is for a different target (its origins are not all in the manifest)");
       const dir = resolve(need(rest, "--out"));
@@ -682,7 +704,7 @@ async function flowCommand(argv: string[]): Promise<number> {
       return 0;
     }
     case "import": {
-      const m = loadManifest(need(rest, "--config"));
+      const m = loadManifest(configPath(rest));
       const spec = resolve(need(rest, "--openapi"));
       if (statSync(spec).size > MAX_SPEC_BYTES) throw new UsageError(`--openapi file is larger than ${MAX_SPEC_BYTES} bytes`);
       const doc = parseOpenApiText(readFileSync(spec, "utf8"));
@@ -769,3 +791,29 @@ async function doctor(argv: string[]): Promise<number> {
 const entry = (() => { try { return realpathSync(process.argv[1] ?? ""); } catch { return ""; } })();
 const invokedDirectly = entry.replace(/\\/g, "/").endsWith("dist/src/cli.js");
 if (invokedDirectly) main(process.argv.slice(2)).then((code) => { process.exitCode = code; });
+
+/** `navsentry init <url>` (SPEC-0.3.0 §3.1). Interactive on purpose: authorization is the user's answer. */
+async function initCommand(argv: string[]): Promise<number> {
+  const url = argv[0];
+  if (!url || url.startsWith("--")) throw new UsageError("usage: navsentry init <url> [--environment local|dev|staging|production] [--lang en|th] [--out <file>]");
+  const env = arg(argv, "--environment");
+  if (env !== undefined && !INIT_ENVIRONMENTS.includes(env as InitEnvironment)) throw new UsageError(`--environment must be one of ${INIT_ENVIRONMENTS.join(", ")}`);
+  const lang = arg(argv, "--lang");
+  if (lang !== undefined && lang !== "en" && lang !== "th") throw new UsageError("--lang must be en or th");
+  const out = resolve(argv.includes("--out") ? need(argv, "--out") : DEFAULT_MANIFEST);
+  if (existsSync(out)) throw new UsageError(`${out} already exists; NavSentry never overwrites a manifest (edit it, or choose --out)`);
+  if (!process.stdin.isTTY || !process.stdout.isTTY) throw new UsageError("navsentry init asks you to confirm authorization, so it runs only in an interactive terminal. Run it yourself; an agent must not answer for you");
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const answers = await askInit({ ask: (q) => rl.question(q), say: (l) => print(l) }, url, { ...(env ? { environment: env as InitEnvironment } : {}), ...(lang ? { language: lang as "en" | "th" } : {}) });
+    const manifest = buildInitManifest(answers);
+    writeFileSync(out, JSON.stringify(manifest, null, 2) + "\n", { flag: "wx" });
+    print(`Wrote ${out}\nNext: navsentry plan   (no network)\n      navsentry scan   (one page)\n      navsentry scan --deep   (crawl by template, page models)`);
+    return 0;
+  } catch (e) {
+    if (e instanceof InitError) throw new UsageError(e.message);
+    throw e;
+  } finally {
+    rl.close();
+  }
+}
