@@ -1,6 +1,6 @@
 # SPEC 0.3.0 — Agent-first use, readable reports and the flow recorder
 
-- Status: **DRAFT** · Drafted: 2026-11-06 · Owner decisions D1–D10: open ([§10](#10-owner-decisions))
+- Status: **ACCEPTED** · Drafted: 2026-11-06 · Owner decisions D1–D10: decided 2026-11-06 with the recommended options ([§10](#10-owner-decisions)) · Implementation: not started
 - Related: [DEV-PLAN](../DEV-PLAN.md) · [ADR-0008](../adr/0008-playwright-engine-s1.md) · [ADR-0009](../adr/0009-visual-driver-on-owned-browser.md) · [SPEC-0.2.0](SPEC-0.2.0-M2-SAFE-VALIDATE.md) · AGENTS.md hard rules 2, 4, 5, 7
 - Source: owner review of 0.2.0 on 2026-11-05 (12 points) and owner request 2026-11-06 (middle path for Computer Use, agent-first use, browser recorder).
 - No code may be written for a milestone below until this spec is ACCEPTED and its owner decisions are recorded.
@@ -31,7 +31,7 @@
    - extension **ไม่ส่ง request เอง** และไม่บันทึกค่าที่พิมพ์ (รหัสผ่านไม่ถูกเก็บเด็ดขาด)
    - ตอน replay จริง ทุก request ผ่าน NavSentry ตามกฎข้อ 4
 
-เจ้าของต้องตัดสินใจ 10 ข้อใน §10 ก่อนเริ่มเขียนโค้ด
+เจ้าของตัดสินใจครบ 10 ข้อแล้ว (2026-11-06) ใช้ตัวเลือกที่แนะนำทั้งหมด
 
 ## 1. Goals
 | ID | Goal | Review point |
@@ -205,7 +205,7 @@ Chrome and Edge ship a DevTools **Recorder** panel that exports a user journey a
 Order: a → c → b → d → e → f. Reports and short commands give the most value first; e can start in parallel with d.
 
 ## 10. Owner decisions
-| ID | Question | Options | Recommended |
+| ID | Question | Options | Decision (2026-11-06) |
 |---|---|---|---|
 | D1 | Ship a local stdio MCP server? | yes (zero-dependency) / no, CLI with `--json` only | yes, in 0.3.0-b |
 | D2 | Default manifest file name | `navsentry.json` / `.navsentry/manifest.json` | `navsentry.json` |

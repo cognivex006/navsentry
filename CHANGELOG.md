@@ -5,7 +5,7 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Added
-- Draft [SPEC-0.3.0](docs/specs/SPEC-0.3.0-AGENT-FIRST-AND-RECORDER.md): agent-first use, self-contained reports, a Computer Use middle path and a flow recorder. No behaviour changes until it is accepted.
+- [SPEC-0.3.0](docs/specs/SPEC-0.3.0-AGENT-FIRST-AND-RECORDER.md): agent-first use, self-contained reports, a Computer Use middle path and a flow recorder. Accepted 2026-11-06 with owner decisions D1–D10 (recommended options); no behaviour changes yet.
 
 ## [0.2.0] - 2026-11-05
 
