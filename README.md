@@ -76,6 +76,28 @@ navsentry doctor update --host codex --scope project --project /path/to/your/app
 
 **Other agents**: any agent that reads `SKILL.md` files can use the `skills/navsentry/` and `skills/navsentry-doctor/` folders. `navsentry doctor` prints the package folder that contains them. See [docs/AGENT-INTEGRATIONS.md](docs/AGENT-INTEGRATIONS.md) for details.
 
+## Quick start
+
+```bash
+navsentry init https://staging.example.test/
+```
+
+`init` asks you to confirm that you own the target or have written authorization, then writes `navsentry.json`. Every command finds that file, so no `--config` is needed:
+
+```bash
+navsentry plan
+```
+
+```bash
+navsentry scan
+```
+
+```bash
+navsentry scan --deep
+```
+
+`scan` checks one page; `scan --deep` follows links and samples pages by template. To try every mode on the bundled demo shop without a real target, follow the [10-minute tour](docs/TOUR.md).
+
 ## Usage
 
 1. Describe the target in a manifest. Start from [examples/manifest.example.json](examples/manifest.example.json). Credentials are referenced by environment variable names only.
@@ -189,10 +211,11 @@ The previous copy is backed up outside the skills folder. Plugins are owned by t
 |---|---|
 | `navsentry doctor` | Versions, installations and available transports |
 | `navsentry integrations` | Available transports only |
+| `navsentry init <url>` | Write `navsentry.json` after you confirm authorization (interactive terminal only) |
 | `navsentry validate --config <m>` | Check a manifest |
 | `navsentry plan --config <m>` | Show planned requests and skipped cases (no network) |
 | `navsentry test --config <m> [--out <dir>] [--env <profile>] [--project <dir>]` | Run observe-mode checks and write reports |
-| `navsentry scan --config <m> --mode page\|spider\|flow [--url <URL>] [--engine http] [--env <profile>]` | Scan one page, crawl by template (spider), or replay flows |
+| `navsentry scan [--config <m>] [--mode page\|spider\|flow] [--deep] [--url <URL>] [--engine http\|playwright\|analyzer] [--env <profile>]` | Scan one page (default), crawl by template (`--deep` = spider with page models), or replay flows |
 | `navsentry workspace status\|clean [--project <dir>] [--dry-run]` | Show or remove NavSentry leftovers in a project |
 | `navsentry inventory --config <m> [--project <dir>]` | Read-only code inventory of a development project (routes, OpenAPI, tests, lockfiles) |
 | `navsentry flow import --openapi <spec.json> --config <m> --out <dir>` | Draft flows from a local OpenAPI JSON document |
