@@ -118,21 +118,37 @@ The AI agent looks at screenshots and clicks, while NavSentry owns the browser a
 navsentry browse start --url http://127.0.0.1:4173/ --out runs/visual
 ```
 
-It prints `SESSION: <id>`. In another terminal, or from your agent:
+It prints `SESSION: <id>`. In another terminal, or from your agent, list what can be clicked or typed into:
 
 ```bash
-navsentry browse screenshot --session <id>
+navsentry browse snapshot --session <id>
 ```
+
+Each element has a ref such as `e3`. Click the Search link by its ref (check the snapshot for the right number):
 
 ```bash
-navsentry browse click --x 640 --y 400 --session <id>
+navsentry browse click --ref e3 --session <id>
 ```
+
+Take a new snapshot (refs change after each page load). Then type a search term into the search box, using the box's ref from that snapshot:
 
 ```bash
-navsentry browse end --session <id>
+navsentry browse type --ref e7 --text lamp --session <id>
 ```
 
-Read `runs/visual/VISUAL-SESSION.md`. To let an agent do it, ask in Claude Code or Codex: *"Use the navsentry skill to explore http://127.0.0.1:4173/ with the visual driver from examples/demo and summarize what it finds."*
+Press Enter to run the search:
+
+```bash
+navsentry browse key --key Enter --session <id>
+```
+
+`browse screenshot --session <id>` shows the page as an image. End the session and save what you did as a draft flow:
+
+```bash
+navsentry browse end --session <id> --save-flow flows/drafts
+```
+
+Read `runs/visual/VISUAL-SESSION.md` and the draft in `flows/drafts/`. Typed values are never recorded: in the draft, each input becomes a variable read from an environment variable at replay time. Secrets are typed with `--env <VAR>` instead of `--text`, and a sign-in form cannot be submitted here, because the visual driver refuses POST requests. To let an agent do it, ask in Claude Code or Codex: *"Use the navsentry skill to explore http://127.0.0.1:4173/ with the visual driver from examples/demo and summarize what it finds."*
 
 ## 8. Clean up
 

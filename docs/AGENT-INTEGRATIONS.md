@@ -63,8 +63,10 @@ No hosted service, no GitHub App, no telemetry. `navsentry doctor` makes no netw
 | `navsentry_compare` | no | Before/after verdict |
 | `navsentry_flow_analyze`, `navsentry_flow_lint` | no | Draft and check flows |
 | `navsentry_knowledge_lookup` | no | Offline advisory lookup |
-| `navsentry_browse_start`, `_click`, `_scroll` | **yes** | Visual driver on NavSentry's own browser |
-| `navsentry_browse_screenshot`, `_end` | no | Screenshot as an image; end the session |
+| `navsentry_browse_start`, `_click`, `_key`, `_scroll` | **yes** | Visual driver on NavSentry's own browser; click by snapshot ref or by coordinates |
+| `navsentry_browse_snapshot` | no | Interactive elements with refs, roles, names and scope flags (no values) |
+| `navsentry_browse_type` | no | Fill a field: `env` for secrets, `text` for short non-secret input; values are never logged |
+| `navsentry_browse_screenshot`, `_end` | no | Screenshot as an image; end the session, optionally `save_flow` to a draft flow |
 
 There is no tool to create or edit a manifest, approve a flow, clean a workspace or update an installation; those stay with the person. Each tool runs the CLI, so every refusal and safety gate applies.
 
