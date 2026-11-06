@@ -121,6 +121,13 @@ export const TOOLS: ToolDef[] = [
     argv: (a) => ["flow", "lint", ...cfg(a), "--flows", val(a, "flows", true)!],
   },
   {
+    name: "navsentry_flow_from_recording", title: "Draft a flow from a DevTools recording (no network)",
+    description: "Turns a Chrome/Edge DevTools Recorder JSON export (made by the user) into one draft flow plus an IMPORT.md of steps that need review. Recorded input values are dropped and become env variables. Out-of-scope URLs are never encoded.",
+    inputSchema: { type: "object", properties: { ...COMMON, input: str("Recorder JSON file."), out: str("Folder for the draft, for example navsentry/flows/drafts.") }, required: ["input", "out"], additionalProperties: false },
+    annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: false },
+    argv: (a) => ["flow", "from-recording", ...cfg(a), "--input", val(a, "input", true)!, "--out", val(a, "out", true)!],
+  },
+  {
     name: "navsentry_knowledge_lookup", title: "Look up known vulnerabilities (offline)",
     description: "Searches the offline advisory snapshot by product and version, or by CVE/GHSA/alias. Zero matches never means no vulnerabilities.",
     inputSchema: { type: "object", properties: { product: str("Product name, for example jquery."), version: str("Version."), id: str("CVE, GHSA or alias."), cwd: COMMON.cwd }, additionalProperties: false },

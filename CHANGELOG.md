@@ -5,6 +5,12 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Added
+- 0.3.0-e recorder import (SPEC-0.3.0 §6): `navsentry flow from-recording --input <recording.json> --out <dir>` turns a Chrome/Edge DevTools Recorder JSON export into one draft E2E flow plus `<id>.IMPORT.md`. Zero network; the file is read as data.
+  - `navigate`, `click`, `change` and `waitForElement` become navigate, click, fill and see steps, located by accessible-name selectors.
+  - Recorded values are dropped: each input becomes an env-backed variable.
+  - Out-of-scope URLs, a second origin, CSS/XPath-only selectors, keys, scrolls and hovers are listed, never guessed.
+  - At most 200 steps (owner decision D10). An existing flow is never overwritten.
+  - MCP tool `navsentry_flow_from_recording`. A sample recording ships in `examples/demo/recordings/`, documented in FLOWS.md and the tour.
 - 0.3.0-d visual driver middle path (SPEC-0.3.0 §5, owner decisions D5 and D6). Every request still goes through ScopeGate and the Budget.
   - **`browse snapshot`:** lists the page's interactive elements with refs (e1, e2…), roles, accessible names and an in-scope flag for links. It never includes field values, and names are redacted.
   - **`browse click --ref <ref>`:** clicks by ref; coordinates still work. The role and name of the clicked element are logged.

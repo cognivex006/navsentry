@@ -211,6 +211,27 @@ The step sends the read (it must return 2xx, the positive control), then the log
 
 **NSC-INJ-004.** The run marker `nsv-<16 hex>` may be put in a create body or filled into a form (`"value": {"var": "marker"}`). When a later HTML response shows it inside a tag (attribute) or a `<script>` element, `run.json → observations` records the context, the count and the URL, and REPORT.md lists them. This is a fact, not a result. The case stays NOT_TESTED, because testing output encoding needs an injection payload (active-approved).
 
+## Drafts from a browser recording (0.3.0)
+Chrome and Edge have a built-in **Recorder** panel in DevTools.
+
+1. Open DevTools → Recorder → *Create a new recording*, use the site, then stop.
+2. Export the recording as JSON.
+3. Import it:
+
+```bash
+navsentry flow from-recording --input journey.json --out navsentry/flows/drafts
+```
+
+The import works like this:
+
+- It reads the file as data and sends nothing.
+- `navigate`, `click`, `change` and `waitForElement` steps become `navigate`, `click`, `fill` and `see` steps. Targets come from the recording's accessible-name selectors (`aria/Name[role="link"]` → role and name, `aria/Name` → label or text). A click that only focuses the field typed into next is folded into the fill step.
+- **Recorded input values are dropped.** Each `change` becomes a variable read from an environment variable at replay time, for example `NAVSENTRY_REC_<NAME>_1`.
+- URLs outside the manifest scope, a second origin, CSS- or XPath-only selectors, Enter and other keys, scrolls and hovers are **listed in `<id>.IMPORT.md`, never guessed**.
+- One recording becomes one draft flow. A recording may have at most 200 steps. An existing flow is never overwritten.
+
+Review the draft, add `see` steps for what must be visible, and let the owner approve it. Replay it with `scan --mode flow --engine playwright` (development profile). `fill` steps run only in safe-validate.
+
 ## Drafts from an OpenAPI document (0.1.3)
 `navsentry flow import --openapi openapi.json --config <manifest> --out navsentry/flows/drafts` turns documented GET operations into draft integration flows. A protected operation (`security` set) becomes a pair: an authenticated actor `access: allowed` and anonymous `access: denied`. Path and required query parameters become variables with `env` references such as `NAVSENTRY_VAR_ORDER_ID`: set them to test values before running. The document is a contract claim, not observed behaviour, so review every step. IMPORT.md lists every operation that was not encoded and why.
 

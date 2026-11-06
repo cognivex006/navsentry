@@ -42,6 +42,7 @@ import { TOOL_VERSION } from "./types.js";
 import { SessionRefused, sendCommand, startSession } from "./visual/session.js";
 import { renderVisualSession } from "./visual/report.js";
 import { draftFlowFromSession } from "./visual/flow-draft.js";
+import { MAX_RECORDING_BYTES, RecordingError, importRecording } from "./flow/recording.js";
 import { renderHtml } from "./report/html.js";
 import { paint } from "./report/color.js";
 import { nextSteps, renderNext } from "./next.js";
@@ -95,6 +96,7 @@ Story flows (Markdown test cases; zero network):
   navsentry flow init --id <id> --title <title> [--story <text>] [--level auto|integration|e2e] --out <dir>
   navsentry flow analyze --config <manifest.json> --from-run <run.json> --out <dir> [--lang en|th]
   navsentry flow import --openapi <spec.json> --config <manifest.json> --out <dir>   (local OpenAPI JSON → drafts)
+  navsentry flow from-recording --input <recording.json> [--config <manifest.json>] --out <dir>   (Chrome/Edge DevTools Recorder → draft)
   navsentry inventory --config <manifest.json> [--project <dir>] [--out <dir>]   (development: read-only code inventory)
   navsentry flow lint --config <manifest.json> --flows <path>
   navsentry flow approve --flows <file> --by <name> [--config <manifest>] [--reference <ref>] [--root <flows-dir>]   (owner action; --config is required for flows that use fixtures)
@@ -242,7 +244,7 @@ export async function main(argv: string[]): Promise<number> {
         throw new UsageError(`unknown command ${cmd}`);
     }
   } catch (e) {
-    if (e instanceof ConfigError || e instanceof UsageError || e instanceof DoctorError || e instanceof FlowError || e instanceof WorkspaceError || e instanceof ProposalError || e instanceof OpenApiError) {
+    if (e instanceof ConfigError || e instanceof UsageError || e instanceof DoctorError || e instanceof FlowError || e instanceof WorkspaceError || e instanceof ProposalError || e instanceof OpenApiError || e instanceof RecordingError) {
       process.stderr.write(`${e.message}\n`);
       return 3;
     }
@@ -783,6 +785,25 @@ async function flowCommand(argv: string[]): Promise<number> {
       print(`IMPORT: ${join(dir, "IMPORT.md")}`);
       return 0;
     }
+    case "from-recording": {
+      // DevTools Recorder JSON → one draft flow (SPEC-0.3.0 §6). Zero network; never overwrites.
+      const m = loadManifest(configPath(rest));
+      const input = resolve(need(rest, "--input"));
+      if (statSync(input).size > MAX_RECORDING_BYTES) throw new UsageError(`--input is larger than ${MAX_RECORDING_BYTES} bytes`);
+      let raw: unknown;
+      try { raw = JSON.parse(readFileSync(input, "utf8")); } catch { throw new UsageError("--input is not JSON; export the recording from DevTools as JSON"); }
+      const imp = importRecording(raw, m, input.split(/[\\/]/).pop() ?? "recording.json");
+      const dir = resolve(need(rest, "--out"));
+      mkdirSync(dir, { recursive: true });
+      const f = join(dir, `${imp.id}.flow.md`);
+      if (existsSync(f)) throw new UsageError(`${f} already exists; NavSentry never overwrites a flow`);
+      writeFileSync(f, imp.flow, { flag: "wx" });
+      writeFileSync(join(dir, `${imp.id}.IMPORT.md`), imp.report);
+      print(`encoded=${imp.encoded} listed for review=${imp.skipped.length}`);
+      print(`FLOW: ${f}`);
+      print(`IMPORT: ${join(dir, `${imp.id}.IMPORT.md`)}`);
+      return 0;
+    }
     case "show": {
       const { docs, problems } = loadFlowFiles(resolve(need(rest, "--flows")));
       if (problems.length) throw new FlowError(problems);
@@ -801,7 +822,7 @@ async function flowCommand(argv: string[]): Promise<number> {
       return 0;
     }
     default:
-      throw new UsageError("flow needs a subcommand: init | analyze | import | lint | approve | show");
+      throw new UsageError("flow needs a subcommand: init | analyze | import | from-recording | lint | approve | show");
   }
 }
 

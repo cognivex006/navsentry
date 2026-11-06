@@ -88,6 +88,20 @@ navsentry flow approve --flows flows/my-journey.flow.md --by "<your name>"
 
 You can also draft flows from a run with `navsentry flow analyze --from-run runs/deep/run.json --out flows/drafts`.
 
+Or record the journey yourself in Chrome or Edge:
+
+1. Open the shop, then DevTools (F12) → **Recorder** → *Create a new recording*.
+2. Click through the site and stop the recording.
+3. Export it as JSON.
+
+A sample export is in `recordings/`:
+
+```bash
+navsentry flow from-recording --input recordings/shop-search.recording.json --out flows/drafts
+```
+
+It writes a draft flow and `rec-shop-search.IMPORT.md`. The IMPORT file lists the steps it could not encode (an Enter key, a CSS-only click, a scroll, an out-of-scope page) and the environment variable that replaces the typed search term.
+
 ## 6. Fix and compare
 
 Stop the demo shop (Ctrl+C) and start the fixed variant on the same address:
