@@ -143,6 +143,12 @@ test("verdict answers 'fix now?' in one line: findings first, incomplete runs ne
   assert.equal(verdict(clean).kind, "NO_URGENT");
   assert.match(verdict(clean).text, /not proof of security/);
   assert.equal(verdict({ ...clean, executionStatus: "PARTIAL" }).kind, "CANNOT_TELL");
+  const info = vuln.findings.filter((f) => actionLevel(f.severity, f.priority) === "INFO" || actionLevel(f.severity, f.priority) === "OPTIONAL");
+  assert.ok(info.length, "fixture has INFO/OPTIONAL findings");
+  assert.equal(verdict({ ...clean, findings: info }).kind, "NO_URGENT");
+  assert.equal(verdict({ ...clean, findings: info, executionStatus: "PARTIAL" }).kind, "CANNOT_TELL", "an incomplete run with only minor findings is never no-fix");
+  assert.equal(verdict(clean, "en", "FAIL").kind, "CANNOT_TELL", "failed flows mean their checks did not run");
+  assert.equal(verdict(clean, "en", "PASS").kind, "NO_URGENT");
   const html = renderHtml(md, "t", "en");
   assert.match(html, /<blockquote class="verdict v-fix_now">/);
   assert.match(renderHtml(renderMarkdown({ ...clean, executionStatus: "PARTIAL" }), "t", "en"), /class="verdict v-cannot_tell"/);
@@ -161,7 +167,8 @@ test("report --out writes the file, never overwrites, and HTML is not dumped on 
     assert.match(a.stdout, /^Wrote /);
     assert.match(readFileSync(out, "utf8"), /class="verdict v-fix_now"/);
     const b = cli(["--format", "html", "--out", out]);
-    assert.notEqual(b.status, 0, "an existing file is never overwritten");
+    assert.equal(b.status, 3, "an existing file is never overwritten");
+    assert.match(b.stderr, /already exists/);
     const piped = cli(["--format", "markdown"]);
     assert.match(piped.stdout, /Do I need to fix something now\?/, "without --out, stdout still works when piped");
   } finally { rmSync(dir, { recursive: true, force: true }); }

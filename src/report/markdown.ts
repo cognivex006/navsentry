@@ -76,14 +76,17 @@ export const VERDICT_MARK: Record<VerdictKind, string> = { FIX_NOW: "🔴", PLAN
  * One-line answer to "do I need to fix something now?", derived only from action levels and
  * completeness. Findings decide first; without them, an incomplete run is CANNOT_TELL, never NO_URGENT.
  */
-export function verdict(r: RunResult, lang: "en" | "th" = "en"): { kind: VerdictKind; count: number; text: string } {
+export function verdict(r: RunResult, lang: "en" | "th" = "en", functional?: string): { kind: VerdictKind; count: number; text: string } {
   const groups = groupFindings(r);
   const now = groups.filter((g) => g.level === "IMMEDIATE" || g.level === "CAUTION").length + (r.fixtures?.leftovers.length ? 1 : 0);
   const plan = groups.filter((g) => g.level === "PLANNED").length;
   const v = L[lang].verdict;
   if (now) return { kind: "FIX_NOW", count: now, text: v.FIX_NOW(now) };
   if (plan) return { kind: "PLAN", count: plan, text: v.PLAN(plan) };
-  if (securityResult(r) === "INCOMPLETE") return { kind: "CANNOT_TELL", count: 0, text: v.CANNOT_TELL() };
+  // Completeness is checked directly: securityResult() says FINDINGS before it looks at completeness,
+  // and flows that failed or did not run mean their checks did not run either.
+  const incomplete = r.executionStatus !== "COMPLETE" || r.coverage.some((c) => c.status === "ERROR" || c.status === "INCONCLUSIVE") || (functional !== undefined && functional !== "PASS");
+  if (incomplete) return { kind: "CANNOT_TELL", count: 0, text: v.CANNOT_TELL() };
   return { kind: "NO_URGENT", count: 0, text: v.NO_URGENT() };
 }
 
@@ -101,7 +104,7 @@ export function groupFindings(r: RunResult): FindingGroup[] {
     .sort((a, b) => ACTION_ORDER.indexOf(a.level) - ACTION_ORDER.indexOf(b.level) || (SEV_RANK[a.items[0]!.severity] ?? 9) - (SEV_RANK[b.items[0]!.severity] ?? 9) || a.id.localeCompare(b.id));
 }
 
-export function renderMarkdown(r: RunResult, lang: "en" | "th" = "en"): string {
+export function renderMarkdown(r: RunResult, lang: "en" | "th" = "en", functional?: string): string {
   const t = L[lang];
   const counts = (s: CheckStatus) => r.coverage.filter((c) => c.status === s).length;
   const groups = groupFindings(r);
@@ -112,7 +115,7 @@ export function renderMarkdown(r: RunResult, lang: "en" | "th" = "en"): string {
 
   // 1. Summary
   out.push(`## ${t.summary}`, "");
-  const vd = verdict(r, lang);
+  const vd = verdict(r, lang, functional);
   out.push(`> ${VERDICT_MARK[vd.kind]} **${t.verdictQ}** ${vd.text}`, "");
   out.push(`| ${ACTION_ORDER.map((a) => `${ACTION_MARK[a]} ${a}`).join(" | ")} |`, `|${ACTION_ORDER.map(() => "---").join("|")}|`, `| ${ACTION_ORDER.map((a) => groups.filter((g) => g.level === a).length).join(" | ")} |`, "");
   out.push("| PASS | FAIL | INCONCLUSIVE | ERROR | NOT_TESTED | Findings |", "|---|---|---|---|---|---|", `| ${counts("PASS")} | ${counts("FAIL")} | ${counts("INCONCLUSIVE")} | ${counts("ERROR")} | ${counts("NOT_TESTED")} | ${r.findings.length} |`, "");

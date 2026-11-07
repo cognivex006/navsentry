@@ -226,6 +226,7 @@ export async function main(argv: string[]): Promise<number> {
         const outFile = arg(rest, "--out");
         if (outFile) {
           // Never overwrite: the run directory already holds reports written by scan.
+          if (existsSync(resolve(outFile))) throw new UsageError(`${resolve(outFile)} already exists; NavSentry never overwrites a report (choose another --out path)`);
           writeFileSync(resolve(outFile), body.endsWith("\n") ? body : body + "\n", { flag: "wx" });
           print(`Wrote ${resolve(outFile)}`);
         } else if (fmt === "html" && process.stdout.isTTY) {
@@ -349,7 +350,7 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
     if (cf) files.push(["client-findings.json", cf]);
     files.push(...models);
     if (m.report.formats.includes("markdown")) {
-      const md = renderMarkdown(r, lang) + (flowRun ? "\n" + renderFlowSection(flowRun, r, lang) : "");
+      const md = renderMarkdown(r, lang, flowRun?.functionalResult) + (flowRun ? "\n" + renderFlowSection(flowRun, r, lang) : "");
       files.push(["REPORT.md", md], ["REPORT.html", renderHtml(md, `NavSentry report — ${r.project}`, lang)]);
     }
     if (m.report.formats.includes("sarif")) files.push(["report.sarif", JSON.stringify(renderSarif(r), null, 2)]);
@@ -376,11 +377,11 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
   if (argv.includes("--json")) {
     // Machine-readable summary for agents (SPEC-0.3.0 §3.2): paths, counts by level, gaps and next commands.
     const n = nextSteps(r, flowRun, out, sec);
-    const vd = verdict(r, lang);
+    const vd = verdict(r, lang, flowRun?.functionalResult);
     print(JSON.stringify({ ...n, kind: "navsentry-run-summary", verdict: { kind: vd.kind, count: vd.count, text: vd.text }, exitCode: exitCode(r, flowRun), findings: r.findings.length, requests: r.budget.requestsUsed, workspace: r.workspace.status, ...(flowRun ? { functionalResult: flowRun.functionalResult, flows: flowRun.flows.length, testReport: join(out, "TEST-REPORT.md") } : {}), runJson: join(out, "run.json") }, null, 2));
   } else {
     print(paint(`execution=${r.executionStatus} security=${sec} findings=${r.findings.length} requests=${r.budget.requestsUsed}${flowRun ? ` functional=${flowRun.functionalResult} flows=${flowRun.flows.length}` : ""} workspace=${r.workspace.status}`));
-    const vd = verdict(r, lang);
+    const vd = verdict(r, lang, flowRun?.functionalResult);
     print(paint(`${VERDICT_MARK[vd.kind]} ${vd.text}`));
     print(paint(`REPORT: ${join(out, "REPORT.md")}`));
     if (m.report.formats.includes("markdown")) print(paint(`Open in a browser: ${join(out, "REPORT.html")}`));

@@ -6,9 +6,9 @@
     "node": "26.13.0",
     "platform": "win32-x64"
   },
-  "runId": "1ffc3457-161c-46f9-ac69-20c7d1a591b3",
-  "startedAt": "2026-11-07T02:56:36.547Z",
-  "finishedAt": "2026-11-07T02:56:39.008Z",
+  "runId": "3ad99116-480e-4a60-b9ad-4bbbe8889489",
+  "startedAt": "2026-11-07T15:14:18.571Z",
+  "finishedAt": "2026-11-07T15:14:21.014Z",
   "project": "demo-after",
   "environment": "local",
   "mode": "observe",
@@ -70,7 +70,7 @@
   ],
   "requests": [
     {
-      "id": "9fca2266-164e-459b-b686-cc67ef266f71",
+      "id": "30ab6169-d9a9-4642-b323-cc5a9a912fce",
       "transport": "direct-http",
       "actor": "anonymous",
       "method": "GET",
@@ -79,10 +79,10 @@
         "user-agent": "NavSentry/0.1 (+authorized-security-test)",
         "accept": "*/*",
         "accept-encoding": "identity",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:36.862Z",
-      "durationMs": 2,
+      "startedAt": "2026-11-07T15:14:18.849Z",
+      "durationMs": 3,
       "status": 200,
       "responseHeaders": {
         "x-content-type-options": [
@@ -104,7 +104,7 @@
           "text/html; charset=utf-8"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:36 GMT"
+          "Sat, 07 Nov 2026 15:14:18 GMT"
         ],
         "connection": [
           "close"
@@ -138,7 +138,7 @@
       }
     },
     {
-      "id": "26d44e52-733f-4533-bc09-d7c31da9d00a",
+      "id": "37ca1325-315e-43ee-8899-6f55c10fad4b",
       "transport": "direct-http",
       "actor": "reader_a",
       "method": "GET",
@@ -148,10 +148,10 @@
         "accept": "*/*",
         "accept-encoding": "identity",
         "authorization": "[REDACTED]",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:36.915Z",
-      "durationMs": 3,
+      "startedAt": "2026-11-07T15:14:18.906Z",
+      "durationMs": 6,
       "status": 200,
       "responseHeaders": {
         "x-content-type-options": [
@@ -173,7 +173,7 @@
           "text/html; charset=utf-8"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:36 GMT"
+          "Sat, 07 Nov 2026 15:14:18 GMT"
         ],
         "connection": [
           "close"
@@ -207,7 +207,7 @@
       }
     },
     {
-      "id": "1768b92f-ccc2-4e27-9128-97fdbd214fb9",
+      "id": "1905e538-664b-4abb-b634-3df013e06611",
       "transport": "direct-http",
       "actor": "reader_b",
       "method": "GET",
@@ -217,78 +217,9 @@
         "accept": "*/*",
         "accept-encoding": "identity",
         "authorization": "[REDACTED]",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:36.968Z",
-      "durationMs": 3,
-      "status": 200,
-      "responseHeaders": {
-        "x-content-type-options": [
-          "nosniff"
-        ],
-        "content-security-policy": [
-          "default-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'"
-        ],
-        "referrer-policy": [
-          "no-referrer"
-        ],
-        "set-cookie": [
-          "SESSIONID=[REDACTED]; Path=/; HttpOnly; SameSite=Lax"
-        ],
-        "cache-control": [
-          "no-store"
-        ],
-        "content-type": [
-          "text/html; charset=utf-8"
-        ],
-        "date": [
-          "Sat, 07 Nov 2026 02:56:36 GMT"
-        ],
-        "connection": [
-          "close"
-        ],
-        "transfer-encoding": [
-          "chunked"
-        ]
-      },
-      "bodyExcerpt": "<!doctype html><title>Demo</title><h1>Demo app</h1>",
-      "bodyBytes": 51,
-      "contract": {
-        "status": 200,
-        "contentType": "text/html",
-        "headerNames": [
-          "content-type"
-        ],
-        "bodyLengthBucket": "2^5"
-      },
-      "redaction": {
-        "applied": false,
-        "count": 0,
-        "kinds": [],
-        "safe": true
-      },
-      "capture": {
-        "status": "complete",
-        "wireBytes": 466,
-        "decodedBytes": 51,
-        "retainedBytes": 51,
-        "sha256": "8258ac1f01db74086bcd8ed188b35cd5a664b61376f6f57eb8aac35b01f93271"
-      }
-    },
-    {
-      "id": "edf40b74-76f6-446b-908b-6a60ecff82cd",
-      "transport": "direct-http",
-      "actor": "admin",
-      "method": "GET",
-      "url": "http://127.0.0.1:4174/",
-      "requestHeaders": {
-        "user-agent": "NavSentry/0.1 (+authorized-security-test)",
-        "accept": "*/*",
-        "accept-encoding": "identity",
-        "authorization": "[REDACTED]",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
-      },
-      "startedAt": "2026-11-07T02:56:37.032Z",
+      "startedAt": "2026-11-07T15:14:18.959Z",
       "durationMs": 5,
       "status": 200,
       "responseHeaders": {
@@ -311,7 +242,7 @@
           "text/html; charset=utf-8"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:37 GMT"
+          "Sat, 07 Nov 2026 15:14:18 GMT"
         ],
         "connection": [
           "close"
@@ -345,20 +276,20 @@
       }
     },
     {
-      "id": "81d2c5f4-9158-4cfe-8ef9-b6028ff987ee",
+      "id": "7113a33f-38a1-4e73-b35a-278dc5ac0669",
       "transport": "direct-http",
-      "actor": "anonymous",
+      "actor": "admin",
       "method": "GET",
       "url": "http://127.0.0.1:4174/",
       "requestHeaders": {
         "user-agent": "NavSentry/0.1 (+authorized-security-test)",
         "accept": "*/*",
         "accept-encoding": "identity",
-        "origin": "https://navsentry-cors-probe.invalid",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "authorization": "[REDACTED]",
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:37.097Z",
-      "durationMs": 2,
+      "startedAt": "2026-11-07T15:14:19.022Z",
+      "durationMs": 5,
       "status": 200,
       "responseHeaders": {
         "x-content-type-options": [
@@ -380,7 +311,7 @@
           "text/html; charset=utf-8"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:37 GMT"
+          "Sat, 07 Nov 2026 15:14:19 GMT"
         ],
         "connection": [
           "close"
@@ -414,7 +345,76 @@
       }
     },
     {
-      "id": "d9884268-d7c3-470d-913b-0507a4060228",
+      "id": "dc998bb4-2b3d-4ca4-a7ff-bc6d9d830641",
+      "transport": "direct-http",
+      "actor": "anonymous",
+      "method": "GET",
+      "url": "http://127.0.0.1:4174/",
+      "requestHeaders": {
+        "user-agent": "NavSentry/0.1 (+authorized-security-test)",
+        "accept": "*/*",
+        "accept-encoding": "identity",
+        "origin": "https://navsentry-cors-probe.invalid",
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
+      },
+      "startedAt": "2026-11-07T15:14:19.076Z",
+      "durationMs": 5,
+      "status": 200,
+      "responseHeaders": {
+        "x-content-type-options": [
+          "nosniff"
+        ],
+        "content-security-policy": [
+          "default-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'"
+        ],
+        "referrer-policy": [
+          "no-referrer"
+        ],
+        "set-cookie": [
+          "SESSIONID=[REDACTED]; Path=/; HttpOnly; SameSite=Lax"
+        ],
+        "cache-control": [
+          "no-store"
+        ],
+        "content-type": [
+          "text/html; charset=utf-8"
+        ],
+        "date": [
+          "Sat, 07 Nov 2026 15:14:19 GMT"
+        ],
+        "connection": [
+          "close"
+        ],
+        "transfer-encoding": [
+          "chunked"
+        ]
+      },
+      "bodyExcerpt": "<!doctype html><title>Demo</title><h1>Demo app</h1>",
+      "bodyBytes": 51,
+      "contract": {
+        "status": 200,
+        "contentType": "text/html",
+        "headerNames": [
+          "content-type"
+        ],
+        "bodyLengthBucket": "2^5"
+      },
+      "redaction": {
+        "applied": false,
+        "count": 0,
+        "kinds": [],
+        "safe": true
+      },
+      "capture": {
+        "status": "complete",
+        "wireBytes": 466,
+        "decodedBytes": 51,
+        "retainedBytes": 51,
+        "sha256": "8258ac1f01db74086bcd8ed188b35cd5a664b61376f6f57eb8aac35b01f93271"
+      }
+    },
+    {
+      "id": "549a2eb8-07a8-4c76-bdb5-d38329675069",
       "transport": "direct-http",
       "actor": "anonymous",
       "method": "OPTIONS",
@@ -423,9 +423,9 @@
         "user-agent": "NavSentry/0.1 (+authorized-security-test)",
         "accept": "*/*",
         "accept-encoding": "identity",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:37.149Z",
+      "startedAt": "2026-11-07T15:14:19.141Z",
       "durationMs": 3,
       "status": 204,
       "responseHeaders": {
@@ -442,7 +442,7 @@
           "GET, OPTIONS"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:37 GMT"
+          "Sat, 07 Nov 2026 15:14:19 GMT"
         ],
         "connection": [
           "close"
@@ -473,7 +473,7 @@
       }
     },
     {
-      "id": "87d99e90-1a5b-4882-8a95-6602f9e82ea7",
+      "id": "3bdebb73-8ef3-4ead-b6d0-34ceec8b027c",
       "transport": "direct-http",
       "actor": "anonymous",
       "method": "GET",
@@ -482,9 +482,76 @@
         "user-agent": "NavSentry/0.1 (+authorized-security-test)",
         "accept": "*/*",
         "accept-encoding": "identity",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:37.199Z",
+      "startedAt": "2026-11-07T15:14:19.205Z",
+      "durationMs": 5,
+      "status": 200,
+      "responseHeaders": {
+        "x-content-type-options": [
+          "nosniff"
+        ],
+        "content-security-policy": [
+          "default-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'"
+        ],
+        "referrer-policy": [
+          "no-referrer"
+        ],
+        "cache-control": [
+          "no-store"
+        ],
+        "content-type": [
+          "application/json"
+        ],
+        "date": [
+          "Sat, 07 Nov 2026 15:14:19 GMT"
+        ],
+        "connection": [
+          "close"
+        ],
+        "transfer-encoding": [
+          "chunked"
+        ]
+      },
+      "bodyExcerpt": "{\"name\":\"Test User\",\"email\":\"\",\"nationalId\":\"x-xxxx-xxxxx-36-6\",\"node\":\"api\"}",
+      "bodyBytes": 77,
+      "contract": {
+        "status": 200,
+        "contentType": "application/json",
+        "headerNames": [
+          "content-type"
+        ],
+        "bodyLengthBucket": "2^6",
+        "jsonShapeHash": "b8aa170afed285df"
+      },
+      "redaction": {
+        "applied": false,
+        "count": 0,
+        "kinds": [],
+        "safe": true
+      },
+      "capture": {
+        "status": "complete",
+        "wireBytes": 416,
+        "decodedBytes": 77,
+        "retainedBytes": 77,
+        "sha256": "e6606ada0ee6247db357fd5103e42eb9af93ac7f33f9a521a230b5496c8eb3a1"
+      }
+    },
+    {
+      "id": "a36d8cb8-d8e9-453f-bf44-8e497cb7ad33",
+      "transport": "direct-http",
+      "actor": "reader_a",
+      "method": "GET",
+      "url": "http://127.0.0.1:4174/api/profile",
+      "requestHeaders": {
+        "user-agent": "NavSentry/0.1 (+authorized-security-test)",
+        "accept": "*/*",
+        "accept-encoding": "identity",
+        "authorization": "[REDACTED]",
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
+      },
+      "startedAt": "2026-11-07T15:14:19.274Z",
       "durationMs": 6,
       "status": 200,
       "responseHeaders": {
@@ -504,7 +571,7 @@
           "application/json"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:37 GMT"
+          "Sat, 07 Nov 2026 15:14:19 GMT"
         ],
         "connection": [
           "close"
@@ -539,74 +606,7 @@
       }
     },
     {
-      "id": "fe5ade7f-5058-4c0f-b51e-7a866df403d0",
-      "transport": "direct-http",
-      "actor": "reader_a",
-      "method": "GET",
-      "url": "http://127.0.0.1:4174/api/profile",
-      "requestHeaders": {
-        "user-agent": "NavSentry/0.1 (+authorized-security-test)",
-        "accept": "*/*",
-        "accept-encoding": "identity",
-        "authorization": "[REDACTED]",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
-      },
-      "startedAt": "2026-11-07T02:56:37.251Z",
-      "durationMs": 3,
-      "status": 200,
-      "responseHeaders": {
-        "x-content-type-options": [
-          "nosniff"
-        ],
-        "content-security-policy": [
-          "default-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'"
-        ],
-        "referrer-policy": [
-          "no-referrer"
-        ],
-        "cache-control": [
-          "no-store"
-        ],
-        "content-type": [
-          "application/json"
-        ],
-        "date": [
-          "Sat, 07 Nov 2026 02:56:37 GMT"
-        ],
-        "connection": [
-          "close"
-        ],
-        "transfer-encoding": [
-          "chunked"
-        ]
-      },
-      "bodyExcerpt": "{\"name\":\"Test User\",\"email\":\"\",\"nationalId\":\"x-xxxx-xxxxx-36-6\",\"node\":\"api\"}",
-      "bodyBytes": 77,
-      "contract": {
-        "status": 200,
-        "contentType": "application/json",
-        "headerNames": [
-          "content-type"
-        ],
-        "bodyLengthBucket": "2^6",
-        "jsonShapeHash": "b8aa170afed285df"
-      },
-      "redaction": {
-        "applied": false,
-        "count": 0,
-        "kinds": [],
-        "safe": true
-      },
-      "capture": {
-        "status": "complete",
-        "wireBytes": 416,
-        "decodedBytes": 77,
-        "retainedBytes": 77,
-        "sha256": "e6606ada0ee6247db357fd5103e42eb9af93ac7f33f9a521a230b5496c8eb3a1"
-      }
-    },
-    {
-      "id": "cb571e71-9a84-4a2b-a04f-28be0a3d78c0",
+      "id": "014e95c2-a0e3-4cbe-a408-ee0a4316d214",
       "transport": "direct-http",
       "actor": "reader_b",
       "method": "GET",
@@ -616,9 +616,9 @@
         "accept": "*/*",
         "accept-encoding": "identity",
         "authorization": "[REDACTED]",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:37.306Z",
+      "startedAt": "2026-11-07T15:14:19.324Z",
       "durationMs": 4,
       "status": 200,
       "responseHeaders": {
@@ -638,7 +638,7 @@
           "application/json"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:37 GMT"
+          "Sat, 07 Nov 2026 15:14:19 GMT"
         ],
         "connection": [
           "close"
@@ -673,7 +673,7 @@
       }
     },
     {
-      "id": "8870f2b1-b206-4fd2-a4c4-68a9421ffef7",
+      "id": "9addad12-1a8d-43e2-a54c-aa5c98655161",
       "transport": "direct-http",
       "actor": "admin",
       "method": "GET",
@@ -683,9 +683,9 @@
         "accept": "*/*",
         "accept-encoding": "identity",
         "authorization": "[REDACTED]",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:37.362Z",
+      "startedAt": "2026-11-07T15:14:19.375Z",
       "durationMs": 5,
       "status": 200,
       "responseHeaders": {
@@ -705,7 +705,7 @@
           "application/json"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:37 GMT"
+          "Sat, 07 Nov 2026 15:14:19 GMT"
         ],
         "connection": [
           "close"
@@ -740,7 +740,7 @@
       }
     },
     {
-      "id": "c51c198c-6bb2-4459-9efa-6fcf2d948bdf",
+      "id": "13d1a121-9ae1-426c-88ec-68c55b21301e",
       "transport": "direct-http",
       "actor": "anonymous",
       "method": "GET",
@@ -750,10 +750,10 @@
         "accept": "*/*",
         "accept-encoding": "identity",
         "origin": "https://navsentry-cors-probe.invalid",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:37.415Z",
-      "durationMs": 3,
+      "startedAt": "2026-11-07T15:14:19.425Z",
+      "durationMs": 5,
       "status": 200,
       "responseHeaders": {
         "x-content-type-options": [
@@ -772,7 +772,7 @@
           "application/json"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:37 GMT"
+          "Sat, 07 Nov 2026 15:14:19 GMT"
         ],
         "connection": [
           "close"
@@ -807,7 +807,7 @@
       }
     },
     {
-      "id": "4fbadb7c-27be-4538-b0ae-8c861c13296e",
+      "id": "626af86b-8458-468a-bcae-f5df9798331f",
       "transport": "direct-http",
       "actor": "anonymous",
       "method": "OPTIONS",
@@ -816,10 +816,10 @@
         "user-agent": "NavSentry/0.1 (+authorized-security-test)",
         "accept": "*/*",
         "accept-encoding": "identity",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:37.482Z",
-      "durationMs": 4,
+      "startedAt": "2026-11-07T15:14:19.474Z",
+      "durationMs": 5,
       "status": 204,
       "responseHeaders": {
         "x-content-type-options": [
@@ -835,7 +835,7 @@
           "GET, OPTIONS"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:37 GMT"
+          "Sat, 07 Nov 2026 15:14:19 GMT"
         ],
         "connection": [
           "close"
@@ -866,7 +866,7 @@
       }
     },
     {
-      "id": "3eabf4d1-b268-44de-92bb-9a428bb7927c",
+      "id": "add9d26b-eb28-40ea-ab85-8cd9a8826a0a",
       "transport": "direct-http",
       "actor": "anonymous",
       "method": "GET",
@@ -875,9 +875,9 @@
         "user-agent": "NavSentry/0.1 (+authorized-security-test)",
         "accept": "*/*",
         "accept-encoding": "identity",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:37.544Z",
+      "startedAt": "2026-11-07T15:14:19.525Z",
       "durationMs": 4,
       "status": 500,
       "responseHeaders": {
@@ -894,7 +894,7 @@
           "application/json"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:37 GMT"
+          "Sat, 07 Nov 2026 15:14:19 GMT"
         ],
         "connection": [
           "close"
@@ -929,7 +929,7 @@
       }
     },
     {
-      "id": "4a0ba05c-b84d-4b3c-ab90-09da2def34b2",
+      "id": "de0d6a70-7bd6-45ea-9d73-d0200dcb312b",
       "transport": "direct-http",
       "actor": "reader_a",
       "method": "GET",
@@ -939,9 +939,9 @@
         "accept": "*/*",
         "accept-encoding": "identity",
         "authorization": "[REDACTED]",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:37.598Z",
+      "startedAt": "2026-11-07T15:14:19.590Z",
       "durationMs": 5,
       "status": 500,
       "responseHeaders": {
@@ -958,7 +958,7 @@
           "application/json"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:37 GMT"
+          "Sat, 07 Nov 2026 15:14:19 GMT"
         ],
         "connection": [
           "close"
@@ -993,7 +993,7 @@
       }
     },
     {
-      "id": "de1a16c8-f4f7-4291-ae7b-62db3c3603ac",
+      "id": "13602b33-b492-46ef-b532-fa09402c6006",
       "transport": "direct-http",
       "actor": "reader_b",
       "method": "GET",
@@ -1003,10 +1003,10 @@
         "accept": "*/*",
         "accept-encoding": "identity",
         "authorization": "[REDACTED]",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:37.651Z",
-      "durationMs": 3,
+      "startedAt": "2026-11-07T15:14:19.653Z",
+      "durationMs": 2,
       "status": 500,
       "responseHeaders": {
         "x-content-type-options": [
@@ -1022,7 +1022,7 @@
           "application/json"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:37 GMT"
+          "Sat, 07 Nov 2026 15:14:19 GMT"
         ],
         "connection": [
           "close"
@@ -1057,7 +1057,7 @@
       }
     },
     {
-      "id": "45a1be9d-67be-4ef0-a0f9-14785876b537",
+      "id": "f7c079dc-e91c-497d-8a37-677a99bd9105",
       "transport": "direct-http",
       "actor": "admin",
       "method": "GET",
@@ -1067,73 +1067,9 @@
         "accept": "*/*",
         "accept-encoding": "identity",
         "authorization": "[REDACTED]",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:37.714Z",
-      "durationMs": 8,
-      "status": 500,
-      "responseHeaders": {
-        "x-content-type-options": [
-          "nosniff"
-        ],
-        "content-security-policy": [
-          "default-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'"
-        ],
-        "referrer-policy": [
-          "no-referrer"
-        ],
-        "content-type": [
-          "application/json"
-        ],
-        "date": [
-          "Sat, 07 Nov 2026 02:56:37 GMT"
-        ],
-        "connection": [
-          "close"
-        ],
-        "transfer-encoding": [
-          "chunked"
-        ]
-      },
-      "bodyExcerpt": "{\"success\":false,\"code\":\"E500\",\"message\":\"Internal error, reference 7f3a\"}",
-      "bodyBytes": 74,
-      "contract": {
-        "status": 500,
-        "contentType": "application/json",
-        "headerNames": [
-          "content-type"
-        ],
-        "bodyLengthBucket": "2^6",
-        "jsonShapeHash": "7a9ed05ffff4e0e1"
-      },
-      "redaction": {
-        "applied": false,
-        "count": 0,
-        "kinds": [],
-        "safe": true
-      },
-      "capture": {
-        "status": "complete",
-        "wireBytes": 407,
-        "decodedBytes": 74,
-        "retainedBytes": 74,
-        "sha256": "10baa11accfbf75747617350d2e46c812d37800095714769728d30c67dcb0d22"
-      }
-    },
-    {
-      "id": "0e23b1d9-3a79-423c-ae4b-d771b1d7c758",
-      "transport": "direct-http",
-      "actor": "anonymous",
-      "method": "GET",
-      "url": "http://127.0.0.1:4174/api/error",
-      "requestHeaders": {
-        "user-agent": "NavSentry/0.1 (+authorized-security-test)",
-        "accept": "*/*",
-        "accept-encoding": "identity",
-        "origin": "https://navsentry-cors-probe.invalid",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
-      },
-      "startedAt": "2026-11-07T02:56:37.765Z",
+      "startedAt": "2026-11-07T15:14:19.709Z",
       "durationMs": 4,
       "status": 500,
       "responseHeaders": {
@@ -1150,7 +1086,7 @@
           "application/json"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:37 GMT"
+          "Sat, 07 Nov 2026 15:14:19 GMT"
         ],
         "connection": [
           "close"
@@ -1185,7 +1121,71 @@
       }
     },
     {
-      "id": "6501bc58-13e4-429e-8da9-59d109b65a91",
+      "id": "f7514cae-b764-42d4-9b00-b4d7cac875aa",
+      "transport": "direct-http",
+      "actor": "anonymous",
+      "method": "GET",
+      "url": "http://127.0.0.1:4174/api/error",
+      "requestHeaders": {
+        "user-agent": "NavSentry/0.1 (+authorized-security-test)",
+        "accept": "*/*",
+        "accept-encoding": "identity",
+        "origin": "https://navsentry-cors-probe.invalid",
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
+      },
+      "startedAt": "2026-11-07T15:14:19.760Z",
+      "durationMs": 5,
+      "status": 500,
+      "responseHeaders": {
+        "x-content-type-options": [
+          "nosniff"
+        ],
+        "content-security-policy": [
+          "default-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'"
+        ],
+        "referrer-policy": [
+          "no-referrer"
+        ],
+        "content-type": [
+          "application/json"
+        ],
+        "date": [
+          "Sat, 07 Nov 2026 15:14:19 GMT"
+        ],
+        "connection": [
+          "close"
+        ],
+        "transfer-encoding": [
+          "chunked"
+        ]
+      },
+      "bodyExcerpt": "{\"success\":false,\"code\":\"E500\",\"message\":\"Internal error, reference 7f3a\"}",
+      "bodyBytes": 74,
+      "contract": {
+        "status": 500,
+        "contentType": "application/json",
+        "headerNames": [
+          "content-type"
+        ],
+        "bodyLengthBucket": "2^6",
+        "jsonShapeHash": "7a9ed05ffff4e0e1"
+      },
+      "redaction": {
+        "applied": false,
+        "count": 0,
+        "kinds": [],
+        "safe": true
+      },
+      "capture": {
+        "status": "complete",
+        "wireBytes": 407,
+        "decodedBytes": 74,
+        "retainedBytes": 74,
+        "sha256": "10baa11accfbf75747617350d2e46c812d37800095714769728d30c67dcb0d22"
+      }
+    },
+    {
+      "id": "3cce6a60-ea9b-483e-87f9-01e87252eb65",
       "transport": "direct-http",
       "actor": "anonymous",
       "method": "OPTIONS",
@@ -1194,10 +1194,10 @@
         "user-agent": "NavSentry/0.1 (+authorized-security-test)",
         "accept": "*/*",
         "accept-encoding": "identity",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:37.831Z",
-      "durationMs": 6,
+      "startedAt": "2026-11-07T15:14:19.811Z",
+      "durationMs": 4,
       "status": 204,
       "responseHeaders": {
         "x-content-type-options": [
@@ -1213,7 +1213,7 @@
           "GET, OPTIONS"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:37 GMT"
+          "Sat, 07 Nov 2026 15:14:19 GMT"
         ],
         "connection": [
           "close"
@@ -1244,7 +1244,7 @@
       }
     },
     {
-      "id": "e3232f01-c20e-4e88-9ec0-fc9cfcf342a1",
+      "id": "a24ac633-2e84-4363-9c3e-e49b9fa79d79",
       "transport": "direct-http",
       "actor": "anonymous",
       "method": "GET",
@@ -1253,9 +1253,9 @@
         "user-agent": "NavSentry/0.1 (+authorized-security-test)",
         "accept": "*/*",
         "accept-encoding": "identity",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:37.883Z",
+      "startedAt": "2026-11-07T15:14:19.875Z",
       "durationMs": 5,
       "status": 200,
       "responseHeaders": {
@@ -1275,7 +1275,7 @@
           "no-store"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:37 GMT"
+          "Sat, 07 Nov 2026 15:14:19 GMT"
         ],
         "connection": [
           "close"
@@ -1312,7 +1312,7 @@
       }
     },
     {
-      "id": "e88a6675-5420-4242-9808-af998bdaaed6",
+      "id": "13bfe798-0547-40af-bc91-901cbb323438",
       "transport": "direct-http",
       "actor": "reader_a",
       "method": "GET",
@@ -1322,147 +1322,9 @@
         "accept": "*/*",
         "accept-encoding": "identity",
         "authorization": "[REDACTED]",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:37.942Z",
-      "durationMs": 3,
-      "status": 200,
-      "responseHeaders": {
-        "x-content-type-options": [
-          "nosniff"
-        ],
-        "content-security-policy": [
-          "default-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'"
-        ],
-        "referrer-policy": [
-          "no-referrer"
-        ],
-        "content-type": [
-          "application/json"
-        ],
-        "cache-control": [
-          "no-store"
-        ],
-        "date": [
-          "Sat, 07 Nov 2026 02:56:37 GMT"
-        ],
-        "connection": [
-          "close"
-        ],
-        "transfer-encoding": [
-          "chunked"
-        ]
-      },
-      "bodyExcerpt": "{\"token\":\"[REDACTED:jwt]\"}",
-      "bodyBytes": 164,
-      "contract": {
-        "status": 200,
-        "contentType": "application/json",
-        "headerNames": [
-          "content-type"
-        ],
-        "bodyLengthBucket": "2^7",
-        "jsonShapeHash": "c14e4be8e33fcdcc"
-      },
-      "redaction": {
-        "applied": true,
-        "count": 1,
-        "kinds": [
-          "jwt"
-        ],
-        "safe": true
-      },
-      "capture": {
-        "status": "complete",
-        "wireBytes": 503,
-        "decodedBytes": 164,
-        "retainedBytes": 164,
-        "sha256": "ecea6d2f38a857e9a62ca648218a147a30e5b75c1200fb3d4bf90573531ecbf1"
-      }
-    },
-    {
-      "id": "8fd984a6-a4fb-43a9-96bb-b0c418ee2eab",
-      "transport": "direct-http",
-      "actor": "reader_b",
-      "method": "GET",
-      "url": "http://127.0.0.1:4174/api/token",
-      "requestHeaders": {
-        "user-agent": "NavSentry/0.1 (+authorized-security-test)",
-        "accept": "*/*",
-        "accept-encoding": "identity",
-        "authorization": "[REDACTED]",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
-      },
-      "startedAt": "2026-11-07T02:56:37.999Z",
-      "durationMs": 4,
-      "status": 200,
-      "responseHeaders": {
-        "x-content-type-options": [
-          "nosniff"
-        ],
-        "content-security-policy": [
-          "default-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'"
-        ],
-        "referrer-policy": [
-          "no-referrer"
-        ],
-        "content-type": [
-          "application/json"
-        ],
-        "cache-control": [
-          "no-store"
-        ],
-        "date": [
-          "Sat, 07 Nov 2026 02:56:38 GMT"
-        ],
-        "connection": [
-          "close"
-        ],
-        "transfer-encoding": [
-          "chunked"
-        ]
-      },
-      "bodyExcerpt": "{\"token\":\"[REDACTED:jwt]\"}",
-      "bodyBytes": 164,
-      "contract": {
-        "status": 200,
-        "contentType": "application/json",
-        "headerNames": [
-          "content-type"
-        ],
-        "bodyLengthBucket": "2^7",
-        "jsonShapeHash": "c14e4be8e33fcdcc"
-      },
-      "redaction": {
-        "applied": true,
-        "count": 1,
-        "kinds": [
-          "jwt"
-        ],
-        "safe": true
-      },
-      "capture": {
-        "status": "complete",
-        "wireBytes": 503,
-        "decodedBytes": 164,
-        "retainedBytes": 164,
-        "sha256": "ecea6d2f38a857e9a62ca648218a147a30e5b75c1200fb3d4bf90573531ecbf1"
-      }
-    },
-    {
-      "id": "d79c0569-0466-4e39-a825-cdc74262303a",
-      "transport": "direct-http",
-      "actor": "admin",
-      "method": "GET",
-      "url": "http://127.0.0.1:4174/api/token",
-      "requestHeaders": {
-        "user-agent": "NavSentry/0.1 (+authorized-security-test)",
-        "accept": "*/*",
-        "accept-encoding": "identity",
-        "authorization": "[REDACTED]",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
-      },
-      "startedAt": "2026-11-07T02:56:38.050Z",
+      "startedAt": "2026-11-07T15:14:19.940Z",
       "durationMs": 6,
       "status": 200,
       "responseHeaders": {
@@ -1482,7 +1344,7 @@
           "no-store"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:38 GMT"
+          "Sat, 07 Nov 2026 15:14:19 GMT"
         ],
         "connection": [
           "close"
@@ -1519,19 +1381,19 @@
       }
     },
     {
-      "id": "e6d6df6e-4e4f-4a51-9ac5-0bb85aeb2a6a",
+      "id": "c7c9dbcd-7be8-4ff5-a77b-30d7860828d5",
       "transport": "direct-http",
-      "actor": "anonymous",
+      "actor": "reader_b",
       "method": "GET",
       "url": "http://127.0.0.1:4174/api/token",
       "requestHeaders": {
         "user-agent": "NavSentry/0.1 (+authorized-security-test)",
         "accept": "*/*",
         "accept-encoding": "identity",
-        "origin": "https://navsentry-cors-probe.invalid",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "authorization": "[REDACTED]",
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:38.102Z",
+      "startedAt": "2026-11-07T15:14:19.992Z",
       "durationMs": 4,
       "status": 200,
       "responseHeaders": {
@@ -1551,7 +1413,7 @@
           "no-store"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:38 GMT"
+          "Sat, 07 Nov 2026 15:14:19 GMT"
         ],
         "connection": [
           "close"
@@ -1588,7 +1450,145 @@
       }
     },
     {
-      "id": "4bcc4de7-4e42-45ad-83f1-2585f6a24138",
+      "id": "6d86ca6e-4ded-487c-ab2f-4750c2ce8416",
+      "transport": "direct-http",
+      "actor": "admin",
+      "method": "GET",
+      "url": "http://127.0.0.1:4174/api/token",
+      "requestHeaders": {
+        "user-agent": "NavSentry/0.1 (+authorized-security-test)",
+        "accept": "*/*",
+        "accept-encoding": "identity",
+        "authorization": "[REDACTED]",
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
+      },
+      "startedAt": "2026-11-07T15:14:20.042Z",
+      "durationMs": 6,
+      "status": 200,
+      "responseHeaders": {
+        "x-content-type-options": [
+          "nosniff"
+        ],
+        "content-security-policy": [
+          "default-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'"
+        ],
+        "referrer-policy": [
+          "no-referrer"
+        ],
+        "content-type": [
+          "application/json"
+        ],
+        "cache-control": [
+          "no-store"
+        ],
+        "date": [
+          "Sat, 07 Nov 2026 15:14:20 GMT"
+        ],
+        "connection": [
+          "close"
+        ],
+        "transfer-encoding": [
+          "chunked"
+        ]
+      },
+      "bodyExcerpt": "{\"token\":\"[REDACTED:jwt]\"}",
+      "bodyBytes": 164,
+      "contract": {
+        "status": 200,
+        "contentType": "application/json",
+        "headerNames": [
+          "content-type"
+        ],
+        "bodyLengthBucket": "2^7",
+        "jsonShapeHash": "c14e4be8e33fcdcc"
+      },
+      "redaction": {
+        "applied": true,
+        "count": 1,
+        "kinds": [
+          "jwt"
+        ],
+        "safe": true
+      },
+      "capture": {
+        "status": "complete",
+        "wireBytes": 503,
+        "decodedBytes": 164,
+        "retainedBytes": 164,
+        "sha256": "ecea6d2f38a857e9a62ca648218a147a30e5b75c1200fb3d4bf90573531ecbf1"
+      }
+    },
+    {
+      "id": "5b296f67-90f2-4d32-afe9-e8aac44af853",
+      "transport": "direct-http",
+      "actor": "anonymous",
+      "method": "GET",
+      "url": "http://127.0.0.1:4174/api/token",
+      "requestHeaders": {
+        "user-agent": "NavSentry/0.1 (+authorized-security-test)",
+        "accept": "*/*",
+        "accept-encoding": "identity",
+        "origin": "https://navsentry-cors-probe.invalid",
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
+      },
+      "startedAt": "2026-11-07T15:14:20.108Z",
+      "durationMs": 4,
+      "status": 200,
+      "responseHeaders": {
+        "x-content-type-options": [
+          "nosniff"
+        ],
+        "content-security-policy": [
+          "default-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'"
+        ],
+        "referrer-policy": [
+          "no-referrer"
+        ],
+        "content-type": [
+          "application/json"
+        ],
+        "cache-control": [
+          "no-store"
+        ],
+        "date": [
+          "Sat, 07 Nov 2026 15:14:20 GMT"
+        ],
+        "connection": [
+          "close"
+        ],
+        "transfer-encoding": [
+          "chunked"
+        ]
+      },
+      "bodyExcerpt": "{\"token\":\"[REDACTED:jwt]\"}",
+      "bodyBytes": 164,
+      "contract": {
+        "status": 200,
+        "contentType": "application/json",
+        "headerNames": [
+          "content-type"
+        ],
+        "bodyLengthBucket": "2^7",
+        "jsonShapeHash": "c14e4be8e33fcdcc"
+      },
+      "redaction": {
+        "applied": true,
+        "count": 1,
+        "kinds": [
+          "jwt"
+        ],
+        "safe": true
+      },
+      "capture": {
+        "status": "complete",
+        "wireBytes": 503,
+        "decodedBytes": 164,
+        "retainedBytes": 164,
+        "sha256": "ecea6d2f38a857e9a62ca648218a147a30e5b75c1200fb3d4bf90573531ecbf1"
+      }
+    },
+    {
+      "id": "dfb0876c-a5f0-4585-88b4-63dd3ce3a8a1",
       "transport": "direct-http",
       "actor": "anonymous",
       "method": "OPTIONS",
@@ -1597,10 +1597,10 @@
         "user-agent": "NavSentry/0.1 (+authorized-security-test)",
         "accept": "*/*",
         "accept-encoding": "identity",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:38.156Z",
-      "durationMs": 4,
+      "startedAt": "2026-11-07T15:14:20.171Z",
+      "durationMs": 5,
       "status": 204,
       "responseHeaders": {
         "x-content-type-options": [
@@ -1616,7 +1616,7 @@
           "GET, OPTIONS"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:38 GMT"
+          "Sat, 07 Nov 2026 15:14:20 GMT"
         ],
         "connection": [
           "close"
@@ -1647,7 +1647,7 @@
       }
     },
     {
-      "id": "f2509787-5cf4-48d3-bbea-9ad516d1c313",
+      "id": "8fd4ba22-2030-49f2-ae2e-b61c0e154402",
       "transport": "direct-http",
       "actor": "anonymous",
       "method": "GET",
@@ -1656,9 +1656,9 @@
         "user-agent": "NavSentry/0.1 (+authorized-security-test)",
         "accept": "*/*",
         "accept-encoding": "identity",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:38.210Z",
+      "startedAt": "2026-11-07T15:14:20.222Z",
       "durationMs": 5,
       "status": 302,
       "responseHeaders": {
@@ -1675,7 +1675,7 @@
           "http://evil.example/steal"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:38 GMT"
+          "Sat, 07 Nov 2026 15:14:20 GMT"
         ],
         "connection": [
           "close"
@@ -1709,7 +1709,7 @@
       }
     },
     {
-      "id": "2b6eea44-9120-459e-8e1e-76ea927c8776",
+      "id": "0ed5c51b-d6d6-48ce-a458-96f8817c5a12",
       "transport": "direct-http",
       "actor": "reader_a",
       "method": "GET",
@@ -1719,10 +1719,10 @@
         "accept": "*/*",
         "accept-encoding": "identity",
         "authorization": "[REDACTED]",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:38.262Z",
-      "durationMs": 2,
+      "startedAt": "2026-11-07T15:14:20.274Z",
+      "durationMs": 4,
       "status": 302,
       "responseHeaders": {
         "x-content-type-options": [
@@ -1738,7 +1738,7 @@
           "http://evil.example/steal"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:38 GMT"
+          "Sat, 07 Nov 2026 15:14:20 GMT"
         ],
         "connection": [
           "close"
@@ -1772,7 +1772,7 @@
       }
     },
     {
-      "id": "ca63c85e-fb2c-47f4-848c-257f430b27a3",
+      "id": "6569df78-427a-4f16-a62c-871f7982b5d4",
       "transport": "direct-http",
       "actor": "reader_b",
       "method": "GET",
@@ -1782,10 +1782,10 @@
         "accept": "*/*",
         "accept-encoding": "identity",
         "authorization": "[REDACTED]",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:38.314Z",
-      "durationMs": 2,
+      "startedAt": "2026-11-07T15:14:20.328Z",
+      "durationMs": 5,
       "status": 302,
       "responseHeaders": {
         "x-content-type-options": [
@@ -1801,7 +1801,7 @@
           "http://evil.example/steal"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:38 GMT"
+          "Sat, 07 Nov 2026 15:14:20 GMT"
         ],
         "connection": [
           "close"
@@ -1835,7 +1835,7 @@
       }
     },
     {
-      "id": "7e4f6f15-2e07-46b6-a6b7-709192f168e3",
+      "id": "abd3261a-2270-4dfb-bfeb-11c95675ddef",
       "transport": "direct-http",
       "actor": "admin",
       "method": "GET",
@@ -1845,10 +1845,10 @@
         "accept": "*/*",
         "accept-encoding": "identity",
         "authorization": "[REDACTED]",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:38.380Z",
-      "durationMs": 2,
+      "startedAt": "2026-11-07T15:14:20.378Z",
+      "durationMs": 4,
       "status": 302,
       "responseHeaders": {
         "x-content-type-options": [
@@ -1864,7 +1864,7 @@
           "http://evil.example/steal"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:38 GMT"
+          "Sat, 07 Nov 2026 15:14:20 GMT"
         ],
         "connection": [
           "close"
@@ -1898,7 +1898,7 @@
       }
     },
     {
-      "id": "04cd4a01-d68a-4d7d-a87a-cd574c9f0bd9",
+      "id": "53d710df-5333-4c88-bace-68bb2b34b006",
       "transport": "direct-http",
       "actor": "anonymous",
       "method": "GET",
@@ -1908,10 +1908,10 @@
         "accept": "*/*",
         "accept-encoding": "identity",
         "origin": "https://navsentry-cors-probe.invalid",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:38.431Z",
-      "durationMs": 2,
+      "startedAt": "2026-11-07T15:14:20.439Z",
+      "durationMs": 6,
       "status": 302,
       "responseHeaders": {
         "x-content-type-options": [
@@ -1927,7 +1927,7 @@
           "http://evil.example/steal"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:38 GMT"
+          "Sat, 07 Nov 2026 15:14:20 GMT"
         ],
         "connection": [
           "close"
@@ -1961,7 +1961,7 @@
       }
     },
     {
-      "id": "9c4141ff-2bc5-44b8-99b3-a54a00cb66d1",
+      "id": "32774e7d-6ee1-4af9-aba9-0e7d09a7e36a",
       "transport": "direct-http",
       "actor": "anonymous",
       "method": "OPTIONS",
@@ -1970,10 +1970,10 @@
         "user-agent": "NavSentry/0.1 (+authorized-security-test)",
         "accept": "*/*",
         "accept-encoding": "identity",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:38.485Z",
-      "durationMs": 1,
+      "startedAt": "2026-11-07T15:14:20.494Z",
+      "durationMs": 5,
       "status": 204,
       "responseHeaders": {
         "x-content-type-options": [
@@ -1989,7 +1989,7 @@
           "GET, OPTIONS"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:38 GMT"
+          "Sat, 07 Nov 2026 15:14:20 GMT"
         ],
         "connection": [
           "close"
@@ -2020,7 +2020,7 @@
       }
     },
     {
-      "id": "5c524a00-56f3-47a5-9d96-382e43945a69",
+      "id": "f66daebb-8d70-4264-a29f-444d0cbb8d23",
       "transport": "direct-http",
       "actor": "reader_a",
       "method": "GET",
@@ -2031,14 +2031,14 @@
         "accept-encoding": "identity",
         "authorization": "[REDACTED]",
         "x-navsentry-flow": "orders-access/S1",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:38.544Z",
+      "startedAt": "2026-11-07T15:14:20.547Z",
       "flow": {
         "id": "orders-access",
         "step": "S1"
       },
-      "durationMs": 2,
+      "durationMs": 5,
       "status": 200,
       "responseHeaders": {
         "x-content-type-options": [
@@ -2057,7 +2057,7 @@
           "no-store"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:38 GMT"
+          "Sat, 07 Nov 2026 15:14:20 GMT"
         ],
         "connection": [
           "close"
@@ -2092,7 +2092,7 @@
       }
     },
     {
-      "id": "8e9be177-b5ce-437f-863d-25a8ef80e46a",
+      "id": "bc94536a-9b75-4f51-808f-96faf9aa81cd",
       "transport": "direct-http",
       "actor": "reader_a",
       "method": "GET",
@@ -2103,14 +2103,14 @@
         "accept-encoding": "identity",
         "authorization": "[REDACTED]",
         "x-navsentry-flow": "orders-access/S2",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:38.597Z",
+      "startedAt": "2026-11-07T15:14:20.601Z",
       "flow": {
         "id": "orders-access",
         "step": "S2"
       },
-      "durationMs": 1,
+      "durationMs": 5,
       "status": 200,
       "responseHeaders": {
         "x-content-type-options": [
@@ -2129,7 +2129,7 @@
           "no-store"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:38 GMT"
+          "Sat, 07 Nov 2026 15:14:20 GMT"
         ],
         "connection": [
           "close"
@@ -2164,7 +2164,7 @@
       }
     },
     {
-      "id": "591fe1b8-c9dd-45ba-9ae5-a429fb9ae44d",
+      "id": "ec0be639-7d18-47a8-accd-9fce1d4e0012",
       "transport": "direct-http",
       "actor": "reader_b",
       "method": "GET",
@@ -2175,15 +2175,15 @@
         "accept-encoding": "identity",
         "authorization": "[REDACTED]",
         "x-navsentry-flow": "orders-access/S3",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:38.661Z",
+      "startedAt": "2026-11-07T15:14:20.658Z",
       "flow": {
         "id": "orders-access",
         "step": "S3",
         "deniedProbe": true
       },
-      "durationMs": 4,
+      "durationMs": 6,
       "status": 404,
       "responseHeaders": {
         "x-content-type-options": [
@@ -2202,7 +2202,7 @@
           "no-store"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:38 GMT"
+          "Sat, 07 Nov 2026 15:14:20 GMT"
         ],
         "connection": [
           "close"
@@ -2237,7 +2237,7 @@
       }
     },
     {
-      "id": "7ee078d6-0e4c-44f3-a310-86d299009e86",
+      "id": "e5fda4c4-584a-46aa-a366-794b815509d3",
       "transport": "direct-http",
       "actor": "reader_a",
       "method": "GET",
@@ -2248,14 +2248,14 @@
         "accept-encoding": "identity",
         "authorization": "[REDACTED]",
         "x-navsentry-flow": "orders-access/S4",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:38.716Z",
+      "startedAt": "2026-11-07T15:14:20.722Z",
       "flow": {
         "id": "orders-access",
         "step": "S4"
       },
-      "durationMs": 3,
+      "durationMs": 5,
       "status": 200,
       "responseHeaders": {
         "x-content-type-options": [
@@ -2274,7 +2274,7 @@
           "no-store"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:38 GMT"
+          "Sat, 07 Nov 2026 15:14:20 GMT"
         ],
         "connection": [
           "close"
@@ -2309,7 +2309,7 @@
       }
     },
     {
-      "id": "f0cbda3b-9acc-4f52-a2dd-1282a8e17bca",
+      "id": "49901057-d9f3-4746-b23d-9588b434ee65",
       "transport": "direct-http",
       "actor": "anonymous",
       "method": "GET",
@@ -2319,15 +2319,15 @@
         "accept": "application/json",
         "accept-encoding": "identity",
         "x-navsentry-flow": "orders-access/S5",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:38.767Z",
+      "startedAt": "2026-11-07T15:14:20.775Z",
       "flow": {
         "id": "orders-access",
         "step": "S5",
         "deniedProbe": true
       },
-      "durationMs": 4,
+      "durationMs": 5,
       "status": 401,
       "responseHeaders": {
         "x-content-type-options": [
@@ -2346,7 +2346,7 @@
           "no-store"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:38 GMT"
+          "Sat, 07 Nov 2026 15:14:20 GMT"
         ],
         "connection": [
           "close"
@@ -2381,7 +2381,7 @@
       }
     },
     {
-      "id": "93325515-9a8f-41ac-99c3-498487ef00a3",
+      "id": "8cf47542-19fc-46c9-9684-f0245f138b46",
       "transport": "direct-http",
       "actor": "admin",
       "method": "GET",
@@ -2392,14 +2392,14 @@
         "accept-encoding": "identity",
         "authorization": "[REDACTED]",
         "x-navsentry-flow": "orders-access/S6",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:38.829Z",
+      "startedAt": "2026-11-07T15:14:20.830Z",
       "flow": {
         "id": "orders-access",
         "step": "S6"
       },
-      "durationMs": 2,
+      "durationMs": 4,
       "status": 200,
       "responseHeaders": {
         "x-content-type-options": [
@@ -2418,7 +2418,7 @@
           "no-store"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:38 GMT"
+          "Sat, 07 Nov 2026 15:14:20 GMT"
         ],
         "connection": [
           "close"
@@ -2453,7 +2453,7 @@
       }
     },
     {
-      "id": "14793e8f-7984-4854-b593-f6e5ed0317e0",
+      "id": "fea33c08-1f54-4d7e-9eb6-a48da2ffab44",
       "transport": "direct-http",
       "actor": "reader_a",
       "method": "GET",
@@ -2464,15 +2464,15 @@
         "accept-encoding": "identity",
         "authorization": "[REDACTED]",
         "x-navsentry-flow": "orders-access/S7",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:38.881Z",
+      "startedAt": "2026-11-07T15:14:20.891Z",
       "flow": {
         "id": "orders-access",
         "step": "S7",
         "deniedProbe": true
       },
-      "durationMs": 1,
+      "durationMs": 5,
       "status": 403,
       "responseHeaders": {
         "x-content-type-options": [
@@ -2491,7 +2491,7 @@
           "no-store"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:38 GMT"
+          "Sat, 07 Nov 2026 15:14:20 GMT"
         ],
         "connection": [
           "close"
@@ -2526,7 +2526,7 @@
       }
     },
     {
-      "id": "46b7c2ee-550d-43ed-bf38-a7e326e0f67a",
+      "id": "4e7bf7d5-cfdc-46c5-817d-50bf618d74a8",
       "transport": "direct-http",
       "actor": "reader_a",
       "method": "GET",
@@ -2537,14 +2537,14 @@
         "accept-encoding": "identity",
         "authorization": "[REDACTED]",
         "x-navsentry-flow": "profile-journey/S1",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:38.944Z",
+      "startedAt": "2026-11-07T15:14:20.943Z",
       "flow": {
         "id": "profile-journey",
         "step": "S1"
       },
-      "durationMs": 2,
+      "durationMs": 4,
       "status": 200,
       "responseHeaders": {
         "x-content-type-options": [
@@ -2563,7 +2563,7 @@
           "text/html; charset=utf-8"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:38 GMT"
+          "Sat, 07 Nov 2026 15:14:20 GMT"
         ],
         "connection": [
           "close"
@@ -2597,7 +2597,7 @@
       }
     },
     {
-      "id": "b6f239af-9c75-41f3-99ab-d0e39c17d32a",
+      "id": "807771c8-24b3-4bcb-bfa2-c9b5f13786fb",
       "transport": "direct-http",
       "actor": "anonymous",
       "method": "GET",
@@ -2607,15 +2607,15 @@
         "accept": "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
         "accept-encoding": "identity",
         "x-navsentry-flow": "profile-journey/S4",
-        "x-navsentry-run": "1ffc3457-161c-46f9-ac69-20c7d1a591b3"
+        "x-navsentry-run": "3ad99116-480e-4a60-b9ad-4bbbe8889489"
       },
-      "startedAt": "2026-11-07T02:56:39.006Z",
+      "startedAt": "2026-11-07T15:14:21.007Z",
       "flow": {
         "id": "profile-journey",
         "step": "S4",
         "deniedProbe": true
       },
-      "durationMs": 1,
+      "durationMs": 4,
       "status": 302,
       "responseHeaders": {
         "x-content-type-options": [
@@ -2631,7 +2631,7 @@
           "/login"
         ],
         "date": [
-          "Sat, 07 Nov 2026 02:56:39 GMT"
+          "Sat, 07 Nov 2026 15:14:21 GMT"
         ],
         "connection": [
           "close"
@@ -2674,7 +2674,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "9fca2266-164e-459b-b686-cc67ef266f71"
+        "30ab6169-d9a9-4642-b323-cc5a9a912fce"
       ],
       "reason": "plain HTTP target"
     },
@@ -2686,7 +2686,7 @@
       "summary": "Enforcing CSP without unsafe script sources",
       "observations": [],
       "requestIds": [
-        "9fca2266-164e-459b-b686-cc67ef266f71"
+        "30ab6169-d9a9-4642-b323-cc5a9a912fce"
       ]
     },
     {
@@ -2697,7 +2697,7 @@
       "summary": "CSP frame-ancestors 'self'",
       "observations": [],
       "requestIds": [
-        "9fca2266-164e-459b-b686-cc67ef266f71"
+        "30ab6169-d9a9-4642-b323-cc5a9a912fce"
       ]
     },
     {
@@ -2708,7 +2708,7 @@
       "summary": "Explicit Content-Type and nosniff",
       "observations": [],
       "requestIds": [
-        "9fca2266-164e-459b-b686-cc67ef266f71"
+        "30ab6169-d9a9-4642-b323-cc5a9a912fce"
       ]
     },
     {
@@ -2719,7 +2719,7 @@
       "summary": "Cache-Control: no-store",
       "observations": [],
       "requestIds": [
-        "9fca2266-164e-459b-b686-cc67ef266f71"
+        "30ab6169-d9a9-4642-b323-cc5a9a912fce"
       ]
     },
     {
@@ -2730,7 +2730,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "9fca2266-164e-459b-b686-cc67ef266f71"
+        "30ab6169-d9a9-4642-b323-cc5a9a912fce"
       ]
     },
     {
@@ -2741,7 +2741,7 @@
       "summary": "No stack trace or internal error signature",
       "observations": [],
       "requestIds": [
-        "9fca2266-164e-459b-b686-cc67ef266f71"
+        "30ab6169-d9a9-4642-b323-cc5a9a912fce"
       ]
     },
     {
@@ -2752,7 +2752,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "9fca2266-164e-459b-b686-cc67ef266f71"
+        "30ab6169-d9a9-4642-b323-cc5a9a912fce"
       ]
     },
     {
@@ -2763,7 +2763,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "9fca2266-164e-459b-b686-cc67ef266f71"
+        "30ab6169-d9a9-4642-b323-cc5a9a912fce"
       ]
     },
     {
@@ -2774,7 +2774,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "9fca2266-164e-459b-b686-cc67ef266f71"
+        "30ab6169-d9a9-4642-b323-cc5a9a912fce"
       ]
     },
     {
@@ -2785,7 +2785,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "9fca2266-164e-459b-b686-cc67ef266f71"
+        "30ab6169-d9a9-4642-b323-cc5a9a912fce"
       ]
     },
     {
@@ -2796,7 +2796,7 @@
       "summary": "Secure flag evaluated on HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "9fca2266-164e-459b-b686-cc67ef266f71"
+        "30ab6169-d9a9-4642-b323-cc5a9a912fce"
       ],
       "reason": "plain HTTP target"
     },
@@ -2810,7 +2810,7 @@
         "cookie: SESSIONID"
       ],
       "requestIds": [
-        "9fca2266-164e-459b-b686-cc67ef266f71"
+        "30ab6169-d9a9-4642-b323-cc5a9a912fce"
       ]
     },
     {
@@ -2823,7 +2823,7 @@
         "cookie: SESSIONID"
       ],
       "requestIds": [
-        "9fca2266-164e-459b-b686-cc67ef266f71"
+        "30ab6169-d9a9-4642-b323-cc5a9a912fce"
       ]
     },
     {
@@ -2834,7 +2834,7 @@
       "summary": "No JWT observed in response",
       "observations": [],
       "requestIds": [
-        "9fca2266-164e-459b-b686-cc67ef266f71"
+        "30ab6169-d9a9-4642-b323-cc5a9a912fce"
       ],
       "reason": "no token"
     },
@@ -2848,7 +2848,7 @@
         "no redirect"
       ],
       "requestIds": [
-        "9fca2266-164e-459b-b686-cc67ef266f71"
+        "30ab6169-d9a9-4642-b323-cc5a9a912fce"
       ]
     },
     {
@@ -2859,7 +2859,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "26d44e52-733f-4533-bc09-d7c31da9d00a"
+        "37ca1325-315e-43ee-8899-6f55c10fad4b"
       ],
       "reason": "plain HTTP target"
     },
@@ -2871,7 +2871,7 @@
       "summary": "Enforcing CSP without unsafe script sources",
       "observations": [],
       "requestIds": [
-        "26d44e52-733f-4533-bc09-d7c31da9d00a"
+        "37ca1325-315e-43ee-8899-6f55c10fad4b"
       ]
     },
     {
@@ -2882,7 +2882,7 @@
       "summary": "CSP frame-ancestors 'self'",
       "observations": [],
       "requestIds": [
-        "26d44e52-733f-4533-bc09-d7c31da9d00a"
+        "37ca1325-315e-43ee-8899-6f55c10fad4b"
       ]
     },
     {
@@ -2893,7 +2893,7 @@
       "summary": "Explicit Content-Type and nosniff",
       "observations": [],
       "requestIds": [
-        "26d44e52-733f-4533-bc09-d7c31da9d00a"
+        "37ca1325-315e-43ee-8899-6f55c10fad4b"
       ]
     },
     {
@@ -2904,7 +2904,7 @@
       "summary": "Cache-Control: no-store",
       "observations": [],
       "requestIds": [
-        "26d44e52-733f-4533-bc09-d7c31da9d00a"
+        "37ca1325-315e-43ee-8899-6f55c10fad4b"
       ]
     },
     {
@@ -2915,7 +2915,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "26d44e52-733f-4533-bc09-d7c31da9d00a"
+        "37ca1325-315e-43ee-8899-6f55c10fad4b"
       ]
     },
     {
@@ -2926,7 +2926,7 @@
       "summary": "No stack trace or internal error signature",
       "observations": [],
       "requestIds": [
-        "26d44e52-733f-4533-bc09-d7c31da9d00a"
+        "37ca1325-315e-43ee-8899-6f55c10fad4b"
       ]
     },
     {
@@ -2937,7 +2937,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "26d44e52-733f-4533-bc09-d7c31da9d00a"
+        "37ca1325-315e-43ee-8899-6f55c10fad4b"
       ]
     },
     {
@@ -2948,7 +2948,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "26d44e52-733f-4533-bc09-d7c31da9d00a"
+        "37ca1325-315e-43ee-8899-6f55c10fad4b"
       ]
     },
     {
@@ -2959,7 +2959,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "26d44e52-733f-4533-bc09-d7c31da9d00a"
+        "37ca1325-315e-43ee-8899-6f55c10fad4b"
       ]
     },
     {
@@ -2970,7 +2970,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "26d44e52-733f-4533-bc09-d7c31da9d00a"
+        "37ca1325-315e-43ee-8899-6f55c10fad4b"
       ]
     },
     {
@@ -2981,7 +2981,7 @@
       "summary": "Secure flag evaluated on HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "26d44e52-733f-4533-bc09-d7c31da9d00a"
+        "37ca1325-315e-43ee-8899-6f55c10fad4b"
       ],
       "reason": "plain HTTP target"
     },
@@ -2995,7 +2995,7 @@
         "cookie: SESSIONID"
       ],
       "requestIds": [
-        "26d44e52-733f-4533-bc09-d7c31da9d00a"
+        "37ca1325-315e-43ee-8899-6f55c10fad4b"
       ]
     },
     {
@@ -3008,7 +3008,7 @@
         "cookie: SESSIONID"
       ],
       "requestIds": [
-        "26d44e52-733f-4533-bc09-d7c31da9d00a"
+        "37ca1325-315e-43ee-8899-6f55c10fad4b"
       ]
     },
     {
@@ -3019,7 +3019,7 @@
       "summary": "No JWT observed in response",
       "observations": [],
       "requestIds": [
-        "26d44e52-733f-4533-bc09-d7c31da9d00a"
+        "37ca1325-315e-43ee-8899-6f55c10fad4b"
       ],
       "reason": "no token"
     },
@@ -3033,7 +3033,7 @@
         "no redirect"
       ],
       "requestIds": [
-        "26d44e52-733f-4533-bc09-d7c31da9d00a"
+        "37ca1325-315e-43ee-8899-6f55c10fad4b"
       ]
     },
     {
@@ -3044,7 +3044,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "1768b92f-ccc2-4e27-9128-97fdbd214fb9"
+        "1905e538-664b-4abb-b634-3df013e06611"
       ],
       "reason": "plain HTTP target"
     },
@@ -3056,7 +3056,7 @@
       "summary": "Enforcing CSP without unsafe script sources",
       "observations": [],
       "requestIds": [
-        "1768b92f-ccc2-4e27-9128-97fdbd214fb9"
+        "1905e538-664b-4abb-b634-3df013e06611"
       ]
     },
     {
@@ -3067,7 +3067,7 @@
       "summary": "CSP frame-ancestors 'self'",
       "observations": [],
       "requestIds": [
-        "1768b92f-ccc2-4e27-9128-97fdbd214fb9"
+        "1905e538-664b-4abb-b634-3df013e06611"
       ]
     },
     {
@@ -3078,7 +3078,7 @@
       "summary": "Explicit Content-Type and nosniff",
       "observations": [],
       "requestIds": [
-        "1768b92f-ccc2-4e27-9128-97fdbd214fb9"
+        "1905e538-664b-4abb-b634-3df013e06611"
       ]
     },
     {
@@ -3089,7 +3089,7 @@
       "summary": "Cache-Control: no-store",
       "observations": [],
       "requestIds": [
-        "1768b92f-ccc2-4e27-9128-97fdbd214fb9"
+        "1905e538-664b-4abb-b634-3df013e06611"
       ]
     },
     {
@@ -3100,7 +3100,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "1768b92f-ccc2-4e27-9128-97fdbd214fb9"
+        "1905e538-664b-4abb-b634-3df013e06611"
       ]
     },
     {
@@ -3111,7 +3111,7 @@
       "summary": "No stack trace or internal error signature",
       "observations": [],
       "requestIds": [
-        "1768b92f-ccc2-4e27-9128-97fdbd214fb9"
+        "1905e538-664b-4abb-b634-3df013e06611"
       ]
     },
     {
@@ -3122,7 +3122,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "1768b92f-ccc2-4e27-9128-97fdbd214fb9"
+        "1905e538-664b-4abb-b634-3df013e06611"
       ]
     },
     {
@@ -3133,7 +3133,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "1768b92f-ccc2-4e27-9128-97fdbd214fb9"
+        "1905e538-664b-4abb-b634-3df013e06611"
       ]
     },
     {
@@ -3144,7 +3144,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "1768b92f-ccc2-4e27-9128-97fdbd214fb9"
+        "1905e538-664b-4abb-b634-3df013e06611"
       ]
     },
     {
@@ -3155,7 +3155,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "1768b92f-ccc2-4e27-9128-97fdbd214fb9"
+        "1905e538-664b-4abb-b634-3df013e06611"
       ]
     },
     {
@@ -3166,7 +3166,7 @@
       "summary": "Secure flag evaluated on HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "1768b92f-ccc2-4e27-9128-97fdbd214fb9"
+        "1905e538-664b-4abb-b634-3df013e06611"
       ],
       "reason": "plain HTTP target"
     },
@@ -3180,7 +3180,7 @@
         "cookie: SESSIONID"
       ],
       "requestIds": [
-        "1768b92f-ccc2-4e27-9128-97fdbd214fb9"
+        "1905e538-664b-4abb-b634-3df013e06611"
       ]
     },
     {
@@ -3193,7 +3193,7 @@
         "cookie: SESSIONID"
       ],
       "requestIds": [
-        "1768b92f-ccc2-4e27-9128-97fdbd214fb9"
+        "1905e538-664b-4abb-b634-3df013e06611"
       ]
     },
     {
@@ -3204,7 +3204,7 @@
       "summary": "No JWT observed in response",
       "observations": [],
       "requestIds": [
-        "1768b92f-ccc2-4e27-9128-97fdbd214fb9"
+        "1905e538-664b-4abb-b634-3df013e06611"
       ],
       "reason": "no token"
     },
@@ -3218,7 +3218,7 @@
         "no redirect"
       ],
       "requestIds": [
-        "1768b92f-ccc2-4e27-9128-97fdbd214fb9"
+        "1905e538-664b-4abb-b634-3df013e06611"
       ]
     },
     {
@@ -3229,7 +3229,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "edf40b74-76f6-446b-908b-6a60ecff82cd"
+        "7113a33f-38a1-4e73-b35a-278dc5ac0669"
       ],
       "reason": "plain HTTP target"
     },
@@ -3241,7 +3241,7 @@
       "summary": "Enforcing CSP without unsafe script sources",
       "observations": [],
       "requestIds": [
-        "edf40b74-76f6-446b-908b-6a60ecff82cd"
+        "7113a33f-38a1-4e73-b35a-278dc5ac0669"
       ]
     },
     {
@@ -3252,7 +3252,7 @@
       "summary": "CSP frame-ancestors 'self'",
       "observations": [],
       "requestIds": [
-        "edf40b74-76f6-446b-908b-6a60ecff82cd"
+        "7113a33f-38a1-4e73-b35a-278dc5ac0669"
       ]
     },
     {
@@ -3263,7 +3263,7 @@
       "summary": "Explicit Content-Type and nosniff",
       "observations": [],
       "requestIds": [
-        "edf40b74-76f6-446b-908b-6a60ecff82cd"
+        "7113a33f-38a1-4e73-b35a-278dc5ac0669"
       ]
     },
     {
@@ -3274,7 +3274,7 @@
       "summary": "Cache-Control: no-store",
       "observations": [],
       "requestIds": [
-        "edf40b74-76f6-446b-908b-6a60ecff82cd"
+        "7113a33f-38a1-4e73-b35a-278dc5ac0669"
       ]
     },
     {
@@ -3285,7 +3285,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "edf40b74-76f6-446b-908b-6a60ecff82cd"
+        "7113a33f-38a1-4e73-b35a-278dc5ac0669"
       ]
     },
     {
@@ -3296,7 +3296,7 @@
       "summary": "No stack trace or internal error signature",
       "observations": [],
       "requestIds": [
-        "edf40b74-76f6-446b-908b-6a60ecff82cd"
+        "7113a33f-38a1-4e73-b35a-278dc5ac0669"
       ]
     },
     {
@@ -3307,7 +3307,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "edf40b74-76f6-446b-908b-6a60ecff82cd"
+        "7113a33f-38a1-4e73-b35a-278dc5ac0669"
       ]
     },
     {
@@ -3318,7 +3318,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "edf40b74-76f6-446b-908b-6a60ecff82cd"
+        "7113a33f-38a1-4e73-b35a-278dc5ac0669"
       ]
     },
     {
@@ -3329,7 +3329,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "edf40b74-76f6-446b-908b-6a60ecff82cd"
+        "7113a33f-38a1-4e73-b35a-278dc5ac0669"
       ]
     },
     {
@@ -3340,7 +3340,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "edf40b74-76f6-446b-908b-6a60ecff82cd"
+        "7113a33f-38a1-4e73-b35a-278dc5ac0669"
       ]
     },
     {
@@ -3351,7 +3351,7 @@
       "summary": "Secure flag evaluated on HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "edf40b74-76f6-446b-908b-6a60ecff82cd"
+        "7113a33f-38a1-4e73-b35a-278dc5ac0669"
       ],
       "reason": "plain HTTP target"
     },
@@ -3365,7 +3365,7 @@
         "cookie: SESSIONID"
       ],
       "requestIds": [
-        "edf40b74-76f6-446b-908b-6a60ecff82cd"
+        "7113a33f-38a1-4e73-b35a-278dc5ac0669"
       ]
     },
     {
@@ -3378,7 +3378,7 @@
         "cookie: SESSIONID"
       ],
       "requestIds": [
-        "edf40b74-76f6-446b-908b-6a60ecff82cd"
+        "7113a33f-38a1-4e73-b35a-278dc5ac0669"
       ]
     },
     {
@@ -3389,7 +3389,7 @@
       "summary": "No JWT observed in response",
       "observations": [],
       "requestIds": [
-        "edf40b74-76f6-446b-908b-6a60ecff82cd"
+        "7113a33f-38a1-4e73-b35a-278dc5ac0669"
       ],
       "reason": "no token"
     },
@@ -3403,7 +3403,7 @@
         "no redirect"
       ],
       "requestIds": [
-        "edf40b74-76f6-446b-908b-6a60ecff82cd"
+        "7113a33f-38a1-4e73-b35a-278dc5ac0669"
       ]
     },
     {
@@ -3414,7 +3414,7 @@
       "summary": "Untrusted origin not granted CORS access",
       "observations": [],
       "requestIds": [
-        "81d2c5f4-9158-4cfe-8ef9-b6028ff987ee"
+        "dc998bb4-2b3d-4ca4-a7ff-bc6d9d830641"
       ]
     },
     {
@@ -3425,7 +3425,7 @@
       "summary": "Advertised: GET, OPTIONS",
       "observations": [],
       "requestIds": [
-        "d9884268-d7c3-470d-913b-0507a4060228"
+        "549a2eb8-07a8-4c76-bdb5-d38329675069"
       ]
     },
     {
@@ -3436,7 +3436,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "87d99e90-1a5b-4882-8a95-6602f9e82ea7"
+        "3bdebb73-8ef3-4ead-b6d0-34ceec8b027c"
       ],
       "reason": "plain HTTP target"
     },
@@ -3448,7 +3448,7 @@
       "summary": "CSP is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "87d99e90-1a5b-4882-8a95-6602f9e82ea7"
+        "3bdebb73-8ef3-4ead-b6d0-34ceec8b027c"
       ],
       "reason": "not an HTML document"
     },
@@ -3460,7 +3460,7 @@
       "summary": "Framing protection is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "87d99e90-1a5b-4882-8a95-6602f9e82ea7"
+        "3bdebb73-8ef3-4ead-b6d0-34ceec8b027c"
       ],
       "reason": "not an HTML document"
     },
@@ -3472,7 +3472,7 @@
       "summary": "Explicit Content-Type and nosniff",
       "observations": [],
       "requestIds": [
-        "87d99e90-1a5b-4882-8a95-6602f9e82ea7"
+        "3bdebb73-8ef3-4ead-b6d0-34ceec8b027c"
       ]
     },
     {
@@ -3483,7 +3483,7 @@
       "summary": "Response is neither authenticated nor session-setting",
       "observations": [],
       "requestIds": [
-        "87d99e90-1a5b-4882-8a95-6602f9e82ea7"
+        "3bdebb73-8ef3-4ead-b6d0-34ceec8b027c"
       ],
       "reason": "not sensitive"
     },
@@ -3495,7 +3495,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "87d99e90-1a5b-4882-8a95-6602f9e82ea7"
+        "3bdebb73-8ef3-4ead-b6d0-34ceec8b027c"
       ]
     },
     {
@@ -3506,7 +3506,7 @@
       "summary": "No stack trace or internal error signature",
       "observations": [],
       "requestIds": [
-        "87d99e90-1a5b-4882-8a95-6602f9e82ea7"
+        "3bdebb73-8ef3-4ead-b6d0-34ceec8b027c"
       ]
     },
     {
@@ -3517,7 +3517,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "87d99e90-1a5b-4882-8a95-6602f9e82ea7"
+        "3bdebb73-8ef3-4ead-b6d0-34ceec8b027c"
       ]
     },
     {
@@ -3528,7 +3528,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "87d99e90-1a5b-4882-8a95-6602f9e82ea7"
+        "3bdebb73-8ef3-4ead-b6d0-34ceec8b027c"
       ]
     },
     {
@@ -3539,7 +3539,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "87d99e90-1a5b-4882-8a95-6602f9e82ea7"
+        "3bdebb73-8ef3-4ead-b6d0-34ceec8b027c"
       ]
     },
     {
@@ -3550,7 +3550,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "87d99e90-1a5b-4882-8a95-6602f9e82ea7"
+        "3bdebb73-8ef3-4ead-b6d0-34ceec8b027c"
       ]
     },
     {
@@ -3561,7 +3561,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "87d99e90-1a5b-4882-8a95-6602f9e82ea7"
+        "3bdebb73-8ef3-4ead-b6d0-34ceec8b027c"
       ],
       "reason": "no cookies"
     },
@@ -3573,7 +3573,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "87d99e90-1a5b-4882-8a95-6602f9e82ea7"
+        "3bdebb73-8ef3-4ead-b6d0-34ceec8b027c"
       ],
       "reason": "no cookies"
     },
@@ -3585,7 +3585,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "87d99e90-1a5b-4882-8a95-6602f9e82ea7"
+        "3bdebb73-8ef3-4ead-b6d0-34ceec8b027c"
       ],
       "reason": "no cookies"
     },
@@ -3597,7 +3597,7 @@
       "summary": "No JWT observed in response",
       "observations": [],
       "requestIds": [
-        "87d99e90-1a5b-4882-8a95-6602f9e82ea7"
+        "3bdebb73-8ef3-4ead-b6d0-34ceec8b027c"
       ],
       "reason": "no token"
     },
@@ -3611,7 +3611,7 @@
         "no redirect"
       ],
       "requestIds": [
-        "87d99e90-1a5b-4882-8a95-6602f9e82ea7"
+        "3bdebb73-8ef3-4ead-b6d0-34ceec8b027c"
       ]
     },
     {
@@ -3622,7 +3622,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "fe5ade7f-5058-4c0f-b51e-7a866df403d0"
+        "a36d8cb8-d8e9-453f-bf44-8e497cb7ad33"
       ],
       "reason": "plain HTTP target"
     },
@@ -3634,7 +3634,7 @@
       "summary": "CSP is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "fe5ade7f-5058-4c0f-b51e-7a866df403d0"
+        "a36d8cb8-d8e9-453f-bf44-8e497cb7ad33"
       ],
       "reason": "not an HTML document"
     },
@@ -3646,7 +3646,7 @@
       "summary": "Framing protection is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "fe5ade7f-5058-4c0f-b51e-7a866df403d0"
+        "a36d8cb8-d8e9-453f-bf44-8e497cb7ad33"
       ],
       "reason": "not an HTML document"
     },
@@ -3658,7 +3658,7 @@
       "summary": "Explicit Content-Type and nosniff",
       "observations": [],
       "requestIds": [
-        "fe5ade7f-5058-4c0f-b51e-7a866df403d0"
+        "a36d8cb8-d8e9-453f-bf44-8e497cb7ad33"
       ]
     },
     {
@@ -3669,7 +3669,7 @@
       "summary": "Cache-Control: no-store",
       "observations": [],
       "requestIds": [
-        "fe5ade7f-5058-4c0f-b51e-7a866df403d0"
+        "a36d8cb8-d8e9-453f-bf44-8e497cb7ad33"
       ]
     },
     {
@@ -3680,7 +3680,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "fe5ade7f-5058-4c0f-b51e-7a866df403d0"
+        "a36d8cb8-d8e9-453f-bf44-8e497cb7ad33"
       ]
     },
     {
@@ -3691,7 +3691,7 @@
       "summary": "No stack trace or internal error signature",
       "observations": [],
       "requestIds": [
-        "fe5ade7f-5058-4c0f-b51e-7a866df403d0"
+        "a36d8cb8-d8e9-453f-bf44-8e497cb7ad33"
       ]
     },
     {
@@ -3702,7 +3702,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "fe5ade7f-5058-4c0f-b51e-7a866df403d0"
+        "a36d8cb8-d8e9-453f-bf44-8e497cb7ad33"
       ]
     },
     {
@@ -3713,7 +3713,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "fe5ade7f-5058-4c0f-b51e-7a866df403d0"
+        "a36d8cb8-d8e9-453f-bf44-8e497cb7ad33"
       ]
     },
     {
@@ -3724,7 +3724,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "fe5ade7f-5058-4c0f-b51e-7a866df403d0"
+        "a36d8cb8-d8e9-453f-bf44-8e497cb7ad33"
       ]
     },
     {
@@ -3735,7 +3735,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "fe5ade7f-5058-4c0f-b51e-7a866df403d0"
+        "a36d8cb8-d8e9-453f-bf44-8e497cb7ad33"
       ]
     },
     {
@@ -3746,7 +3746,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "fe5ade7f-5058-4c0f-b51e-7a866df403d0"
+        "a36d8cb8-d8e9-453f-bf44-8e497cb7ad33"
       ],
       "reason": "no cookies"
     },
@@ -3758,7 +3758,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "fe5ade7f-5058-4c0f-b51e-7a866df403d0"
+        "a36d8cb8-d8e9-453f-bf44-8e497cb7ad33"
       ],
       "reason": "no cookies"
     },
@@ -3770,7 +3770,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "fe5ade7f-5058-4c0f-b51e-7a866df403d0"
+        "a36d8cb8-d8e9-453f-bf44-8e497cb7ad33"
       ],
       "reason": "no cookies"
     },
@@ -3782,7 +3782,7 @@
       "summary": "No JWT observed in response",
       "observations": [],
       "requestIds": [
-        "fe5ade7f-5058-4c0f-b51e-7a866df403d0"
+        "a36d8cb8-d8e9-453f-bf44-8e497cb7ad33"
       ],
       "reason": "no token"
     },
@@ -3796,7 +3796,7 @@
         "no redirect"
       ],
       "requestIds": [
-        "fe5ade7f-5058-4c0f-b51e-7a866df403d0"
+        "a36d8cb8-d8e9-453f-bf44-8e497cb7ad33"
       ]
     },
     {
@@ -3807,7 +3807,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "cb571e71-9a84-4a2b-a04f-28be0a3d78c0"
+        "014e95c2-a0e3-4cbe-a408-ee0a4316d214"
       ],
       "reason": "plain HTTP target"
     },
@@ -3819,7 +3819,7 @@
       "summary": "CSP is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "cb571e71-9a84-4a2b-a04f-28be0a3d78c0"
+        "014e95c2-a0e3-4cbe-a408-ee0a4316d214"
       ],
       "reason": "not an HTML document"
     },
@@ -3831,7 +3831,7 @@
       "summary": "Framing protection is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "cb571e71-9a84-4a2b-a04f-28be0a3d78c0"
+        "014e95c2-a0e3-4cbe-a408-ee0a4316d214"
       ],
       "reason": "not an HTML document"
     },
@@ -3843,7 +3843,7 @@
       "summary": "Explicit Content-Type and nosniff",
       "observations": [],
       "requestIds": [
-        "cb571e71-9a84-4a2b-a04f-28be0a3d78c0"
+        "014e95c2-a0e3-4cbe-a408-ee0a4316d214"
       ]
     },
     {
@@ -3854,7 +3854,7 @@
       "summary": "Cache-Control: no-store",
       "observations": [],
       "requestIds": [
-        "cb571e71-9a84-4a2b-a04f-28be0a3d78c0"
+        "014e95c2-a0e3-4cbe-a408-ee0a4316d214"
       ]
     },
     {
@@ -3865,7 +3865,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "cb571e71-9a84-4a2b-a04f-28be0a3d78c0"
+        "014e95c2-a0e3-4cbe-a408-ee0a4316d214"
       ]
     },
     {
@@ -3876,7 +3876,7 @@
       "summary": "No stack trace or internal error signature",
       "observations": [],
       "requestIds": [
-        "cb571e71-9a84-4a2b-a04f-28be0a3d78c0"
+        "014e95c2-a0e3-4cbe-a408-ee0a4316d214"
       ]
     },
     {
@@ -3887,7 +3887,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "cb571e71-9a84-4a2b-a04f-28be0a3d78c0"
+        "014e95c2-a0e3-4cbe-a408-ee0a4316d214"
       ]
     },
     {
@@ -3898,7 +3898,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "cb571e71-9a84-4a2b-a04f-28be0a3d78c0"
+        "014e95c2-a0e3-4cbe-a408-ee0a4316d214"
       ]
     },
     {
@@ -3909,7 +3909,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "cb571e71-9a84-4a2b-a04f-28be0a3d78c0"
+        "014e95c2-a0e3-4cbe-a408-ee0a4316d214"
       ]
     },
     {
@@ -3920,7 +3920,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "cb571e71-9a84-4a2b-a04f-28be0a3d78c0"
+        "014e95c2-a0e3-4cbe-a408-ee0a4316d214"
       ]
     },
     {
@@ -3931,7 +3931,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "cb571e71-9a84-4a2b-a04f-28be0a3d78c0"
+        "014e95c2-a0e3-4cbe-a408-ee0a4316d214"
       ],
       "reason": "no cookies"
     },
@@ -3943,7 +3943,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "cb571e71-9a84-4a2b-a04f-28be0a3d78c0"
+        "014e95c2-a0e3-4cbe-a408-ee0a4316d214"
       ],
       "reason": "no cookies"
     },
@@ -3955,7 +3955,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "cb571e71-9a84-4a2b-a04f-28be0a3d78c0"
+        "014e95c2-a0e3-4cbe-a408-ee0a4316d214"
       ],
       "reason": "no cookies"
     },
@@ -3967,7 +3967,7 @@
       "summary": "No JWT observed in response",
       "observations": [],
       "requestIds": [
-        "cb571e71-9a84-4a2b-a04f-28be0a3d78c0"
+        "014e95c2-a0e3-4cbe-a408-ee0a4316d214"
       ],
       "reason": "no token"
     },
@@ -3981,7 +3981,7 @@
         "no redirect"
       ],
       "requestIds": [
-        "cb571e71-9a84-4a2b-a04f-28be0a3d78c0"
+        "014e95c2-a0e3-4cbe-a408-ee0a4316d214"
       ]
     },
     {
@@ -3992,7 +3992,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "8870f2b1-b206-4fd2-a4c4-68a9421ffef7"
+        "9addad12-1a8d-43e2-a54c-aa5c98655161"
       ],
       "reason": "plain HTTP target"
     },
@@ -4004,7 +4004,7 @@
       "summary": "CSP is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "8870f2b1-b206-4fd2-a4c4-68a9421ffef7"
+        "9addad12-1a8d-43e2-a54c-aa5c98655161"
       ],
       "reason": "not an HTML document"
     },
@@ -4016,7 +4016,7 @@
       "summary": "Framing protection is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "8870f2b1-b206-4fd2-a4c4-68a9421ffef7"
+        "9addad12-1a8d-43e2-a54c-aa5c98655161"
       ],
       "reason": "not an HTML document"
     },
@@ -4028,7 +4028,7 @@
       "summary": "Explicit Content-Type and nosniff",
       "observations": [],
       "requestIds": [
-        "8870f2b1-b206-4fd2-a4c4-68a9421ffef7"
+        "9addad12-1a8d-43e2-a54c-aa5c98655161"
       ]
     },
     {
@@ -4039,7 +4039,7 @@
       "summary": "Cache-Control: no-store",
       "observations": [],
       "requestIds": [
-        "8870f2b1-b206-4fd2-a4c4-68a9421ffef7"
+        "9addad12-1a8d-43e2-a54c-aa5c98655161"
       ]
     },
     {
@@ -4050,7 +4050,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "8870f2b1-b206-4fd2-a4c4-68a9421ffef7"
+        "9addad12-1a8d-43e2-a54c-aa5c98655161"
       ]
     },
     {
@@ -4061,7 +4061,7 @@
       "summary": "No stack trace or internal error signature",
       "observations": [],
       "requestIds": [
-        "8870f2b1-b206-4fd2-a4c4-68a9421ffef7"
+        "9addad12-1a8d-43e2-a54c-aa5c98655161"
       ]
     },
     {
@@ -4072,7 +4072,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "8870f2b1-b206-4fd2-a4c4-68a9421ffef7"
+        "9addad12-1a8d-43e2-a54c-aa5c98655161"
       ]
     },
     {
@@ -4083,7 +4083,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "8870f2b1-b206-4fd2-a4c4-68a9421ffef7"
+        "9addad12-1a8d-43e2-a54c-aa5c98655161"
       ]
     },
     {
@@ -4094,7 +4094,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "8870f2b1-b206-4fd2-a4c4-68a9421ffef7"
+        "9addad12-1a8d-43e2-a54c-aa5c98655161"
       ]
     },
     {
@@ -4105,7 +4105,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "8870f2b1-b206-4fd2-a4c4-68a9421ffef7"
+        "9addad12-1a8d-43e2-a54c-aa5c98655161"
       ]
     },
     {
@@ -4116,7 +4116,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "8870f2b1-b206-4fd2-a4c4-68a9421ffef7"
+        "9addad12-1a8d-43e2-a54c-aa5c98655161"
       ],
       "reason": "no cookies"
     },
@@ -4128,7 +4128,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "8870f2b1-b206-4fd2-a4c4-68a9421ffef7"
+        "9addad12-1a8d-43e2-a54c-aa5c98655161"
       ],
       "reason": "no cookies"
     },
@@ -4140,7 +4140,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "8870f2b1-b206-4fd2-a4c4-68a9421ffef7"
+        "9addad12-1a8d-43e2-a54c-aa5c98655161"
       ],
       "reason": "no cookies"
     },
@@ -4152,7 +4152,7 @@
       "summary": "No JWT observed in response",
       "observations": [],
       "requestIds": [
-        "8870f2b1-b206-4fd2-a4c4-68a9421ffef7"
+        "9addad12-1a8d-43e2-a54c-aa5c98655161"
       ],
       "reason": "no token"
     },
@@ -4166,7 +4166,7 @@
         "no redirect"
       ],
       "requestIds": [
-        "8870f2b1-b206-4fd2-a4c4-68a9421ffef7"
+        "9addad12-1a8d-43e2-a54c-aa5c98655161"
       ]
     },
     {
@@ -4177,7 +4177,7 @@
       "summary": "Untrusted origin not granted CORS access",
       "observations": [],
       "requestIds": [
-        "c51c198c-6bb2-4459-9efa-6fcf2d948bdf"
+        "13d1a121-9ae1-426c-88ec-68c55b21301e"
       ]
     },
     {
@@ -4188,7 +4188,7 @@
       "summary": "Advertised: GET, OPTIONS",
       "observations": [],
       "requestIds": [
-        "4fbadb7c-27be-4538-b0ae-8c861c13296e"
+        "626af86b-8458-468a-bcae-f5df9798331f"
       ]
     },
     {
@@ -4199,7 +4199,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "3eabf4d1-b268-44de-92bb-9a428bb7927c"
+        "add9d26b-eb28-40ea-ab85-8cd9a8826a0a"
       ],
       "reason": "plain HTTP target"
     },
@@ -4211,7 +4211,7 @@
       "summary": "CSP is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "3eabf4d1-b268-44de-92bb-9a428bb7927c"
+        "add9d26b-eb28-40ea-ab85-8cd9a8826a0a"
       ],
       "reason": "not an HTML document"
     },
@@ -4223,7 +4223,7 @@
       "summary": "Framing protection is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "3eabf4d1-b268-44de-92bb-9a428bb7927c"
+        "add9d26b-eb28-40ea-ab85-8cd9a8826a0a"
       ],
       "reason": "not an HTML document"
     },
@@ -4235,7 +4235,7 @@
       "summary": "Explicit Content-Type and nosniff",
       "observations": [],
       "requestIds": [
-        "3eabf4d1-b268-44de-92bb-9a428bb7927c"
+        "add9d26b-eb28-40ea-ab85-8cd9a8826a0a"
       ]
     },
     {
@@ -4246,7 +4246,7 @@
       "summary": "Response is neither authenticated nor session-setting",
       "observations": [],
       "requestIds": [
-        "3eabf4d1-b268-44de-92bb-9a428bb7927c"
+        "add9d26b-eb28-40ea-ab85-8cd9a8826a0a"
       ],
       "reason": "not sensitive"
     },
@@ -4258,7 +4258,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "3eabf4d1-b268-44de-92bb-9a428bb7927c"
+        "add9d26b-eb28-40ea-ab85-8cd9a8826a0a"
       ]
     },
     {
@@ -4269,7 +4269,7 @@
       "summary": "No stack trace or internal error signature",
       "observations": [],
       "requestIds": [
-        "3eabf4d1-b268-44de-92bb-9a428bb7927c"
+        "add9d26b-eb28-40ea-ab85-8cd9a8826a0a"
       ]
     },
     {
@@ -4280,7 +4280,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "3eabf4d1-b268-44de-92bb-9a428bb7927c"
+        "add9d26b-eb28-40ea-ab85-8cd9a8826a0a"
       ]
     },
     {
@@ -4291,7 +4291,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "3eabf4d1-b268-44de-92bb-9a428bb7927c"
+        "add9d26b-eb28-40ea-ab85-8cd9a8826a0a"
       ]
     },
     {
@@ -4302,7 +4302,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "3eabf4d1-b268-44de-92bb-9a428bb7927c"
+        "add9d26b-eb28-40ea-ab85-8cd9a8826a0a"
       ]
     },
     {
@@ -4313,7 +4313,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "3eabf4d1-b268-44de-92bb-9a428bb7927c"
+        "add9d26b-eb28-40ea-ab85-8cd9a8826a0a"
       ]
     },
     {
@@ -4324,7 +4324,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "3eabf4d1-b268-44de-92bb-9a428bb7927c"
+        "add9d26b-eb28-40ea-ab85-8cd9a8826a0a"
       ],
       "reason": "no cookies"
     },
@@ -4336,7 +4336,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "3eabf4d1-b268-44de-92bb-9a428bb7927c"
+        "add9d26b-eb28-40ea-ab85-8cd9a8826a0a"
       ],
       "reason": "no cookies"
     },
@@ -4348,7 +4348,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "3eabf4d1-b268-44de-92bb-9a428bb7927c"
+        "add9d26b-eb28-40ea-ab85-8cd9a8826a0a"
       ],
       "reason": "no cookies"
     },
@@ -4360,7 +4360,7 @@
       "summary": "No JWT observed in response",
       "observations": [],
       "requestIds": [
-        "3eabf4d1-b268-44de-92bb-9a428bb7927c"
+        "add9d26b-eb28-40ea-ab85-8cd9a8826a0a"
       ],
       "reason": "no token"
     },
@@ -4374,7 +4374,7 @@
         "no redirect"
       ],
       "requestIds": [
-        "3eabf4d1-b268-44de-92bb-9a428bb7927c"
+        "add9d26b-eb28-40ea-ab85-8cd9a8826a0a"
       ]
     },
     {
@@ -4385,7 +4385,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "4a0ba05c-b84d-4b3c-ab90-09da2def34b2"
+        "de0d6a70-7bd6-45ea-9d73-d0200dcb312b"
       ],
       "reason": "plain HTTP target"
     },
@@ -4397,7 +4397,7 @@
       "summary": "CSP is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "4a0ba05c-b84d-4b3c-ab90-09da2def34b2"
+        "de0d6a70-7bd6-45ea-9d73-d0200dcb312b"
       ],
       "reason": "not an HTML document"
     },
@@ -4409,7 +4409,7 @@
       "summary": "Framing protection is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "4a0ba05c-b84d-4b3c-ab90-09da2def34b2"
+        "de0d6a70-7bd6-45ea-9d73-d0200dcb312b"
       ],
       "reason": "not an HTML document"
     },
@@ -4421,7 +4421,7 @@
       "summary": "Explicit Content-Type and nosniff",
       "observations": [],
       "requestIds": [
-        "4a0ba05c-b84d-4b3c-ab90-09da2def34b2"
+        "de0d6a70-7bd6-45ea-9d73-d0200dcb312b"
       ]
     },
     {
@@ -4434,7 +4434,7 @@
         "Cache-Control absent"
       ],
       "requestIds": [
-        "4a0ba05c-b84d-4b3c-ab90-09da2def34b2"
+        "de0d6a70-7bd6-45ea-9d73-d0200dcb312b"
       ]
     },
     {
@@ -4445,7 +4445,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "4a0ba05c-b84d-4b3c-ab90-09da2def34b2"
+        "de0d6a70-7bd6-45ea-9d73-d0200dcb312b"
       ]
     },
     {
@@ -4456,7 +4456,7 @@
       "summary": "No stack trace or internal error signature",
       "observations": [],
       "requestIds": [
-        "4a0ba05c-b84d-4b3c-ab90-09da2def34b2"
+        "de0d6a70-7bd6-45ea-9d73-d0200dcb312b"
       ]
     },
     {
@@ -4467,7 +4467,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "4a0ba05c-b84d-4b3c-ab90-09da2def34b2"
+        "de0d6a70-7bd6-45ea-9d73-d0200dcb312b"
       ]
     },
     {
@@ -4478,7 +4478,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "4a0ba05c-b84d-4b3c-ab90-09da2def34b2"
+        "de0d6a70-7bd6-45ea-9d73-d0200dcb312b"
       ]
     },
     {
@@ -4489,7 +4489,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "4a0ba05c-b84d-4b3c-ab90-09da2def34b2"
+        "de0d6a70-7bd6-45ea-9d73-d0200dcb312b"
       ]
     },
     {
@@ -4500,7 +4500,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "4a0ba05c-b84d-4b3c-ab90-09da2def34b2"
+        "de0d6a70-7bd6-45ea-9d73-d0200dcb312b"
       ]
     },
     {
@@ -4511,7 +4511,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "4a0ba05c-b84d-4b3c-ab90-09da2def34b2"
+        "de0d6a70-7bd6-45ea-9d73-d0200dcb312b"
       ],
       "reason": "no cookies"
     },
@@ -4523,7 +4523,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "4a0ba05c-b84d-4b3c-ab90-09da2def34b2"
+        "de0d6a70-7bd6-45ea-9d73-d0200dcb312b"
       ],
       "reason": "no cookies"
     },
@@ -4535,7 +4535,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "4a0ba05c-b84d-4b3c-ab90-09da2def34b2"
+        "de0d6a70-7bd6-45ea-9d73-d0200dcb312b"
       ],
       "reason": "no cookies"
     },
@@ -4547,7 +4547,7 @@
       "summary": "No JWT observed in response",
       "observations": [],
       "requestIds": [
-        "4a0ba05c-b84d-4b3c-ab90-09da2def34b2"
+        "de0d6a70-7bd6-45ea-9d73-d0200dcb312b"
       ],
       "reason": "no token"
     },
@@ -4561,7 +4561,7 @@
         "no redirect"
       ],
       "requestIds": [
-        "4a0ba05c-b84d-4b3c-ab90-09da2def34b2"
+        "de0d6a70-7bd6-45ea-9d73-d0200dcb312b"
       ]
     },
     {
@@ -4572,7 +4572,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "de1a16c8-f4f7-4291-ae7b-62db3c3603ac"
+        "13602b33-b492-46ef-b532-fa09402c6006"
       ],
       "reason": "plain HTTP target"
     },
@@ -4584,7 +4584,7 @@
       "summary": "CSP is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "de1a16c8-f4f7-4291-ae7b-62db3c3603ac"
+        "13602b33-b492-46ef-b532-fa09402c6006"
       ],
       "reason": "not an HTML document"
     },
@@ -4596,7 +4596,7 @@
       "summary": "Framing protection is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "de1a16c8-f4f7-4291-ae7b-62db3c3603ac"
+        "13602b33-b492-46ef-b532-fa09402c6006"
       ],
       "reason": "not an HTML document"
     },
@@ -4608,7 +4608,7 @@
       "summary": "Explicit Content-Type and nosniff",
       "observations": [],
       "requestIds": [
-        "de1a16c8-f4f7-4291-ae7b-62db3c3603ac"
+        "13602b33-b492-46ef-b532-fa09402c6006"
       ]
     },
     {
@@ -4621,7 +4621,7 @@
         "Cache-Control absent"
       ],
       "requestIds": [
-        "de1a16c8-f4f7-4291-ae7b-62db3c3603ac"
+        "13602b33-b492-46ef-b532-fa09402c6006"
       ]
     },
     {
@@ -4632,7 +4632,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "de1a16c8-f4f7-4291-ae7b-62db3c3603ac"
+        "13602b33-b492-46ef-b532-fa09402c6006"
       ]
     },
     {
@@ -4643,7 +4643,7 @@
       "summary": "No stack trace or internal error signature",
       "observations": [],
       "requestIds": [
-        "de1a16c8-f4f7-4291-ae7b-62db3c3603ac"
+        "13602b33-b492-46ef-b532-fa09402c6006"
       ]
     },
     {
@@ -4654,7 +4654,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "de1a16c8-f4f7-4291-ae7b-62db3c3603ac"
+        "13602b33-b492-46ef-b532-fa09402c6006"
       ]
     },
     {
@@ -4665,7 +4665,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "de1a16c8-f4f7-4291-ae7b-62db3c3603ac"
+        "13602b33-b492-46ef-b532-fa09402c6006"
       ]
     },
     {
@@ -4676,7 +4676,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "de1a16c8-f4f7-4291-ae7b-62db3c3603ac"
+        "13602b33-b492-46ef-b532-fa09402c6006"
       ]
     },
     {
@@ -4687,7 +4687,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "de1a16c8-f4f7-4291-ae7b-62db3c3603ac"
+        "13602b33-b492-46ef-b532-fa09402c6006"
       ]
     },
     {
@@ -4698,7 +4698,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "de1a16c8-f4f7-4291-ae7b-62db3c3603ac"
+        "13602b33-b492-46ef-b532-fa09402c6006"
       ],
       "reason": "no cookies"
     },
@@ -4710,7 +4710,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "de1a16c8-f4f7-4291-ae7b-62db3c3603ac"
+        "13602b33-b492-46ef-b532-fa09402c6006"
       ],
       "reason": "no cookies"
     },
@@ -4722,7 +4722,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "de1a16c8-f4f7-4291-ae7b-62db3c3603ac"
+        "13602b33-b492-46ef-b532-fa09402c6006"
       ],
       "reason": "no cookies"
     },
@@ -4734,7 +4734,7 @@
       "summary": "No JWT observed in response",
       "observations": [],
       "requestIds": [
-        "de1a16c8-f4f7-4291-ae7b-62db3c3603ac"
+        "13602b33-b492-46ef-b532-fa09402c6006"
       ],
       "reason": "no token"
     },
@@ -4748,7 +4748,7 @@
         "no redirect"
       ],
       "requestIds": [
-        "de1a16c8-f4f7-4291-ae7b-62db3c3603ac"
+        "13602b33-b492-46ef-b532-fa09402c6006"
       ]
     },
     {
@@ -4759,7 +4759,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "45a1be9d-67be-4ef0-a0f9-14785876b537"
+        "f7c079dc-e91c-497d-8a37-677a99bd9105"
       ],
       "reason": "plain HTTP target"
     },
@@ -4771,7 +4771,7 @@
       "summary": "CSP is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "45a1be9d-67be-4ef0-a0f9-14785876b537"
+        "f7c079dc-e91c-497d-8a37-677a99bd9105"
       ],
       "reason": "not an HTML document"
     },
@@ -4783,7 +4783,7 @@
       "summary": "Framing protection is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "45a1be9d-67be-4ef0-a0f9-14785876b537"
+        "f7c079dc-e91c-497d-8a37-677a99bd9105"
       ],
       "reason": "not an HTML document"
     },
@@ -4795,7 +4795,7 @@
       "summary": "Explicit Content-Type and nosniff",
       "observations": [],
       "requestIds": [
-        "45a1be9d-67be-4ef0-a0f9-14785876b537"
+        "f7c079dc-e91c-497d-8a37-677a99bd9105"
       ]
     },
     {
@@ -4808,7 +4808,7 @@
         "Cache-Control absent"
       ],
       "requestIds": [
-        "45a1be9d-67be-4ef0-a0f9-14785876b537"
+        "f7c079dc-e91c-497d-8a37-677a99bd9105"
       ]
     },
     {
@@ -4819,7 +4819,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "45a1be9d-67be-4ef0-a0f9-14785876b537"
+        "f7c079dc-e91c-497d-8a37-677a99bd9105"
       ]
     },
     {
@@ -4830,7 +4830,7 @@
       "summary": "No stack trace or internal error signature",
       "observations": [],
       "requestIds": [
-        "45a1be9d-67be-4ef0-a0f9-14785876b537"
+        "f7c079dc-e91c-497d-8a37-677a99bd9105"
       ]
     },
     {
@@ -4841,7 +4841,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "45a1be9d-67be-4ef0-a0f9-14785876b537"
+        "f7c079dc-e91c-497d-8a37-677a99bd9105"
       ]
     },
     {
@@ -4852,7 +4852,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "45a1be9d-67be-4ef0-a0f9-14785876b537"
+        "f7c079dc-e91c-497d-8a37-677a99bd9105"
       ]
     },
     {
@@ -4863,7 +4863,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "45a1be9d-67be-4ef0-a0f9-14785876b537"
+        "f7c079dc-e91c-497d-8a37-677a99bd9105"
       ]
     },
     {
@@ -4874,7 +4874,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "45a1be9d-67be-4ef0-a0f9-14785876b537"
+        "f7c079dc-e91c-497d-8a37-677a99bd9105"
       ]
     },
     {
@@ -4885,7 +4885,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "45a1be9d-67be-4ef0-a0f9-14785876b537"
+        "f7c079dc-e91c-497d-8a37-677a99bd9105"
       ],
       "reason": "no cookies"
     },
@@ -4897,7 +4897,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "45a1be9d-67be-4ef0-a0f9-14785876b537"
+        "f7c079dc-e91c-497d-8a37-677a99bd9105"
       ],
       "reason": "no cookies"
     },
@@ -4909,7 +4909,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "45a1be9d-67be-4ef0-a0f9-14785876b537"
+        "f7c079dc-e91c-497d-8a37-677a99bd9105"
       ],
       "reason": "no cookies"
     },
@@ -4921,7 +4921,7 @@
       "summary": "No JWT observed in response",
       "observations": [],
       "requestIds": [
-        "45a1be9d-67be-4ef0-a0f9-14785876b537"
+        "f7c079dc-e91c-497d-8a37-677a99bd9105"
       ],
       "reason": "no token"
     },
@@ -4935,7 +4935,7 @@
         "no redirect"
       ],
       "requestIds": [
-        "45a1be9d-67be-4ef0-a0f9-14785876b537"
+        "f7c079dc-e91c-497d-8a37-677a99bd9105"
       ]
     },
     {
@@ -4946,7 +4946,7 @@
       "summary": "Untrusted origin not granted CORS access",
       "observations": [],
       "requestIds": [
-        "0e23b1d9-3a79-423c-ae4b-d771b1d7c758"
+        "f7514cae-b764-42d4-9b00-b4d7cac875aa"
       ]
     },
     {
@@ -4957,7 +4957,7 @@
       "summary": "Advertised: GET, OPTIONS",
       "observations": [],
       "requestIds": [
-        "6501bc58-13e4-429e-8da9-59d109b65a91"
+        "3cce6a60-ea9b-483e-87f9-01e87252eb65"
       ]
     },
     {
@@ -4968,7 +4968,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "e3232f01-c20e-4e88-9ec0-fc9cfcf342a1"
+        "a24ac633-2e84-4363-9c3e-e49b9fa79d79"
       ],
       "reason": "plain HTTP target"
     },
@@ -4980,7 +4980,7 @@
       "summary": "CSP is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "e3232f01-c20e-4e88-9ec0-fc9cfcf342a1"
+        "a24ac633-2e84-4363-9c3e-e49b9fa79d79"
       ],
       "reason": "not an HTML document"
     },
@@ -4992,7 +4992,7 @@
       "summary": "Framing protection is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "e3232f01-c20e-4e88-9ec0-fc9cfcf342a1"
+        "a24ac633-2e84-4363-9c3e-e49b9fa79d79"
       ],
       "reason": "not an HTML document"
     },
@@ -5004,7 +5004,7 @@
       "summary": "Explicit Content-Type and nosniff",
       "observations": [],
       "requestIds": [
-        "e3232f01-c20e-4e88-9ec0-fc9cfcf342a1"
+        "a24ac633-2e84-4363-9c3e-e49b9fa79d79"
       ]
     },
     {
@@ -5015,7 +5015,7 @@
       "summary": "Response is neither authenticated nor session-setting",
       "observations": [],
       "requestIds": [
-        "e3232f01-c20e-4e88-9ec0-fc9cfcf342a1"
+        "a24ac633-2e84-4363-9c3e-e49b9fa79d79"
       ],
       "reason": "not sensitive"
     },
@@ -5027,7 +5027,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "e3232f01-c20e-4e88-9ec0-fc9cfcf342a1"
+        "a24ac633-2e84-4363-9c3e-e49b9fa79d79"
       ]
     },
     {
@@ -5038,7 +5038,7 @@
       "summary": "No stack trace or internal error signature",
       "observations": [],
       "requestIds": [
-        "e3232f01-c20e-4e88-9ec0-fc9cfcf342a1"
+        "a24ac633-2e84-4363-9c3e-e49b9fa79d79"
       ]
     },
     {
@@ -5049,7 +5049,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "e3232f01-c20e-4e88-9ec0-fc9cfcf342a1"
+        "a24ac633-2e84-4363-9c3e-e49b9fa79d79"
       ]
     },
     {
@@ -5060,7 +5060,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "e3232f01-c20e-4e88-9ec0-fc9cfcf342a1"
+        "a24ac633-2e84-4363-9c3e-e49b9fa79d79"
       ]
     },
     {
@@ -5071,7 +5071,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "e3232f01-c20e-4e88-9ec0-fc9cfcf342a1"
+        "a24ac633-2e84-4363-9c3e-e49b9fa79d79"
       ]
     },
     {
@@ -5082,7 +5082,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "e3232f01-c20e-4e88-9ec0-fc9cfcf342a1"
+        "a24ac633-2e84-4363-9c3e-e49b9fa79d79"
       ]
     },
     {
@@ -5093,7 +5093,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "e3232f01-c20e-4e88-9ec0-fc9cfcf342a1"
+        "a24ac633-2e84-4363-9c3e-e49b9fa79d79"
       ],
       "reason": "no cookies"
     },
@@ -5105,7 +5105,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "e3232f01-c20e-4e88-9ec0-fc9cfcf342a1"
+        "a24ac633-2e84-4363-9c3e-e49b9fa79d79"
       ],
       "reason": "no cookies"
     },
@@ -5117,7 +5117,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "e3232f01-c20e-4e88-9ec0-fc9cfcf342a1"
+        "a24ac633-2e84-4363-9c3e-e49b9fa79d79"
       ],
       "reason": "no cookies"
     },
@@ -5129,7 +5129,7 @@
       "summary": "1 JWT(s) carry alg/exp/iss/aud",
       "observations": [],
       "requestIds": [
-        "e3232f01-c20e-4e88-9ec0-fc9cfcf342a1"
+        "a24ac633-2e84-4363-9c3e-e49b9fa79d79"
       ]
     },
     {
@@ -5142,7 +5142,7 @@
         "no redirect"
       ],
       "requestIds": [
-        "e3232f01-c20e-4e88-9ec0-fc9cfcf342a1"
+        "a24ac633-2e84-4363-9c3e-e49b9fa79d79"
       ]
     },
     {
@@ -5153,7 +5153,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "e88a6675-5420-4242-9808-af998bdaaed6"
+        "13bfe798-0547-40af-bc91-901cbb323438"
       ],
       "reason": "plain HTTP target"
     },
@@ -5165,7 +5165,7 @@
       "summary": "CSP is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "e88a6675-5420-4242-9808-af998bdaaed6"
+        "13bfe798-0547-40af-bc91-901cbb323438"
       ],
       "reason": "not an HTML document"
     },
@@ -5177,7 +5177,7 @@
       "summary": "Framing protection is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "e88a6675-5420-4242-9808-af998bdaaed6"
+        "13bfe798-0547-40af-bc91-901cbb323438"
       ],
       "reason": "not an HTML document"
     },
@@ -5189,7 +5189,7 @@
       "summary": "Explicit Content-Type and nosniff",
       "observations": [],
       "requestIds": [
-        "e88a6675-5420-4242-9808-af998bdaaed6"
+        "13bfe798-0547-40af-bc91-901cbb323438"
       ]
     },
     {
@@ -5200,7 +5200,7 @@
       "summary": "Cache-Control: no-store",
       "observations": [],
       "requestIds": [
-        "e88a6675-5420-4242-9808-af998bdaaed6"
+        "13bfe798-0547-40af-bc91-901cbb323438"
       ]
     },
     {
@@ -5211,7 +5211,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "e88a6675-5420-4242-9808-af998bdaaed6"
+        "13bfe798-0547-40af-bc91-901cbb323438"
       ]
     },
     {
@@ -5222,7 +5222,7 @@
       "summary": "No stack trace or internal error signature",
       "observations": [],
       "requestIds": [
-        "e88a6675-5420-4242-9808-af998bdaaed6"
+        "13bfe798-0547-40af-bc91-901cbb323438"
       ]
     },
     {
@@ -5233,7 +5233,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "e88a6675-5420-4242-9808-af998bdaaed6"
+        "13bfe798-0547-40af-bc91-901cbb323438"
       ]
     },
     {
@@ -5244,7 +5244,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "e88a6675-5420-4242-9808-af998bdaaed6"
+        "13bfe798-0547-40af-bc91-901cbb323438"
       ]
     },
     {
@@ -5255,7 +5255,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "e88a6675-5420-4242-9808-af998bdaaed6"
+        "13bfe798-0547-40af-bc91-901cbb323438"
       ]
     },
     {
@@ -5266,7 +5266,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "e88a6675-5420-4242-9808-af998bdaaed6"
+        "13bfe798-0547-40af-bc91-901cbb323438"
       ]
     },
     {
@@ -5277,7 +5277,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "e88a6675-5420-4242-9808-af998bdaaed6"
+        "13bfe798-0547-40af-bc91-901cbb323438"
       ],
       "reason": "no cookies"
     },
@@ -5289,7 +5289,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "e88a6675-5420-4242-9808-af998bdaaed6"
+        "13bfe798-0547-40af-bc91-901cbb323438"
       ],
       "reason": "no cookies"
     },
@@ -5301,7 +5301,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "e88a6675-5420-4242-9808-af998bdaaed6"
+        "13bfe798-0547-40af-bc91-901cbb323438"
       ],
       "reason": "no cookies"
     },
@@ -5313,7 +5313,7 @@
       "summary": "1 JWT(s) carry alg/exp/iss/aud",
       "observations": [],
       "requestIds": [
-        "e88a6675-5420-4242-9808-af998bdaaed6"
+        "13bfe798-0547-40af-bc91-901cbb323438"
       ]
     },
     {
@@ -5326,7 +5326,7 @@
         "no redirect"
       ],
       "requestIds": [
-        "e88a6675-5420-4242-9808-af998bdaaed6"
+        "13bfe798-0547-40af-bc91-901cbb323438"
       ]
     },
     {
@@ -5337,7 +5337,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "8fd984a6-a4fb-43a9-96bb-b0c418ee2eab"
+        "c7c9dbcd-7be8-4ff5-a77b-30d7860828d5"
       ],
       "reason": "plain HTTP target"
     },
@@ -5349,7 +5349,7 @@
       "summary": "CSP is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "8fd984a6-a4fb-43a9-96bb-b0c418ee2eab"
+        "c7c9dbcd-7be8-4ff5-a77b-30d7860828d5"
       ],
       "reason": "not an HTML document"
     },
@@ -5361,7 +5361,7 @@
       "summary": "Framing protection is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "8fd984a6-a4fb-43a9-96bb-b0c418ee2eab"
+        "c7c9dbcd-7be8-4ff5-a77b-30d7860828d5"
       ],
       "reason": "not an HTML document"
     },
@@ -5373,7 +5373,7 @@
       "summary": "Explicit Content-Type and nosniff",
       "observations": [],
       "requestIds": [
-        "8fd984a6-a4fb-43a9-96bb-b0c418ee2eab"
+        "c7c9dbcd-7be8-4ff5-a77b-30d7860828d5"
       ]
     },
     {
@@ -5384,7 +5384,7 @@
       "summary": "Cache-Control: no-store",
       "observations": [],
       "requestIds": [
-        "8fd984a6-a4fb-43a9-96bb-b0c418ee2eab"
+        "c7c9dbcd-7be8-4ff5-a77b-30d7860828d5"
       ]
     },
     {
@@ -5395,7 +5395,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "8fd984a6-a4fb-43a9-96bb-b0c418ee2eab"
+        "c7c9dbcd-7be8-4ff5-a77b-30d7860828d5"
       ]
     },
     {
@@ -5406,7 +5406,7 @@
       "summary": "No stack trace or internal error signature",
       "observations": [],
       "requestIds": [
-        "8fd984a6-a4fb-43a9-96bb-b0c418ee2eab"
+        "c7c9dbcd-7be8-4ff5-a77b-30d7860828d5"
       ]
     },
     {
@@ -5417,7 +5417,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "8fd984a6-a4fb-43a9-96bb-b0c418ee2eab"
+        "c7c9dbcd-7be8-4ff5-a77b-30d7860828d5"
       ]
     },
     {
@@ -5428,7 +5428,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "8fd984a6-a4fb-43a9-96bb-b0c418ee2eab"
+        "c7c9dbcd-7be8-4ff5-a77b-30d7860828d5"
       ]
     },
     {
@@ -5439,7 +5439,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "8fd984a6-a4fb-43a9-96bb-b0c418ee2eab"
+        "c7c9dbcd-7be8-4ff5-a77b-30d7860828d5"
       ]
     },
     {
@@ -5450,7 +5450,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "8fd984a6-a4fb-43a9-96bb-b0c418ee2eab"
+        "c7c9dbcd-7be8-4ff5-a77b-30d7860828d5"
       ]
     },
     {
@@ -5461,7 +5461,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "8fd984a6-a4fb-43a9-96bb-b0c418ee2eab"
+        "c7c9dbcd-7be8-4ff5-a77b-30d7860828d5"
       ],
       "reason": "no cookies"
     },
@@ -5473,7 +5473,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "8fd984a6-a4fb-43a9-96bb-b0c418ee2eab"
+        "c7c9dbcd-7be8-4ff5-a77b-30d7860828d5"
       ],
       "reason": "no cookies"
     },
@@ -5485,7 +5485,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "8fd984a6-a4fb-43a9-96bb-b0c418ee2eab"
+        "c7c9dbcd-7be8-4ff5-a77b-30d7860828d5"
       ],
       "reason": "no cookies"
     },
@@ -5497,7 +5497,7 @@
       "summary": "1 JWT(s) carry alg/exp/iss/aud",
       "observations": [],
       "requestIds": [
-        "8fd984a6-a4fb-43a9-96bb-b0c418ee2eab"
+        "c7c9dbcd-7be8-4ff5-a77b-30d7860828d5"
       ]
     },
     {
@@ -5510,7 +5510,7 @@
         "no redirect"
       ],
       "requestIds": [
-        "8fd984a6-a4fb-43a9-96bb-b0c418ee2eab"
+        "c7c9dbcd-7be8-4ff5-a77b-30d7860828d5"
       ]
     },
     {
@@ -5521,7 +5521,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "d79c0569-0466-4e39-a825-cdc74262303a"
+        "6d86ca6e-4ded-487c-ab2f-4750c2ce8416"
       ],
       "reason": "plain HTTP target"
     },
@@ -5533,7 +5533,7 @@
       "summary": "CSP is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "d79c0569-0466-4e39-a825-cdc74262303a"
+        "6d86ca6e-4ded-487c-ab2f-4750c2ce8416"
       ],
       "reason": "not an HTML document"
     },
@@ -5545,7 +5545,7 @@
       "summary": "Framing protection is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "d79c0569-0466-4e39-a825-cdc74262303a"
+        "6d86ca6e-4ded-487c-ab2f-4750c2ce8416"
       ],
       "reason": "not an HTML document"
     },
@@ -5557,7 +5557,7 @@
       "summary": "Explicit Content-Type and nosniff",
       "observations": [],
       "requestIds": [
-        "d79c0569-0466-4e39-a825-cdc74262303a"
+        "6d86ca6e-4ded-487c-ab2f-4750c2ce8416"
       ]
     },
     {
@@ -5568,7 +5568,7 @@
       "summary": "Cache-Control: no-store",
       "observations": [],
       "requestIds": [
-        "d79c0569-0466-4e39-a825-cdc74262303a"
+        "6d86ca6e-4ded-487c-ab2f-4750c2ce8416"
       ]
     },
     {
@@ -5579,7 +5579,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "d79c0569-0466-4e39-a825-cdc74262303a"
+        "6d86ca6e-4ded-487c-ab2f-4750c2ce8416"
       ]
     },
     {
@@ -5590,7 +5590,7 @@
       "summary": "No stack trace or internal error signature",
       "observations": [],
       "requestIds": [
-        "d79c0569-0466-4e39-a825-cdc74262303a"
+        "6d86ca6e-4ded-487c-ab2f-4750c2ce8416"
       ]
     },
     {
@@ -5601,7 +5601,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "d79c0569-0466-4e39-a825-cdc74262303a"
+        "6d86ca6e-4ded-487c-ab2f-4750c2ce8416"
       ]
     },
     {
@@ -5612,7 +5612,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "d79c0569-0466-4e39-a825-cdc74262303a"
+        "6d86ca6e-4ded-487c-ab2f-4750c2ce8416"
       ]
     },
     {
@@ -5623,7 +5623,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "d79c0569-0466-4e39-a825-cdc74262303a"
+        "6d86ca6e-4ded-487c-ab2f-4750c2ce8416"
       ]
     },
     {
@@ -5634,7 +5634,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "d79c0569-0466-4e39-a825-cdc74262303a"
+        "6d86ca6e-4ded-487c-ab2f-4750c2ce8416"
       ]
     },
     {
@@ -5645,7 +5645,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "d79c0569-0466-4e39-a825-cdc74262303a"
+        "6d86ca6e-4ded-487c-ab2f-4750c2ce8416"
       ],
       "reason": "no cookies"
     },
@@ -5657,7 +5657,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "d79c0569-0466-4e39-a825-cdc74262303a"
+        "6d86ca6e-4ded-487c-ab2f-4750c2ce8416"
       ],
       "reason": "no cookies"
     },
@@ -5669,7 +5669,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "d79c0569-0466-4e39-a825-cdc74262303a"
+        "6d86ca6e-4ded-487c-ab2f-4750c2ce8416"
       ],
       "reason": "no cookies"
     },
@@ -5681,7 +5681,7 @@
       "summary": "1 JWT(s) carry alg/exp/iss/aud",
       "observations": [],
       "requestIds": [
-        "d79c0569-0466-4e39-a825-cdc74262303a"
+        "6d86ca6e-4ded-487c-ab2f-4750c2ce8416"
       ]
     },
     {
@@ -5694,7 +5694,7 @@
         "no redirect"
       ],
       "requestIds": [
-        "d79c0569-0466-4e39-a825-cdc74262303a"
+        "6d86ca6e-4ded-487c-ab2f-4750c2ce8416"
       ]
     },
     {
@@ -5705,7 +5705,7 @@
       "summary": "Untrusted origin not granted CORS access",
       "observations": [],
       "requestIds": [
-        "e6d6df6e-4e4f-4a51-9ac5-0bb85aeb2a6a"
+        "5b296f67-90f2-4d32-afe9-e8aac44af853"
       ]
     },
     {
@@ -5716,7 +5716,7 @@
       "summary": "Advertised: GET, OPTIONS",
       "observations": [],
       "requestIds": [
-        "4bcc4de7-4e42-45ad-83f1-2585f6a24138"
+        "dfb0876c-a5f0-4585-88b4-63dd3ce3a8a1"
       ]
     },
     {
@@ -5727,7 +5727,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "f2509787-5cf4-48d3-bbea-9ad516d1c313"
+        "8fd4ba22-2030-49f2-ae2e-b61c0e154402"
       ],
       "reason": "plain HTTP target"
     },
@@ -5739,7 +5739,7 @@
       "summary": "CSP is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "f2509787-5cf4-48d3-bbea-9ad516d1c313"
+        "8fd4ba22-2030-49f2-ae2e-b61c0e154402"
       ],
       "reason": "not an HTML document"
     },
@@ -5751,7 +5751,7 @@
       "summary": "Framing protection is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "f2509787-5cf4-48d3-bbea-9ad516d1c313"
+        "8fd4ba22-2030-49f2-ae2e-b61c0e154402"
       ],
       "reason": "not an HTML document"
     },
@@ -5763,7 +5763,7 @@
       "summary": "No response body",
       "observations": [],
       "requestIds": [
-        "f2509787-5cf4-48d3-bbea-9ad516d1c313"
+        "8fd4ba22-2030-49f2-ae2e-b61c0e154402"
       ],
       "reason": "empty body"
     },
@@ -5775,7 +5775,7 @@
       "summary": "Response is neither authenticated nor session-setting",
       "observations": [],
       "requestIds": [
-        "f2509787-5cf4-48d3-bbea-9ad516d1c313"
+        "8fd4ba22-2030-49f2-ae2e-b61c0e154402"
       ],
       "reason": "not sensitive"
     },
@@ -5787,7 +5787,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "f2509787-5cf4-48d3-bbea-9ad516d1c313"
+        "8fd4ba22-2030-49f2-ae2e-b61c0e154402"
       ]
     },
     {
@@ -5798,7 +5798,7 @@
       "summary": "No body",
       "observations": [],
       "requestIds": [
-        "f2509787-5cf4-48d3-bbea-9ad516d1c313"
+        "8fd4ba22-2030-49f2-ae2e-b61c0e154402"
       ]
     },
     {
@@ -5809,7 +5809,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "f2509787-5cf4-48d3-bbea-9ad516d1c313"
+        "8fd4ba22-2030-49f2-ae2e-b61c0e154402"
       ]
     },
     {
@@ -5820,7 +5820,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "f2509787-5cf4-48d3-bbea-9ad516d1c313"
+        "8fd4ba22-2030-49f2-ae2e-b61c0e154402"
       ]
     },
     {
@@ -5831,7 +5831,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "f2509787-5cf4-48d3-bbea-9ad516d1c313"
+        "8fd4ba22-2030-49f2-ae2e-b61c0e154402"
       ]
     },
     {
@@ -5842,7 +5842,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "f2509787-5cf4-48d3-bbea-9ad516d1c313"
+        "8fd4ba22-2030-49f2-ae2e-b61c0e154402"
       ]
     },
     {
@@ -5853,7 +5853,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "f2509787-5cf4-48d3-bbea-9ad516d1c313"
+        "8fd4ba22-2030-49f2-ae2e-b61c0e154402"
       ],
       "reason": "no cookies"
     },
@@ -5865,7 +5865,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "f2509787-5cf4-48d3-bbea-9ad516d1c313"
+        "8fd4ba22-2030-49f2-ae2e-b61c0e154402"
       ],
       "reason": "no cookies"
     },
@@ -5877,7 +5877,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "f2509787-5cf4-48d3-bbea-9ad516d1c313"
+        "8fd4ba22-2030-49f2-ae2e-b61c0e154402"
       ],
       "reason": "no cookies"
     },
@@ -5889,7 +5889,7 @@
       "summary": "No JWT observed in response",
       "observations": [],
       "requestIds": [
-        "f2509787-5cf4-48d3-bbea-9ad516d1c313"
+        "8fd4ba22-2030-49f2-ae2e-b61c0e154402"
       ],
       "reason": "no token"
     },
@@ -5903,7 +5903,7 @@
         "Location scheme: http:"
       ],
       "requestIds": [
-        "f2509787-5cf4-48d3-bbea-9ad516d1c313"
+        "8fd4ba22-2030-49f2-ae2e-b61c0e154402"
       ]
     },
     {
@@ -5914,7 +5914,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "2b6eea44-9120-459e-8e1e-76ea927c8776"
+        "0ed5c51b-d6d6-48ce-a458-96f8817c5a12"
       ],
       "reason": "plain HTTP target"
     },
@@ -5926,7 +5926,7 @@
       "summary": "CSP is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "2b6eea44-9120-459e-8e1e-76ea927c8776"
+        "0ed5c51b-d6d6-48ce-a458-96f8817c5a12"
       ],
       "reason": "not an HTML document"
     },
@@ -5938,7 +5938,7 @@
       "summary": "Framing protection is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "2b6eea44-9120-459e-8e1e-76ea927c8776"
+        "0ed5c51b-d6d6-48ce-a458-96f8817c5a12"
       ],
       "reason": "not an HTML document"
     },
@@ -5950,7 +5950,7 @@
       "summary": "No response body",
       "observations": [],
       "requestIds": [
-        "2b6eea44-9120-459e-8e1e-76ea927c8776"
+        "0ed5c51b-d6d6-48ce-a458-96f8817c5a12"
       ],
       "reason": "empty body"
     },
@@ -5962,7 +5962,7 @@
       "summary": "Response is neither authenticated nor session-setting",
       "observations": [],
       "requestIds": [
-        "2b6eea44-9120-459e-8e1e-76ea927c8776"
+        "0ed5c51b-d6d6-48ce-a458-96f8817c5a12"
       ],
       "reason": "not sensitive"
     },
@@ -5974,7 +5974,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "2b6eea44-9120-459e-8e1e-76ea927c8776"
+        "0ed5c51b-d6d6-48ce-a458-96f8817c5a12"
       ]
     },
     {
@@ -5985,7 +5985,7 @@
       "summary": "No body",
       "observations": [],
       "requestIds": [
-        "2b6eea44-9120-459e-8e1e-76ea927c8776"
+        "0ed5c51b-d6d6-48ce-a458-96f8817c5a12"
       ]
     },
     {
@@ -5996,7 +5996,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "2b6eea44-9120-459e-8e1e-76ea927c8776"
+        "0ed5c51b-d6d6-48ce-a458-96f8817c5a12"
       ]
     },
     {
@@ -6007,7 +6007,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "2b6eea44-9120-459e-8e1e-76ea927c8776"
+        "0ed5c51b-d6d6-48ce-a458-96f8817c5a12"
       ]
     },
     {
@@ -6018,7 +6018,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "2b6eea44-9120-459e-8e1e-76ea927c8776"
+        "0ed5c51b-d6d6-48ce-a458-96f8817c5a12"
       ]
     },
     {
@@ -6029,7 +6029,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "2b6eea44-9120-459e-8e1e-76ea927c8776"
+        "0ed5c51b-d6d6-48ce-a458-96f8817c5a12"
       ]
     },
     {
@@ -6040,7 +6040,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "2b6eea44-9120-459e-8e1e-76ea927c8776"
+        "0ed5c51b-d6d6-48ce-a458-96f8817c5a12"
       ],
       "reason": "no cookies"
     },
@@ -6052,7 +6052,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "2b6eea44-9120-459e-8e1e-76ea927c8776"
+        "0ed5c51b-d6d6-48ce-a458-96f8817c5a12"
       ],
       "reason": "no cookies"
     },
@@ -6064,7 +6064,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "2b6eea44-9120-459e-8e1e-76ea927c8776"
+        "0ed5c51b-d6d6-48ce-a458-96f8817c5a12"
       ],
       "reason": "no cookies"
     },
@@ -6076,7 +6076,7 @@
       "summary": "No JWT observed in response",
       "observations": [],
       "requestIds": [
-        "2b6eea44-9120-459e-8e1e-76ea927c8776"
+        "0ed5c51b-d6d6-48ce-a458-96f8817c5a12"
       ],
       "reason": "no token"
     },
@@ -6090,7 +6090,7 @@
         "Location scheme: http:"
       ],
       "requestIds": [
-        "2b6eea44-9120-459e-8e1e-76ea927c8776"
+        "0ed5c51b-d6d6-48ce-a458-96f8817c5a12"
       ]
     },
     {
@@ -6101,7 +6101,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "ca63c85e-fb2c-47f4-848c-257f430b27a3"
+        "6569df78-427a-4f16-a62c-871f7982b5d4"
       ],
       "reason": "plain HTTP target"
     },
@@ -6113,7 +6113,7 @@
       "summary": "CSP is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "ca63c85e-fb2c-47f4-848c-257f430b27a3"
+        "6569df78-427a-4f16-a62c-871f7982b5d4"
       ],
       "reason": "not an HTML document"
     },
@@ -6125,7 +6125,7 @@
       "summary": "Framing protection is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "ca63c85e-fb2c-47f4-848c-257f430b27a3"
+        "6569df78-427a-4f16-a62c-871f7982b5d4"
       ],
       "reason": "not an HTML document"
     },
@@ -6137,7 +6137,7 @@
       "summary": "No response body",
       "observations": [],
       "requestIds": [
-        "ca63c85e-fb2c-47f4-848c-257f430b27a3"
+        "6569df78-427a-4f16-a62c-871f7982b5d4"
       ],
       "reason": "empty body"
     },
@@ -6149,7 +6149,7 @@
       "summary": "Response is neither authenticated nor session-setting",
       "observations": [],
       "requestIds": [
-        "ca63c85e-fb2c-47f4-848c-257f430b27a3"
+        "6569df78-427a-4f16-a62c-871f7982b5d4"
       ],
       "reason": "not sensitive"
     },
@@ -6161,7 +6161,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "ca63c85e-fb2c-47f4-848c-257f430b27a3"
+        "6569df78-427a-4f16-a62c-871f7982b5d4"
       ]
     },
     {
@@ -6172,7 +6172,7 @@
       "summary": "No body",
       "observations": [],
       "requestIds": [
-        "ca63c85e-fb2c-47f4-848c-257f430b27a3"
+        "6569df78-427a-4f16-a62c-871f7982b5d4"
       ]
     },
     {
@@ -6183,7 +6183,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "ca63c85e-fb2c-47f4-848c-257f430b27a3"
+        "6569df78-427a-4f16-a62c-871f7982b5d4"
       ]
     },
     {
@@ -6194,7 +6194,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "ca63c85e-fb2c-47f4-848c-257f430b27a3"
+        "6569df78-427a-4f16-a62c-871f7982b5d4"
       ]
     },
     {
@@ -6205,7 +6205,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "ca63c85e-fb2c-47f4-848c-257f430b27a3"
+        "6569df78-427a-4f16-a62c-871f7982b5d4"
       ]
     },
     {
@@ -6216,7 +6216,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "ca63c85e-fb2c-47f4-848c-257f430b27a3"
+        "6569df78-427a-4f16-a62c-871f7982b5d4"
       ]
     },
     {
@@ -6227,7 +6227,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "ca63c85e-fb2c-47f4-848c-257f430b27a3"
+        "6569df78-427a-4f16-a62c-871f7982b5d4"
       ],
       "reason": "no cookies"
     },
@@ -6239,7 +6239,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "ca63c85e-fb2c-47f4-848c-257f430b27a3"
+        "6569df78-427a-4f16-a62c-871f7982b5d4"
       ],
       "reason": "no cookies"
     },
@@ -6251,7 +6251,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "ca63c85e-fb2c-47f4-848c-257f430b27a3"
+        "6569df78-427a-4f16-a62c-871f7982b5d4"
       ],
       "reason": "no cookies"
     },
@@ -6263,7 +6263,7 @@
       "summary": "No JWT observed in response",
       "observations": [],
       "requestIds": [
-        "ca63c85e-fb2c-47f4-848c-257f430b27a3"
+        "6569df78-427a-4f16-a62c-871f7982b5d4"
       ],
       "reason": "no token"
     },
@@ -6277,7 +6277,7 @@
         "Location scheme: http:"
       ],
       "requestIds": [
-        "ca63c85e-fb2c-47f4-848c-257f430b27a3"
+        "6569df78-427a-4f16-a62c-871f7982b5d4"
       ]
     },
     {
@@ -6288,7 +6288,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "7e4f6f15-2e07-46b6-a6b7-709192f168e3"
+        "abd3261a-2270-4dfb-bfeb-11c95675ddef"
       ],
       "reason": "plain HTTP target"
     },
@@ -6300,7 +6300,7 @@
       "summary": "CSP is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "7e4f6f15-2e07-46b6-a6b7-709192f168e3"
+        "abd3261a-2270-4dfb-bfeb-11c95675ddef"
       ],
       "reason": "not an HTML document"
     },
@@ -6312,7 +6312,7 @@
       "summary": "Framing protection is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "7e4f6f15-2e07-46b6-a6b7-709192f168e3"
+        "abd3261a-2270-4dfb-bfeb-11c95675ddef"
       ],
       "reason": "not an HTML document"
     },
@@ -6324,7 +6324,7 @@
       "summary": "No response body",
       "observations": [],
       "requestIds": [
-        "7e4f6f15-2e07-46b6-a6b7-709192f168e3"
+        "abd3261a-2270-4dfb-bfeb-11c95675ddef"
       ],
       "reason": "empty body"
     },
@@ -6336,7 +6336,7 @@
       "summary": "Response is neither authenticated nor session-setting",
       "observations": [],
       "requestIds": [
-        "7e4f6f15-2e07-46b6-a6b7-709192f168e3"
+        "abd3261a-2270-4dfb-bfeb-11c95675ddef"
       ],
       "reason": "not sensitive"
     },
@@ -6348,7 +6348,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "7e4f6f15-2e07-46b6-a6b7-709192f168e3"
+        "abd3261a-2270-4dfb-bfeb-11c95675ddef"
       ]
     },
     {
@@ -6359,7 +6359,7 @@
       "summary": "No body",
       "observations": [],
       "requestIds": [
-        "7e4f6f15-2e07-46b6-a6b7-709192f168e3"
+        "abd3261a-2270-4dfb-bfeb-11c95675ddef"
       ]
     },
     {
@@ -6370,7 +6370,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "7e4f6f15-2e07-46b6-a6b7-709192f168e3"
+        "abd3261a-2270-4dfb-bfeb-11c95675ddef"
       ]
     },
     {
@@ -6381,7 +6381,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "7e4f6f15-2e07-46b6-a6b7-709192f168e3"
+        "abd3261a-2270-4dfb-bfeb-11c95675ddef"
       ]
     },
     {
@@ -6392,7 +6392,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "7e4f6f15-2e07-46b6-a6b7-709192f168e3"
+        "abd3261a-2270-4dfb-bfeb-11c95675ddef"
       ]
     },
     {
@@ -6403,7 +6403,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "7e4f6f15-2e07-46b6-a6b7-709192f168e3"
+        "abd3261a-2270-4dfb-bfeb-11c95675ddef"
       ]
     },
     {
@@ -6414,7 +6414,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "7e4f6f15-2e07-46b6-a6b7-709192f168e3"
+        "abd3261a-2270-4dfb-bfeb-11c95675ddef"
       ],
       "reason": "no cookies"
     },
@@ -6426,7 +6426,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "7e4f6f15-2e07-46b6-a6b7-709192f168e3"
+        "abd3261a-2270-4dfb-bfeb-11c95675ddef"
       ],
       "reason": "no cookies"
     },
@@ -6438,7 +6438,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "7e4f6f15-2e07-46b6-a6b7-709192f168e3"
+        "abd3261a-2270-4dfb-bfeb-11c95675ddef"
       ],
       "reason": "no cookies"
     },
@@ -6450,7 +6450,7 @@
       "summary": "No JWT observed in response",
       "observations": [],
       "requestIds": [
-        "7e4f6f15-2e07-46b6-a6b7-709192f168e3"
+        "abd3261a-2270-4dfb-bfeb-11c95675ddef"
       ],
       "reason": "no token"
     },
@@ -6464,7 +6464,7 @@
         "Location scheme: http:"
       ],
       "requestIds": [
-        "7e4f6f15-2e07-46b6-a6b7-709192f168e3"
+        "abd3261a-2270-4dfb-bfeb-11c95675ddef"
       ]
     },
     {
@@ -6475,7 +6475,7 @@
       "summary": "Untrusted origin not granted CORS access",
       "observations": [],
       "requestIds": [
-        "04cd4a01-d68a-4d7d-a87a-cd574c9f0bd9"
+        "53d710df-5333-4c88-bace-68bb2b34b006"
       ]
     },
     {
@@ -6486,7 +6486,7 @@
       "summary": "Advertised: GET, OPTIONS",
       "observations": [],
       "requestIds": [
-        "9c4141ff-2bc5-44b8-99b3-a54a00cb66d1"
+        "32774e7d-6ee1-4af9-aba9-0e7d09a7e36a"
       ]
     },
     {
@@ -6497,7 +6497,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "5c524a00-56f3-47a5-9d96-382e43945a69"
+        "f66daebb-8d70-4264-a29f-444d0cbb8d23"
       ],
       "reason": "plain HTTP target"
     },
@@ -6509,7 +6509,7 @@
       "summary": "CSP is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "5c524a00-56f3-47a5-9d96-382e43945a69"
+        "f66daebb-8d70-4264-a29f-444d0cbb8d23"
       ],
       "reason": "not an HTML document"
     },
@@ -6521,7 +6521,7 @@
       "summary": "Framing protection is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "5c524a00-56f3-47a5-9d96-382e43945a69"
+        "f66daebb-8d70-4264-a29f-444d0cbb8d23"
       ],
       "reason": "not an HTML document"
     },
@@ -6533,7 +6533,7 @@
       "summary": "Explicit Content-Type and nosniff",
       "observations": [],
       "requestIds": [
-        "5c524a00-56f3-47a5-9d96-382e43945a69"
+        "f66daebb-8d70-4264-a29f-444d0cbb8d23"
       ]
     },
     {
@@ -6544,7 +6544,7 @@
       "summary": "Cache-Control: no-store",
       "observations": [],
       "requestIds": [
-        "5c524a00-56f3-47a5-9d96-382e43945a69"
+        "f66daebb-8d70-4264-a29f-444d0cbb8d23"
       ]
     },
     {
@@ -6555,7 +6555,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "5c524a00-56f3-47a5-9d96-382e43945a69"
+        "f66daebb-8d70-4264-a29f-444d0cbb8d23"
       ]
     },
     {
@@ -6566,7 +6566,7 @@
       "summary": "No stack trace or internal error signature",
       "observations": [],
       "requestIds": [
-        "5c524a00-56f3-47a5-9d96-382e43945a69"
+        "f66daebb-8d70-4264-a29f-444d0cbb8d23"
       ]
     },
     {
@@ -6577,7 +6577,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "5c524a00-56f3-47a5-9d96-382e43945a69"
+        "f66daebb-8d70-4264-a29f-444d0cbb8d23"
       ]
     },
     {
@@ -6588,7 +6588,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "5c524a00-56f3-47a5-9d96-382e43945a69"
+        "f66daebb-8d70-4264-a29f-444d0cbb8d23"
       ]
     },
     {
@@ -6599,7 +6599,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "5c524a00-56f3-47a5-9d96-382e43945a69"
+        "f66daebb-8d70-4264-a29f-444d0cbb8d23"
       ]
     },
     {
@@ -6610,7 +6610,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "5c524a00-56f3-47a5-9d96-382e43945a69"
+        "f66daebb-8d70-4264-a29f-444d0cbb8d23"
       ]
     },
     {
@@ -6621,7 +6621,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "5c524a00-56f3-47a5-9d96-382e43945a69"
+        "f66daebb-8d70-4264-a29f-444d0cbb8d23"
       ],
       "reason": "no cookies"
     },
@@ -6633,7 +6633,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "5c524a00-56f3-47a5-9d96-382e43945a69"
+        "f66daebb-8d70-4264-a29f-444d0cbb8d23"
       ],
       "reason": "no cookies"
     },
@@ -6645,7 +6645,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "5c524a00-56f3-47a5-9d96-382e43945a69"
+        "f66daebb-8d70-4264-a29f-444d0cbb8d23"
       ],
       "reason": "no cookies"
     },
@@ -6657,7 +6657,7 @@
       "summary": "No JWT observed in response",
       "observations": [],
       "requestIds": [
-        "5c524a00-56f3-47a5-9d96-382e43945a69"
+        "f66daebb-8d70-4264-a29f-444d0cbb8d23"
       ],
       "reason": "no token"
     },
@@ -6671,7 +6671,7 @@
         "no redirect"
       ],
       "requestIds": [
-        "5c524a00-56f3-47a5-9d96-382e43945a69"
+        "f66daebb-8d70-4264-a29f-444d0cbb8d23"
       ]
     },
     {
@@ -6682,7 +6682,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "8e9be177-b5ce-437f-863d-25a8ef80e46a"
+        "bc94536a-9b75-4f51-808f-96faf9aa81cd"
       ],
       "reason": "plain HTTP target"
     },
@@ -6694,7 +6694,7 @@
       "summary": "CSP is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "8e9be177-b5ce-437f-863d-25a8ef80e46a"
+        "bc94536a-9b75-4f51-808f-96faf9aa81cd"
       ],
       "reason": "not an HTML document"
     },
@@ -6706,7 +6706,7 @@
       "summary": "Framing protection is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "8e9be177-b5ce-437f-863d-25a8ef80e46a"
+        "bc94536a-9b75-4f51-808f-96faf9aa81cd"
       ],
       "reason": "not an HTML document"
     },
@@ -6718,7 +6718,7 @@
       "summary": "Explicit Content-Type and nosniff",
       "observations": [],
       "requestIds": [
-        "8e9be177-b5ce-437f-863d-25a8ef80e46a"
+        "bc94536a-9b75-4f51-808f-96faf9aa81cd"
       ]
     },
     {
@@ -6729,7 +6729,7 @@
       "summary": "Cache-Control: no-store",
       "observations": [],
       "requestIds": [
-        "8e9be177-b5ce-437f-863d-25a8ef80e46a"
+        "bc94536a-9b75-4f51-808f-96faf9aa81cd"
       ]
     },
     {
@@ -6740,7 +6740,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "8e9be177-b5ce-437f-863d-25a8ef80e46a"
+        "bc94536a-9b75-4f51-808f-96faf9aa81cd"
       ]
     },
     {
@@ -6751,7 +6751,7 @@
       "summary": "No stack trace or internal error signature",
       "observations": [],
       "requestIds": [
-        "8e9be177-b5ce-437f-863d-25a8ef80e46a"
+        "bc94536a-9b75-4f51-808f-96faf9aa81cd"
       ]
     },
     {
@@ -6762,7 +6762,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "8e9be177-b5ce-437f-863d-25a8ef80e46a"
+        "bc94536a-9b75-4f51-808f-96faf9aa81cd"
       ]
     },
     {
@@ -6773,7 +6773,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "8e9be177-b5ce-437f-863d-25a8ef80e46a"
+        "bc94536a-9b75-4f51-808f-96faf9aa81cd"
       ]
     },
     {
@@ -6784,7 +6784,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "8e9be177-b5ce-437f-863d-25a8ef80e46a"
+        "bc94536a-9b75-4f51-808f-96faf9aa81cd"
       ]
     },
     {
@@ -6795,7 +6795,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "8e9be177-b5ce-437f-863d-25a8ef80e46a"
+        "bc94536a-9b75-4f51-808f-96faf9aa81cd"
       ]
     },
     {
@@ -6806,7 +6806,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "8e9be177-b5ce-437f-863d-25a8ef80e46a"
+        "bc94536a-9b75-4f51-808f-96faf9aa81cd"
       ],
       "reason": "no cookies"
     },
@@ -6818,7 +6818,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "8e9be177-b5ce-437f-863d-25a8ef80e46a"
+        "bc94536a-9b75-4f51-808f-96faf9aa81cd"
       ],
       "reason": "no cookies"
     },
@@ -6830,7 +6830,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "8e9be177-b5ce-437f-863d-25a8ef80e46a"
+        "bc94536a-9b75-4f51-808f-96faf9aa81cd"
       ],
       "reason": "no cookies"
     },
@@ -6842,7 +6842,7 @@
       "summary": "No JWT observed in response",
       "observations": [],
       "requestIds": [
-        "8e9be177-b5ce-437f-863d-25a8ef80e46a"
+        "bc94536a-9b75-4f51-808f-96faf9aa81cd"
       ],
       "reason": "no token"
     },
@@ -6856,7 +6856,7 @@
         "no redirect"
       ],
       "requestIds": [
-        "8e9be177-b5ce-437f-863d-25a8ef80e46a"
+        "bc94536a-9b75-4f51-808f-96faf9aa81cd"
       ]
     },
     {
@@ -6867,7 +6867,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "591fe1b8-c9dd-45ba-9ae5-a429fb9ae44d"
+        "ec0be639-7d18-47a8-accd-9fce1d4e0012"
       ],
       "reason": "plain HTTP target"
     },
@@ -6879,7 +6879,7 @@
       "summary": "CSP is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "591fe1b8-c9dd-45ba-9ae5-a429fb9ae44d"
+        "ec0be639-7d18-47a8-accd-9fce1d4e0012"
       ],
       "reason": "not an HTML document"
     },
@@ -6891,7 +6891,7 @@
       "summary": "Framing protection is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "591fe1b8-c9dd-45ba-9ae5-a429fb9ae44d"
+        "ec0be639-7d18-47a8-accd-9fce1d4e0012"
       ],
       "reason": "not an HTML document"
     },
@@ -6903,7 +6903,7 @@
       "summary": "Explicit Content-Type and nosniff",
       "observations": [],
       "requestIds": [
-        "591fe1b8-c9dd-45ba-9ae5-a429fb9ae44d"
+        "ec0be639-7d18-47a8-accd-9fce1d4e0012"
       ]
     },
     {
@@ -6914,7 +6914,7 @@
       "summary": "Cache-Control: no-store",
       "observations": [],
       "requestIds": [
-        "591fe1b8-c9dd-45ba-9ae5-a429fb9ae44d"
+        "ec0be639-7d18-47a8-accd-9fce1d4e0012"
       ]
     },
     {
@@ -6925,7 +6925,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "591fe1b8-c9dd-45ba-9ae5-a429fb9ae44d"
+        "ec0be639-7d18-47a8-accd-9fce1d4e0012"
       ]
     },
     {
@@ -6936,7 +6936,7 @@
       "summary": "No stack trace or internal error signature",
       "observations": [],
       "requestIds": [
-        "591fe1b8-c9dd-45ba-9ae5-a429fb9ae44d"
+        "ec0be639-7d18-47a8-accd-9fce1d4e0012"
       ]
     },
     {
@@ -6947,7 +6947,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "591fe1b8-c9dd-45ba-9ae5-a429fb9ae44d"
+        "ec0be639-7d18-47a8-accd-9fce1d4e0012"
       ]
     },
     {
@@ -6958,7 +6958,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "591fe1b8-c9dd-45ba-9ae5-a429fb9ae44d"
+        "ec0be639-7d18-47a8-accd-9fce1d4e0012"
       ]
     },
     {
@@ -6969,7 +6969,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "591fe1b8-c9dd-45ba-9ae5-a429fb9ae44d"
+        "ec0be639-7d18-47a8-accd-9fce1d4e0012"
       ]
     },
     {
@@ -6980,7 +6980,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "591fe1b8-c9dd-45ba-9ae5-a429fb9ae44d"
+        "ec0be639-7d18-47a8-accd-9fce1d4e0012"
       ]
     },
     {
@@ -6991,7 +6991,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "591fe1b8-c9dd-45ba-9ae5-a429fb9ae44d"
+        "ec0be639-7d18-47a8-accd-9fce1d4e0012"
       ],
       "reason": "no cookies"
     },
@@ -7003,7 +7003,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "591fe1b8-c9dd-45ba-9ae5-a429fb9ae44d"
+        "ec0be639-7d18-47a8-accd-9fce1d4e0012"
       ],
       "reason": "no cookies"
     },
@@ -7015,7 +7015,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "591fe1b8-c9dd-45ba-9ae5-a429fb9ae44d"
+        "ec0be639-7d18-47a8-accd-9fce1d4e0012"
       ],
       "reason": "no cookies"
     },
@@ -7027,7 +7027,7 @@
       "summary": "No JWT observed in response",
       "observations": [],
       "requestIds": [
-        "591fe1b8-c9dd-45ba-9ae5-a429fb9ae44d"
+        "ec0be639-7d18-47a8-accd-9fce1d4e0012"
       ],
       "reason": "no token"
     },
@@ -7041,7 +7041,7 @@
         "no redirect"
       ],
       "requestIds": [
-        "591fe1b8-c9dd-45ba-9ae5-a429fb9ae44d"
+        "ec0be639-7d18-47a8-accd-9fce1d4e0012"
       ]
     },
     {
@@ -7052,7 +7052,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "7ee078d6-0e4c-44f3-a310-86d299009e86"
+        "e5fda4c4-584a-46aa-a366-794b815509d3"
       ],
       "reason": "plain HTTP target"
     },
@@ -7064,7 +7064,7 @@
       "summary": "CSP is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "7ee078d6-0e4c-44f3-a310-86d299009e86"
+        "e5fda4c4-584a-46aa-a366-794b815509d3"
       ],
       "reason": "not an HTML document"
     },
@@ -7076,7 +7076,7 @@
       "summary": "Framing protection is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "7ee078d6-0e4c-44f3-a310-86d299009e86"
+        "e5fda4c4-584a-46aa-a366-794b815509d3"
       ],
       "reason": "not an HTML document"
     },
@@ -7088,7 +7088,7 @@
       "summary": "Explicit Content-Type and nosniff",
       "observations": [],
       "requestIds": [
-        "7ee078d6-0e4c-44f3-a310-86d299009e86"
+        "e5fda4c4-584a-46aa-a366-794b815509d3"
       ]
     },
     {
@@ -7099,7 +7099,7 @@
       "summary": "Cache-Control: no-store",
       "observations": [],
       "requestIds": [
-        "7ee078d6-0e4c-44f3-a310-86d299009e86"
+        "e5fda4c4-584a-46aa-a366-794b815509d3"
       ]
     },
     {
@@ -7110,7 +7110,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "7ee078d6-0e4c-44f3-a310-86d299009e86"
+        "e5fda4c4-584a-46aa-a366-794b815509d3"
       ]
     },
     {
@@ -7121,7 +7121,7 @@
       "summary": "No stack trace or internal error signature",
       "observations": [],
       "requestIds": [
-        "7ee078d6-0e4c-44f3-a310-86d299009e86"
+        "e5fda4c4-584a-46aa-a366-794b815509d3"
       ]
     },
     {
@@ -7132,7 +7132,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "7ee078d6-0e4c-44f3-a310-86d299009e86"
+        "e5fda4c4-584a-46aa-a366-794b815509d3"
       ]
     },
     {
@@ -7143,7 +7143,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "7ee078d6-0e4c-44f3-a310-86d299009e86"
+        "e5fda4c4-584a-46aa-a366-794b815509d3"
       ]
     },
     {
@@ -7154,7 +7154,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "7ee078d6-0e4c-44f3-a310-86d299009e86"
+        "e5fda4c4-584a-46aa-a366-794b815509d3"
       ]
     },
     {
@@ -7165,7 +7165,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "7ee078d6-0e4c-44f3-a310-86d299009e86"
+        "e5fda4c4-584a-46aa-a366-794b815509d3"
       ]
     },
     {
@@ -7176,7 +7176,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "7ee078d6-0e4c-44f3-a310-86d299009e86"
+        "e5fda4c4-584a-46aa-a366-794b815509d3"
       ],
       "reason": "no cookies"
     },
@@ -7188,7 +7188,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "7ee078d6-0e4c-44f3-a310-86d299009e86"
+        "e5fda4c4-584a-46aa-a366-794b815509d3"
       ],
       "reason": "no cookies"
     },
@@ -7200,7 +7200,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "7ee078d6-0e4c-44f3-a310-86d299009e86"
+        "e5fda4c4-584a-46aa-a366-794b815509d3"
       ],
       "reason": "no cookies"
     },
@@ -7212,7 +7212,7 @@
       "summary": "No JWT observed in response",
       "observations": [],
       "requestIds": [
-        "7ee078d6-0e4c-44f3-a310-86d299009e86"
+        "e5fda4c4-584a-46aa-a366-794b815509d3"
       ],
       "reason": "no token"
     },
@@ -7226,7 +7226,7 @@
         "no redirect"
       ],
       "requestIds": [
-        "7ee078d6-0e4c-44f3-a310-86d299009e86"
+        "e5fda4c4-584a-46aa-a366-794b815509d3"
       ]
     },
     {
@@ -7237,7 +7237,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "f0cbda3b-9acc-4f52-a2dd-1282a8e17bca"
+        "49901057-d9f3-4746-b23d-9588b434ee65"
       ],
       "reason": "plain HTTP target"
     },
@@ -7249,7 +7249,7 @@
       "summary": "CSP is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "f0cbda3b-9acc-4f52-a2dd-1282a8e17bca"
+        "49901057-d9f3-4746-b23d-9588b434ee65"
       ],
       "reason": "not an HTML document"
     },
@@ -7261,7 +7261,7 @@
       "summary": "Framing protection is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "f0cbda3b-9acc-4f52-a2dd-1282a8e17bca"
+        "49901057-d9f3-4746-b23d-9588b434ee65"
       ],
       "reason": "not an HTML document"
     },
@@ -7273,7 +7273,7 @@
       "summary": "Explicit Content-Type and nosniff",
       "observations": [],
       "requestIds": [
-        "f0cbda3b-9acc-4f52-a2dd-1282a8e17bca"
+        "49901057-d9f3-4746-b23d-9588b434ee65"
       ]
     },
     {
@@ -7284,7 +7284,7 @@
       "summary": "Response is neither authenticated nor session-setting",
       "observations": [],
       "requestIds": [
-        "f0cbda3b-9acc-4f52-a2dd-1282a8e17bca"
+        "49901057-d9f3-4746-b23d-9588b434ee65"
       ],
       "reason": "not sensitive"
     },
@@ -7296,7 +7296,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "f0cbda3b-9acc-4f52-a2dd-1282a8e17bca"
+        "49901057-d9f3-4746-b23d-9588b434ee65"
       ]
     },
     {
@@ -7307,7 +7307,7 @@
       "summary": "No stack trace or internal error signature",
       "observations": [],
       "requestIds": [
-        "f0cbda3b-9acc-4f52-a2dd-1282a8e17bca"
+        "49901057-d9f3-4746-b23d-9588b434ee65"
       ]
     },
     {
@@ -7318,7 +7318,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "f0cbda3b-9acc-4f52-a2dd-1282a8e17bca"
+        "49901057-d9f3-4746-b23d-9588b434ee65"
       ]
     },
     {
@@ -7329,7 +7329,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "f0cbda3b-9acc-4f52-a2dd-1282a8e17bca"
+        "49901057-d9f3-4746-b23d-9588b434ee65"
       ]
     },
     {
@@ -7340,7 +7340,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "f0cbda3b-9acc-4f52-a2dd-1282a8e17bca"
+        "49901057-d9f3-4746-b23d-9588b434ee65"
       ]
     },
     {
@@ -7351,7 +7351,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "f0cbda3b-9acc-4f52-a2dd-1282a8e17bca"
+        "49901057-d9f3-4746-b23d-9588b434ee65"
       ]
     },
     {
@@ -7362,7 +7362,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "f0cbda3b-9acc-4f52-a2dd-1282a8e17bca"
+        "49901057-d9f3-4746-b23d-9588b434ee65"
       ],
       "reason": "no cookies"
     },
@@ -7374,7 +7374,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "f0cbda3b-9acc-4f52-a2dd-1282a8e17bca"
+        "49901057-d9f3-4746-b23d-9588b434ee65"
       ],
       "reason": "no cookies"
     },
@@ -7386,7 +7386,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "f0cbda3b-9acc-4f52-a2dd-1282a8e17bca"
+        "49901057-d9f3-4746-b23d-9588b434ee65"
       ],
       "reason": "no cookies"
     },
@@ -7398,7 +7398,7 @@
       "summary": "No JWT observed in response",
       "observations": [],
       "requestIds": [
-        "f0cbda3b-9acc-4f52-a2dd-1282a8e17bca"
+        "49901057-d9f3-4746-b23d-9588b434ee65"
       ],
       "reason": "no token"
     },
@@ -7412,7 +7412,7 @@
         "no redirect"
       ],
       "requestIds": [
-        "f0cbda3b-9acc-4f52-a2dd-1282a8e17bca"
+        "49901057-d9f3-4746-b23d-9588b434ee65"
       ]
     },
     {
@@ -7423,7 +7423,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "93325515-9a8f-41ac-99c3-498487ef00a3"
+        "8cf47542-19fc-46c9-9684-f0245f138b46"
       ],
       "reason": "plain HTTP target"
     },
@@ -7435,7 +7435,7 @@
       "summary": "CSP is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "93325515-9a8f-41ac-99c3-498487ef00a3"
+        "8cf47542-19fc-46c9-9684-f0245f138b46"
       ],
       "reason": "not an HTML document"
     },
@@ -7447,7 +7447,7 @@
       "summary": "Framing protection is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "93325515-9a8f-41ac-99c3-498487ef00a3"
+        "8cf47542-19fc-46c9-9684-f0245f138b46"
       ],
       "reason": "not an HTML document"
     },
@@ -7459,7 +7459,7 @@
       "summary": "Explicit Content-Type and nosniff",
       "observations": [],
       "requestIds": [
-        "93325515-9a8f-41ac-99c3-498487ef00a3"
+        "8cf47542-19fc-46c9-9684-f0245f138b46"
       ]
     },
     {
@@ -7470,7 +7470,7 @@
       "summary": "Cache-Control: no-store",
       "observations": [],
       "requestIds": [
-        "93325515-9a8f-41ac-99c3-498487ef00a3"
+        "8cf47542-19fc-46c9-9684-f0245f138b46"
       ]
     },
     {
@@ -7481,7 +7481,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "93325515-9a8f-41ac-99c3-498487ef00a3"
+        "8cf47542-19fc-46c9-9684-f0245f138b46"
       ]
     },
     {
@@ -7492,7 +7492,7 @@
       "summary": "No stack trace or internal error signature",
       "observations": [],
       "requestIds": [
-        "93325515-9a8f-41ac-99c3-498487ef00a3"
+        "8cf47542-19fc-46c9-9684-f0245f138b46"
       ]
     },
     {
@@ -7503,7 +7503,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "93325515-9a8f-41ac-99c3-498487ef00a3"
+        "8cf47542-19fc-46c9-9684-f0245f138b46"
       ]
     },
     {
@@ -7514,7 +7514,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "93325515-9a8f-41ac-99c3-498487ef00a3"
+        "8cf47542-19fc-46c9-9684-f0245f138b46"
       ]
     },
     {
@@ -7525,7 +7525,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "93325515-9a8f-41ac-99c3-498487ef00a3"
+        "8cf47542-19fc-46c9-9684-f0245f138b46"
       ]
     },
     {
@@ -7536,7 +7536,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "93325515-9a8f-41ac-99c3-498487ef00a3"
+        "8cf47542-19fc-46c9-9684-f0245f138b46"
       ]
     },
     {
@@ -7547,7 +7547,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "93325515-9a8f-41ac-99c3-498487ef00a3"
+        "8cf47542-19fc-46c9-9684-f0245f138b46"
       ],
       "reason": "no cookies"
     },
@@ -7559,7 +7559,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "93325515-9a8f-41ac-99c3-498487ef00a3"
+        "8cf47542-19fc-46c9-9684-f0245f138b46"
       ],
       "reason": "no cookies"
     },
@@ -7571,7 +7571,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "93325515-9a8f-41ac-99c3-498487ef00a3"
+        "8cf47542-19fc-46c9-9684-f0245f138b46"
       ],
       "reason": "no cookies"
     },
@@ -7583,7 +7583,7 @@
       "summary": "No JWT observed in response",
       "observations": [],
       "requestIds": [
-        "93325515-9a8f-41ac-99c3-498487ef00a3"
+        "8cf47542-19fc-46c9-9684-f0245f138b46"
       ],
       "reason": "no token"
     },
@@ -7597,7 +7597,7 @@
         "no redirect"
       ],
       "requestIds": [
-        "93325515-9a8f-41ac-99c3-498487ef00a3"
+        "8cf47542-19fc-46c9-9684-f0245f138b46"
       ]
     },
     {
@@ -7608,7 +7608,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "14793e8f-7984-4854-b593-f6e5ed0317e0"
+        "fea33c08-1f54-4d7e-9eb6-a48da2ffab44"
       ],
       "reason": "plain HTTP target"
     },
@@ -7620,7 +7620,7 @@
       "summary": "CSP is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "14793e8f-7984-4854-b593-f6e5ed0317e0"
+        "fea33c08-1f54-4d7e-9eb6-a48da2ffab44"
       ],
       "reason": "not an HTML document"
     },
@@ -7632,7 +7632,7 @@
       "summary": "Framing protection is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "14793e8f-7984-4854-b593-f6e5ed0317e0"
+        "fea33c08-1f54-4d7e-9eb6-a48da2ffab44"
       ],
       "reason": "not an HTML document"
     },
@@ -7644,7 +7644,7 @@
       "summary": "Explicit Content-Type and nosniff",
       "observations": [],
       "requestIds": [
-        "14793e8f-7984-4854-b593-f6e5ed0317e0"
+        "fea33c08-1f54-4d7e-9eb6-a48da2ffab44"
       ]
     },
     {
@@ -7655,7 +7655,7 @@
       "summary": "Cache-Control: no-store",
       "observations": [],
       "requestIds": [
-        "14793e8f-7984-4854-b593-f6e5ed0317e0"
+        "fea33c08-1f54-4d7e-9eb6-a48da2ffab44"
       ]
     },
     {
@@ -7666,7 +7666,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "14793e8f-7984-4854-b593-f6e5ed0317e0"
+        "fea33c08-1f54-4d7e-9eb6-a48da2ffab44"
       ]
     },
     {
@@ -7677,7 +7677,7 @@
       "summary": "No stack trace or internal error signature",
       "observations": [],
       "requestIds": [
-        "14793e8f-7984-4854-b593-f6e5ed0317e0"
+        "fea33c08-1f54-4d7e-9eb6-a48da2ffab44"
       ]
     },
     {
@@ -7688,7 +7688,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "14793e8f-7984-4854-b593-f6e5ed0317e0"
+        "fea33c08-1f54-4d7e-9eb6-a48da2ffab44"
       ]
     },
     {
@@ -7699,7 +7699,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "14793e8f-7984-4854-b593-f6e5ed0317e0"
+        "fea33c08-1f54-4d7e-9eb6-a48da2ffab44"
       ]
     },
     {
@@ -7710,7 +7710,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "14793e8f-7984-4854-b593-f6e5ed0317e0"
+        "fea33c08-1f54-4d7e-9eb6-a48da2ffab44"
       ]
     },
     {
@@ -7721,7 +7721,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "14793e8f-7984-4854-b593-f6e5ed0317e0"
+        "fea33c08-1f54-4d7e-9eb6-a48da2ffab44"
       ]
     },
     {
@@ -7732,7 +7732,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "14793e8f-7984-4854-b593-f6e5ed0317e0"
+        "fea33c08-1f54-4d7e-9eb6-a48da2ffab44"
       ],
       "reason": "no cookies"
     },
@@ -7744,7 +7744,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "14793e8f-7984-4854-b593-f6e5ed0317e0"
+        "fea33c08-1f54-4d7e-9eb6-a48da2ffab44"
       ],
       "reason": "no cookies"
     },
@@ -7756,7 +7756,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "14793e8f-7984-4854-b593-f6e5ed0317e0"
+        "fea33c08-1f54-4d7e-9eb6-a48da2ffab44"
       ],
       "reason": "no cookies"
     },
@@ -7768,7 +7768,7 @@
       "summary": "No JWT observed in response",
       "observations": [],
       "requestIds": [
-        "14793e8f-7984-4854-b593-f6e5ed0317e0"
+        "fea33c08-1f54-4d7e-9eb6-a48da2ffab44"
       ],
       "reason": "no token"
     },
@@ -7782,7 +7782,7 @@
         "no redirect"
       ],
       "requestIds": [
-        "14793e8f-7984-4854-b593-f6e5ed0317e0"
+        "fea33c08-1f54-4d7e-9eb6-a48da2ffab44"
       ]
     },
     {
@@ -7796,8 +7796,8 @@
         "flow orders-access step S3"
       ],
       "requestIds": [
-        "591fe1b8-c9dd-45ba-9ae5-a429fb9ae44d",
-        "8e9be177-b5ce-437f-863d-25a8ef80e46a"
+        "ec0be639-7d18-47a8-accd-9fce1d4e0012",
+        "bc94536a-9b75-4f51-808f-96faf9aa81cd"
       ],
       "basis": "draft-flow"
     },
@@ -7812,8 +7812,8 @@
         "flow orders-access step S5"
       ],
       "requestIds": [
-        "f0cbda3b-9acc-4f52-a2dd-1282a8e17bca",
-        "7ee078d6-0e4c-44f3-a310-86d299009e86"
+        "49901057-d9f3-4746-b23d-9588b434ee65",
+        "e5fda4c4-584a-46aa-a366-794b815509d3"
       ],
       "basis": "draft-flow"
     },
@@ -7828,8 +7828,8 @@
         "flow orders-access step S7"
       ],
       "requestIds": [
-        "14793e8f-7984-4854-b593-f6e5ed0317e0",
-        "93325515-9a8f-41ac-99c3-498487ef00a3"
+        "fea33c08-1f54-4d7e-9eb6-a48da2ffab44",
+        "8cf47542-19fc-46c9-9684-f0245f138b46"
       ],
       "basis": "draft-flow"
     },
@@ -7841,7 +7841,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "46b7c2ee-550d-43ed-bf38-a7e326e0f67a"
+        "4e7bf7d5-cfdc-46c5-817d-50bf618d74a8"
       ],
       "reason": "plain HTTP target"
     },
@@ -7853,7 +7853,7 @@
       "summary": "Enforcing CSP without unsafe script sources",
       "observations": [],
       "requestIds": [
-        "46b7c2ee-550d-43ed-bf38-a7e326e0f67a"
+        "4e7bf7d5-cfdc-46c5-817d-50bf618d74a8"
       ]
     },
     {
@@ -7864,7 +7864,7 @@
       "summary": "CSP frame-ancestors 'self'",
       "observations": [],
       "requestIds": [
-        "46b7c2ee-550d-43ed-bf38-a7e326e0f67a"
+        "4e7bf7d5-cfdc-46c5-817d-50bf618d74a8"
       ]
     },
     {
@@ -7875,7 +7875,7 @@
       "summary": "Explicit Content-Type and nosniff",
       "observations": [],
       "requestIds": [
-        "46b7c2ee-550d-43ed-bf38-a7e326e0f67a"
+        "4e7bf7d5-cfdc-46c5-817d-50bf618d74a8"
       ]
     },
     {
@@ -7886,7 +7886,7 @@
       "summary": "Cache-Control: no-store",
       "observations": [],
       "requestIds": [
-        "46b7c2ee-550d-43ed-bf38-a7e326e0f67a"
+        "4e7bf7d5-cfdc-46c5-817d-50bf618d74a8"
       ]
     },
     {
@@ -7897,7 +7897,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "46b7c2ee-550d-43ed-bf38-a7e326e0f67a"
+        "4e7bf7d5-cfdc-46c5-817d-50bf618d74a8"
       ]
     },
     {
@@ -7908,7 +7908,7 @@
       "summary": "No stack trace or internal error signature",
       "observations": [],
       "requestIds": [
-        "46b7c2ee-550d-43ed-bf38-a7e326e0f67a"
+        "4e7bf7d5-cfdc-46c5-817d-50bf618d74a8"
       ]
     },
     {
@@ -7919,7 +7919,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "46b7c2ee-550d-43ed-bf38-a7e326e0f67a"
+        "4e7bf7d5-cfdc-46c5-817d-50bf618d74a8"
       ]
     },
     {
@@ -7930,7 +7930,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "46b7c2ee-550d-43ed-bf38-a7e326e0f67a"
+        "4e7bf7d5-cfdc-46c5-817d-50bf618d74a8"
       ]
     },
     {
@@ -7941,7 +7941,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "46b7c2ee-550d-43ed-bf38-a7e326e0f67a"
+        "4e7bf7d5-cfdc-46c5-817d-50bf618d74a8"
       ]
     },
     {
@@ -7952,7 +7952,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "46b7c2ee-550d-43ed-bf38-a7e326e0f67a"
+        "4e7bf7d5-cfdc-46c5-817d-50bf618d74a8"
       ]
     },
     {
@@ -7963,7 +7963,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "46b7c2ee-550d-43ed-bf38-a7e326e0f67a"
+        "4e7bf7d5-cfdc-46c5-817d-50bf618d74a8"
       ],
       "reason": "no cookies"
     },
@@ -7975,7 +7975,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "46b7c2ee-550d-43ed-bf38-a7e326e0f67a"
+        "4e7bf7d5-cfdc-46c5-817d-50bf618d74a8"
       ],
       "reason": "no cookies"
     },
@@ -7987,7 +7987,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "46b7c2ee-550d-43ed-bf38-a7e326e0f67a"
+        "4e7bf7d5-cfdc-46c5-817d-50bf618d74a8"
       ],
       "reason": "no cookies"
     },
@@ -7999,7 +7999,7 @@
       "summary": "No JWT observed in response",
       "observations": [],
       "requestIds": [
-        "46b7c2ee-550d-43ed-bf38-a7e326e0f67a"
+        "4e7bf7d5-cfdc-46c5-817d-50bf618d74a8"
       ],
       "reason": "no token"
     },
@@ -8013,7 +8013,7 @@
         "no redirect"
       ],
       "requestIds": [
-        "46b7c2ee-550d-43ed-bf38-a7e326e0f67a"
+        "4e7bf7d5-cfdc-46c5-817d-50bf618d74a8"
       ]
     },
     {
@@ -8024,7 +8024,7 @@
       "summary": "HSTS applies to HTTPS responses only",
       "observations": [],
       "requestIds": [
-        "b6f239af-9c75-41f3-99ab-d0e39c17d32a"
+        "807771c8-24b3-4bcb-bfa2-c9b5f13786fb"
       ],
       "reason": "plain HTTP target"
     },
@@ -8036,7 +8036,7 @@
       "summary": "CSP is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "b6f239af-9c75-41f3-99ab-d0e39c17d32a"
+        "807771c8-24b3-4bcb-bfa2-c9b5f13786fb"
       ],
       "reason": "not an HTML document"
     },
@@ -8048,7 +8048,7 @@
       "summary": "Framing protection is evaluated on HTML documents only",
       "observations": [],
       "requestIds": [
-        "b6f239af-9c75-41f3-99ab-d0e39c17d32a"
+        "807771c8-24b3-4bcb-bfa2-c9b5f13786fb"
       ],
       "reason": "not an HTML document"
     },
@@ -8060,7 +8060,7 @@
       "summary": "No response body",
       "observations": [],
       "requestIds": [
-        "b6f239af-9c75-41f3-99ab-d0e39c17d32a"
+        "807771c8-24b3-4bcb-bfa2-c9b5f13786fb"
       ],
       "reason": "empty body"
     },
@@ -8072,7 +8072,7 @@
       "summary": "Response is neither authenticated nor session-setting",
       "observations": [],
       "requestIds": [
-        "b6f239af-9c75-41f3-99ab-d0e39c17d32a"
+        "807771c8-24b3-4bcb-bfa2-c9b5f13786fb"
       ],
       "reason": "not sensitive"
     },
@@ -8084,7 +8084,7 @@
       "summary": "No version numbers in headers or error page",
       "observations": [],
       "requestIds": [
-        "b6f239af-9c75-41f3-99ab-d0e39c17d32a"
+        "807771c8-24b3-4bcb-bfa2-c9b5f13786fb"
       ]
     },
     {
@@ -8095,7 +8095,7 @@
       "summary": "No body",
       "observations": [],
       "requestIds": [
-        "b6f239af-9c75-41f3-99ab-d0e39c17d32a"
+        "807771c8-24b3-4bcb-bfa2-c9b5f13786fb"
       ]
     },
     {
@@ -8106,7 +8106,7 @@
       "summary": "No private IP literals",
       "observations": [],
       "requestIds": [
-        "b6f239af-9c75-41f3-99ab-d0e39c17d32a"
+        "807771c8-24b3-4bcb-bfa2-c9b5f13786fb"
       ]
     },
     {
@@ -8117,7 +8117,7 @@
       "summary": "No email addresses",
       "observations": [],
       "requestIds": [
-        "b6f239af-9c75-41f3-99ab-d0e39c17d32a"
+        "807771c8-24b3-4bcb-bfa2-c9b5f13786fb"
       ]
     },
     {
@@ -8128,7 +8128,7 @@
       "summary": "No checksum-valid national ID or card numbers",
       "observations": [],
       "requestIds": [
-        "b6f239af-9c75-41f3-99ab-d0e39c17d32a"
+        "807771c8-24b3-4bcb-bfa2-c9b5f13786fb"
       ]
     },
     {
@@ -8139,7 +8139,7 @@
       "summary": "No sensitive parameter names in URL or redirect",
       "observations": [],
       "requestIds": [
-        "b6f239af-9c75-41f3-99ab-d0e39c17d32a"
+        "807771c8-24b3-4bcb-bfa2-c9b5f13786fb"
       ]
     },
     {
@@ -8150,7 +8150,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "b6f239af-9c75-41f3-99ab-d0e39c17d32a"
+        "807771c8-24b3-4bcb-bfa2-c9b5f13786fb"
       ],
       "reason": "no cookies"
     },
@@ -8162,7 +8162,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "b6f239af-9c75-41f3-99ab-d0e39c17d32a"
+        "807771c8-24b3-4bcb-bfa2-c9b5f13786fb"
       ],
       "reason": "no cookies"
     },
@@ -8174,7 +8174,7 @@
       "summary": "No Set-Cookie in response",
       "observations": [],
       "requestIds": [
-        "b6f239af-9c75-41f3-99ab-d0e39c17d32a"
+        "807771c8-24b3-4bcb-bfa2-c9b5f13786fb"
       ],
       "reason": "no cookies"
     },
@@ -8186,7 +8186,7 @@
       "summary": "No JWT observed in response",
       "observations": [],
       "requestIds": [
-        "b6f239af-9c75-41f3-99ab-d0e39c17d32a"
+        "807771c8-24b3-4bcb-bfa2-c9b5f13786fb"
       ],
       "reason": "no token"
     },
@@ -8200,7 +8200,7 @@
         "Location scheme: http:"
       ],
       "requestIds": [
-        "b6f239af-9c75-41f3-99ab-d0e39c17d32a"
+        "807771c8-24b3-4bcb-bfa2-c9b5f13786fb"
       ]
     },
     {
@@ -8214,8 +8214,8 @@
         "flow profile-journey step S4"
       ],
       "requestIds": [
-        "b6f239af-9c75-41f3-99ab-d0e39c17d32a",
-        "46b7c2ee-550d-43ed-bf38-a7e326e0f67a"
+        "807771c8-24b3-4bcb-bfa2-c9b5f13786fb",
+        "4e7bf7d5-cfdc-46c5-817d-50bf618d74a8"
       ],
       "basis": "draft-flow"
     },
@@ -8271,10 +8271,10 @@
         ]
       },
       "requestIds": [
-        "9fca2266-164e-459b-b686-cc67ef266f71",
-        "26d44e52-733f-4533-bc09-d7c31da9d00a",
-        "1768b92f-ccc2-4e27-9128-97fdbd214fb9",
-        "edf40b74-76f6-446b-908b-6a60ecff82cd"
+        "30ab6169-d9a9-4642-b323-cc5a9a912fce",
+        "37ca1325-315e-43ee-8899-6f55c10fad4b",
+        "1905e538-664b-4abb-b634-3df013e06611",
+        "7113a33f-38a1-4e73-b35a-278dc5ac0669"
       ]
     },
     {
@@ -8317,10 +8317,10 @@
         ]
       },
       "requestIds": [
-        "87d99e90-1a5b-4882-8a95-6602f9e82ea7",
-        "fe5ade7f-5058-4c0f-b51e-7a866df403d0",
-        "cb571e71-9a84-4a2b-a04f-28be0a3d78c0",
-        "8870f2b1-b206-4fd2-a4c4-68a9421ffef7"
+        "3bdebb73-8ef3-4ead-b6d0-34ceec8b027c",
+        "a36d8cb8-d8e9-453f-bf44-8e497cb7ad33",
+        "014e95c2-a0e3-4cbe-a408-ee0a4316d214",
+        "9addad12-1a8d-43e2-a54c-aa5c98655161"
       ]
     },
     {
@@ -8363,10 +8363,10 @@
         ]
       },
       "requestIds": [
-        "3eabf4d1-b268-44de-92bb-9a428bb7927c",
-        "4a0ba05c-b84d-4b3c-ab90-09da2def34b2",
-        "de1a16c8-f4f7-4291-ae7b-62db3c3603ac",
-        "45a1be9d-67be-4ef0-a0f9-14785876b537"
+        "add9d26b-eb28-40ea-ab85-8cd9a8826a0a",
+        "de0d6a70-7bd6-45ea-9d73-d0200dcb312b",
+        "13602b33-b492-46ef-b532-fa09402c6006",
+        "f7c079dc-e91c-497d-8a37-677a99bd9105"
       ]
     },
     {
@@ -8409,10 +8409,10 @@
         ]
       },
       "requestIds": [
-        "e3232f01-c20e-4e88-9ec0-fc9cfcf342a1",
-        "e88a6675-5420-4242-9808-af998bdaaed6",
-        "8fd984a6-a4fb-43a9-96bb-b0c418ee2eab",
-        "d79c0569-0466-4e39-a825-cdc74262303a"
+        "a24ac633-2e84-4363-9c3e-e49b9fa79d79",
+        "13bfe798-0547-40af-bc91-901cbb323438",
+        "c7c9dbcd-7be8-4ff5-a77b-30d7860828d5",
+        "6d86ca6e-4ded-487c-ab2f-4750c2ce8416"
       ]
     },
     {
@@ -8455,10 +8455,10 @@
         ]
       },
       "requestIds": [
-        "f2509787-5cf4-48d3-bbea-9ad516d1c313",
-        "2b6eea44-9120-459e-8e1e-76ea927c8776",
-        "ca63c85e-fb2c-47f4-848c-257f430b27a3",
-        "7e4f6f15-2e07-46b6-a6b7-709192f168e3"
+        "8fd4ba22-2030-49f2-ae2e-b61c0e154402",
+        "0ed5c51b-d6d6-48ce-a458-96f8817c5a12",
+        "6569df78-427a-4f16-a62c-871f7982b5d4",
+        "abd3261a-2270-4dfb-bfeb-11c95675ddef"
       ]
     },
     {
@@ -8501,7 +8501,7 @@
         ]
       },
       "requestIds": [
-        "5c524a00-56f3-47a5-9d96-382e43945a69"
+        "f66daebb-8d70-4264-a29f-444d0cbb8d23"
       ]
     },
     {
@@ -8544,8 +8544,8 @@
         ]
       },
       "requestIds": [
-        "8e9be177-b5ce-437f-863d-25a8ef80e46a",
-        "591fe1b8-c9dd-45ba-9ae5-a429fb9ae44d"
+        "bc94536a-9b75-4f51-808f-96faf9aa81cd",
+        "ec0be639-7d18-47a8-accd-9fce1d4e0012"
       ]
     },
     {
@@ -8588,8 +8588,8 @@
         ]
       },
       "requestIds": [
-        "7ee078d6-0e4c-44f3-a310-86d299009e86",
-        "f0cbda3b-9acc-4f52-a2dd-1282a8e17bca"
+        "e5fda4c4-584a-46aa-a366-794b815509d3",
+        "49901057-d9f3-4746-b23d-9588b434ee65"
       ]
     },
     {
@@ -8632,8 +8632,8 @@
         ]
       },
       "requestIds": [
-        "93325515-9a8f-41ac-99c3-498487ef00a3",
-        "14793e8f-7984-4854-b593-f6e5ed0317e0"
+        "8cf47542-19fc-46c9-9684-f0245f138b46",
+        "fea33c08-1f54-4d7e-9eb6-a48da2ffab44"
       ]
     },
     {
@@ -8677,8 +8677,8 @@
         ]
       },
       "requestIds": [
-        "46b7c2ee-550d-43ed-bf38-a7e326e0f67a",
-        "b6f239af-9c75-41f3-99ab-d0e39c17d32a"
+        "4e7bf7d5-cfdc-46c5-817d-50bf618d74a8",
+        "807771c8-24b3-4bcb-bfa2-c9b5f13786fb"
       ]
     },
     {
@@ -8724,9 +8724,9 @@
         ]
       },
       "requestIds": [
-        "4a0ba05c-b84d-4b3c-ab90-09da2def34b2",
-        "de1a16c8-f4f7-4291-ae7b-62db3c3603ac",
-        "45a1be9d-67be-4ef0-a0f9-14785876b537"
+        "de0d6a70-7bd6-45ea-9d73-d0200dcb312b",
+        "13602b33-b492-46ef-b532-fa09402c6006",
+        "f7c079dc-e91c-497d-8a37-677a99bd9105"
       ]
     }
   ],
@@ -9103,7 +9103,7 @@
             "x-content-type-options"
           ],
           "decision": "not followed: origin http://evil.example is not in targets.origins",
-          "requestId": "f2509787-5cf4-48d3-bbea-9ad516d1c313",
+          "requestId": "8fd4ba22-2030-49f2-ae2e-b61c0e154402",
           "location": "http://evil.example/steal"
         }
       ]
@@ -9120,7 +9120,7 @@
             "x-content-type-options"
           ],
           "decision": "not followed: origin http://evil.example is not in targets.origins",
-          "requestId": "2b6eea44-9120-459e-8e1e-76ea927c8776",
+          "requestId": "0ed5c51b-d6d6-48ce-a458-96f8817c5a12",
           "location": "http://evil.example/steal"
         }
       ]
@@ -9137,7 +9137,7 @@
             "x-content-type-options"
           ],
           "decision": "not followed: origin http://evil.example is not in targets.origins",
-          "requestId": "ca63c85e-fb2c-47f4-848c-257f430b27a3",
+          "requestId": "6569df78-427a-4f16-a62c-871f7982b5d4",
           "location": "http://evil.example/steal"
         }
       ]
@@ -9154,7 +9154,7 @@
             "x-content-type-options"
           ],
           "decision": "not followed: origin http://evil.example is not in targets.origins",
-          "requestId": "7e4f6f15-2e07-46b6-a6b7-709192f168e3",
+          "requestId": "abd3261a-2270-4dfb-bfeb-11c95675ddef",
           "location": "http://evil.example/steal"
         }
       ]

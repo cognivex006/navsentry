@@ -9,7 +9,7 @@ All notable changes to this project are documented here. Format: [Keep a Changel
   - 🔴 fix now: an IMMEDIATE or CAUTION finding, or test objects left behind.
   - 🟡 schedule it: PLANNED findings only.
   - 🟢 no fix needed in the tested scope, which is not proof of security.
-  - ⚪ can't tell: an incomplete run without findings, never shown as no-fix.
+  - ⚪ can't tell: an incomplete run, or flows that failed or did not run, when nothing needs a fix now. Never shown as no-fix.
   - `scan` prints the verdict and `Open in a browser: …/REPORT.html`. `scan --json` adds `verdict`.
 - `navsentry report --out <file>` writes the rendered report and never overwrites one. `--format html` on a terminal without `--out` is refused with a pointer to the REPORT.html that scan already wrote, instead of filling the screen with HTML.
 - 0.3.0-f NavSentry Recorder (SPEC-0.3.0 §7, owner decisions D7 and D10). A Chrome/Edge MV3 extension in `extension/`, loaded unpacked and shipped in the package. It records clicks, field changes and submits with a screenshot per step.

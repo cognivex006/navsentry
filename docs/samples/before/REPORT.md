@@ -1,7 +1,7 @@
 # NavSentry Report — demo-before (local)
 
-- Run ID: `4dec9615-c686-4ef0-9fbf-b6e49d63ed74`
-- Started: 2026-11-07T02:56:33.974Z · Finished: 2026-11-07T02:56:36.546Z
+- Run ID: `0858cfcf-c21b-49f2-9ae1-4207ddb50e1d`
+- Started: 2026-11-07T15:14:15.944Z · Finished: 2026-11-07T15:14:18.570Z
 - Tool: navsentry 0.2.0 · Node 26.13.0 · win32-x64
 - Mode: `observe` · Profile: `development` · Origins: `http://127.0.0.1:4173`
 - Execution status: **COMPLETE** · Security result: **FINDINGS**
