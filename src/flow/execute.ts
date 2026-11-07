@@ -81,6 +81,14 @@ export interface FlowBrowser {
   /** Loads a page; `exchange` is the final main-document exchange (after redirects). */
   navigate(actor: string, url: string, flow: { id: string; step: string }): Promise<{ exchange?: Exchange; requestIds: string[]; error?: string }>;
   act(actor: string, action: "click" | "see" | "wait_for" | "fill" | "select" | "submit", target: UiTarget, flow: { id: string; step: string }, value?: string): Promise<{ ok: boolean; observed: string; requestIds: string[]; error?: string }>;
+  /** Replay timeline: a viewport PNG after the step. Sends nothing; returns the file name, or undefined. */
+  snapshot?(actor: string, flow: { id: string; step: string }): Promise<string | undefined>;
+}
+
+/** A screenshot never changes a step's result: failures are ignored. */
+async function stepShot(b: FlowBrowser, actor: string, flow: { id: string; step: string }, res: { screenshot?: string }): Promise<void> {
+  if (!b.snapshot) return;
+  try { const n = await b.snapshot(actor, flow); if (n) res.screenshot = n; } catch { /* no screenshot */ }
 }
 
 /** UI actions the observe-mode browser runs; the others may change state and wait for M2. */
@@ -208,6 +216,7 @@ async function runDoc(doc: FlowDoc, ctx: FlowContext, budget: { exhausted?: stri
         res.assertions = [{ kind: "ui", status: a.error ? "ERROR" : a.ok ? "PASS" : "FAIL", expected, observed: a.observed }];
         res.status = res.assertions[0]!.status;
         if (a.error) res.reason = a.error;
+        await stepShot(ctx.browser, s.actor, { id: doc.header.id, step: s.id }, res);
       } catch (e) {
         if (e instanceof BudgetExceeded) { budget.exhausted = e.message; skip("budget exhausted"); continue; }
         throw e;
@@ -280,6 +289,7 @@ async function runDoc(doc: FlowDoc, ctx: FlowContext, budget: { exhausted?: stri
       try {
         const nav = await ctx.browser.navigate(s.actor, u.toString(), { id: doc.header.id, step: s.id });
         res.requestIds.push(...nav.requestIds);
+        if (nav.exchange) await stepShot(ctx.browser, s.actor, { id: doc.header.id, step: s.id }, res); // a refused navigate shows no page of its own
         if (!nav.exchange) { if (nav.error) { res.status = "ERROR"; res.reason = nav.error; } else skip("denied by scope (see run.json denials)"); continue; }
         run.exchange = nav.exchange;
         res.assertions = evaluate(s.expect ?? {}, nav.exchange, origin);

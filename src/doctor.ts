@@ -84,6 +84,7 @@ export function manifestVersions(root = packageRoot()): ManifestVersion[] {
   optional(".codex-plugin/plugin.json", jsonVersion);
   optional(".antigravity-plugin/plugin.json", jsonVersion);
   optional("gemini-extension.json", jsonVersion);
+  optional("extension/manifest.json", jsonVersion);
   for (const s of SKILLS) add(`skills/${s}/SKILL.md`, skillVersion(join(root, "skills", s, "SKILL.md")));
   optional(".agents/skills/navsentry/SKILL.md", skillVersion);
   return out;
@@ -194,4 +195,23 @@ export function applySkillUpdate(plan: UpdatePlan, backupRoot = join(tmpdir(), "
     cpSync(c.from, c.to, { recursive: true });
   }
   return used ? backup : null;
+}
+
+/** Where `navsentry` resolves on PATH, and an MCP command that works without it (agent launch check). */
+export interface LaunchCheck { onPath: string | null; cli: string; mcpCommand: { command: string; args: string[] } }
+
+/**
+ * MCP hosts spawn the server by name. When `navsentry` is not on PATH (no `npm install -g` or
+ * `npm link`), the spawn fails and the host only reports CONNECTION_CLOSED. Read-only: looks for
+ * the file in each PATH directory, runs nothing.
+ */
+export function launchCheck(pathVar = process.env.PATH ?? process.env.Path ?? "", platform = process.platform, root = packageRoot(), node = process.execPath): LaunchCheck {
+  const names = platform === "win32" ? ["navsentry.cmd", "navsentry.exe", "navsentry.ps1", "navsentry"] : ["navsentry"];
+  let onPath: string | null = null;
+  for (const dir of pathVar.split(platform === "win32" ? ";" : ":").filter(Boolean)) {
+    const hit = names.map((n) => join(dir, n)).find((p) => existsSync(p));
+    if (hit) { onPath = hit; break; }
+  }
+  const cli = join(root, "dist", "src", "cli.js");
+  return { onPath, cli, mcpCommand: onPath ? { command: "navsentry", args: ["mcp"] } : { command: node, args: [cli, "mcp"] } };
 }

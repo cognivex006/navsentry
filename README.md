@@ -32,6 +32,14 @@ npm install -g https://github.com/cognivex006/navsentry/releases/download/v0.2.0
 navsentry doctor
 ```
 
+From a source checkout, build and link it instead, so `navsentry` works in every folder without `npx --prefix`:
+
+```bash
+npm install && npm run build && npm link
+```
+
+`navsentry doctor` shows whether `navsentry` is on PATH (section "Agent launch (MCP)"). If it is not, an MCP host fails with `CONNECTION_CLOSED`; doctor prints a `claude mcp add` line with absolute paths that works without PATH.
+
 ### Agent plugins
 
 Each plugin adds the `navsentry` skill and the `navsentry-doctor` skill. The plugins call the CLI, so install the CLI first.
@@ -76,6 +84,28 @@ navsentry doctor update --host codex --scope project --project /path/to/your/app
 
 **Other agents**: any agent that reads `SKILL.md` files can use the `skills/navsentry/` and `skills/navsentry-doctor/` folders. `navsentry doctor` prints the package folder that contains them. See [docs/AGENT-INTEGRATIONS.md](docs/AGENT-INTEGRATIONS.md) for details.
 
+## Quick start
+
+```bash
+navsentry init https://staging.example.test/
+```
+
+`init` asks you to confirm that you own the target or have written authorization, then writes `navsentry.json`. Every command finds that file, so no `--config` is needed:
+
+```bash
+navsentry plan
+```
+
+```bash
+navsentry scan
+```
+
+```bash
+navsentry scan --deep
+```
+
+`scan` checks one page; `scan --deep` follows links and samples pages by template. To try every mode on the bundled demo shop without a real target, follow the [10-minute tour](docs/TOUR.md).
+
 ## Usage
 
 1. Describe the target in a manifest. Start from [examples/manifest.example.json](examples/manifest.example.json). Credentials are referenced by environment variable names only.
@@ -95,7 +125,14 @@ navsentry doctor update --host codex --scope project --project /path/to/your/app
    navsentry test --config my-manifest.json --out runs/before
    ```
 
-   Open `runs/before/REPORT.md`. Findings are grouped by priority: `IMMEDIATE` (fix now), `CAUTION` (fix carefully; may affect legitimate users) and `PLANNED` (can wait).
+   Open `runs/before/REPORT.html` in a browser, or `REPORT.md`; both have the same content. Every report has the same twelve sections. Each finding gets one card per case with the fix, before/after code examples for common stacks, how to recheck and when it counts as fixed. Each card has an action level:
+   - 🔴 `IMMEDIATE`: fix now.
+   - 🟠 `CAUTION`: fix carefully; may affect legitimate users.
+   - 🟡 `PLANNED`: schedule it.
+   - 🔵 `OPTIONAL`: hardening; may be skipped with a recorded reason.
+   - ⚪ `INFO`: observation only.
+
+   The HTML report filters by level, exports Markdown and prints to PDF. Terminal output is coloured when it goes to a terminal; set `NO_COLOR` or pass `--no-color` to turn colour off.
 4. After a fix, run again and compare:
 
    ```bash
@@ -144,18 +181,26 @@ Browse the case catalog:
 navsentry catalog --category CONF
 ```
 
-Example reports: [before](docs/samples/before/REPORT.md), [after](docs/samples/after/REPORT.md), [compare](docs/samples/compare.md).
+Example reports: [before](docs/samples/before/REPORT.md) ([HTML](docs/samples/before/REPORT.html)), [after](docs/samples/after/REPORT.md) ([HTML](docs/samples/after/REPORT.html)), [compare](docs/samples/compare.md).
 
 ### With an AI agent
 
 Ask in the agent chat, for example:
 
-- "Use navsentry to plan an observe run for our staging manifest."
-- "Run navsentry and summarize REPORT.md by priority."
+- "Use navsentry to scan our app and tell me what to fix first."
+- "Explore the site with the navsentry visual driver and summarize what you find."
 - "Compare the before and after navsentry runs and list any contract drift."
 - "Check my navsentry installation and versions."
 
-The agent reads results as data and asks before running a scan or changing an installation.
+The agent runs the whole loop itself: plan, scan, read the summary, explore, draft flows, and report. It asks you once before sending traffic, and leaves authorization, flow approval and manifest changes to you.
+
+For the smoothest loop, register the local MCP server once. It gives the agent NavSentry tools directly and returns screenshots as images.
+
+```bash
+claude mcp add navsentry -- navsentry mcp
+```
+
+For Codex, see [docs/AGENT-INTEGRATIONS.md](docs/AGENT-INTEGRATIONS.md#mcp-server-claude-code-codex-and-other-mcp-hosts). Without MCP, `navsentry scan --json` and `navsentry next --run <dir>` give agents the same information.
 
 ## Version doctor
 
@@ -189,15 +234,17 @@ The previous copy is backed up outside the skills folder. Plugins are owned by t
 |---|---|
 | `navsentry doctor` | Versions, installations and available transports |
 | `navsentry integrations` | Available transports only |
+| `navsentry init <url>` | Write `navsentry.json` after you confirm authorization (interactive terminal only) |
 | `navsentry validate --config <m>` | Check a manifest |
 | `navsentry plan --config <m>` | Show planned requests and skipped cases (no network) |
 | `navsentry test --config <m> [--out <dir>] [--env <profile>] [--project <dir>]` | Run observe-mode checks and write reports |
-| `navsentry scan --config <m> --mode page\|spider\|flow [--url <URL>] [--engine http] [--env <profile>]` | Scan one page, crawl by template (spider), or replay flows |
+| `navsentry scan [--config <m>] [--mode page\|spider\|flow] [--deep] [--url <URL>] [--engine http\|playwright\|analyzer] [--env <profile>]` | Scan one page (default), crawl by template (`--deep` = spider with page models), or replay flows |
 | `navsentry workspace status\|clean [--project <dir>] [--dry-run]` | Show or remove NavSentry leftovers in a project |
 | `navsentry inventory --config <m> [--project <dir>]` | Read-only code inventory of a development project (routes, OpenAPI, tests, lockfiles) |
 | `navsentry flow import --openapi <spec.json> --config <m> --out <dir>` | Draft flows from a local OpenAPI JSON document |
+| `navsentry flow from-recording --input <recording.json> --out <dir>` | Draft a flow from a Chrome/Edge DevTools Recorder export (values dropped) |
 | `navsentry knowledge status\|lookup\|propose` | Offline vulnerability knowledge base and update proposals |
-| `navsentry report --input <run.json> --format markdown\|json\|sarif [--lang en\|th]` | Render a saved run |
+| `navsentry report --input <run.json> --format markdown\|html\|json\|sarif [--lang en\|th]` | Render a saved run |
 | `navsentry compare --before <run.json> --after <run.json>` | Before/after verdict and contract drift |
 | `navsentry catalog [--category <CODE>]` | List catalog cases |
 

@@ -250,11 +250,21 @@ export interface MutationRecord {
 export interface VisualAction {
   seq: number;
   at: string;
-  action: "navigate" | "screenshot" | "click" | "scroll";
+  action: "navigate" | "screenshot" | "click" | "scroll" | "snapshot" | "type" | "key";
   x?: number;
   y?: number;
   dx?: number;
   dy?: number;
+  /** Element ref from the latest snapshot (0.3.0-d). */
+  ref?: string;
+  /** Role and accessible name of the element acted on, redacted (used for `--save-flow`). */
+  target?: { role: string; name: string };
+  /** `type`: environment variable name the value came from (never the value). */
+  env?: string;
+  /** `type`: length of the typed value; literal text is also recorded as a short sha256 prefix, never in clear. */
+  length?: number;
+  textSha256?: string;
+  key?: string;
   url?: string;
   result?: "ok" | "error";
   error?: string;
@@ -282,6 +292,8 @@ export interface VisualSessionResult {
   incompleteReasons: string[];
   executionStatus: "COMPLETE" | "PARTIAL";
   workspace?: WorkspaceResult;
+  /** Draft flow written from this session (`browse end --save-flow`), relative to the project when possible. */
+  flowDraft?: string;
 }
 
 /** Console capture summary (0.1.3-k). Previews are `[kind,len=n]`; templates hash a value-free shape. */
@@ -431,6 +443,8 @@ export interface StepResult {
   assertions: AssertionResult[];
   requestIds: string[];
   securityCase?: string;
+  /** Browser engine only: PNG file name in the run's `shots/` folder, taken right after the step. */
+  screenshot?: string;
 }
 
 export interface FlowResult {

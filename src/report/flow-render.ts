@@ -8,7 +8,8 @@ const L = {
     integration: "Integration (API/service)", e2e: "E2E (user journey)", httpOnly: "E2E (HTTP-level only)", story: "Story", reasons: "Level reasons", exec: "Executability", review: "Review",
     steps: "| Step | Actor | Action | Request (template) | Status | Assertions | Security case |", failed: "Failed or inconclusive assertions", findings: "Security findings raised during this flow",
     manual: "Manual replay checklist", manualNote: "These steps need a transport that is not usable in this release. Record a manual replay separately in MANUAL-REPLAY.md (docs/reports/templates); it never changes flows.json.",
-    notRun: "Steps not executed", limits: "Limitations", none: "None",
+    notRun: "Steps not executed", limits: "Limitations", timeline: "Replay timeline", expected: "Expected", observed: "Observed",
+    timelineNote: "Screenshot of the headless browser right after each step, so you can see what NavSentry clicked and what the page showed. A FAIL step shows the page at the moment it failed. To watch a page step by step yourself, use `navsentry browse start`. Screenshots can show personal data; the shots folder is git-ignored.", none: "None",
     disclaimer: "A flow PASS means the asserted behaviour matched in the tested scope; it does not prove the feature correct or secure. HTTP-level page checks see server-rendered HTML only.",
     secFirst: "Read the security report first:",
   },
@@ -17,7 +18,8 @@ const L = {
     integration: "Integration (ระดับ API/บริการ)", e2e: "E2E (เส้นทางผู้ใช้ตั้งแต่ต้นจนจบ)", httpOnly: "E2E (ทดสอบได้เฉพาะระดับ HTTP)", story: "เรื่องราวผู้ใช้", reasons: "เหตุผลของการจัดระดับ", exec: "ความสามารถในการรัน", review: "สถานะการอนุมัติ",
     steps: "| ขั้นตอน | Actor | Action | Request (template) | สถานะ | ผลการตรวจ | เคสความปลอดภัย |", failed: "ผลตรวจที่ไม่ผ่านหรือสรุปไม่ได้", findings: "ช่องโหว่ที่พบระหว่างโฟลว์นี้",
     manual: "รายการทดสอบซ้ำด้วยมือ", manualNote: "ขั้นตอนเหล่านี้ต้องใช้ transport ที่รุ่นนี้ยังไม่รองรับ ให้บันทึกผลการทดสอบด้วยมือแยกไว้ใน MANUAL-REPLAY.md (docs/reports/templates) ผลนี้ไม่เปลี่ยน flows.json",
-    notRun: "ขั้นตอนที่ไม่ได้รัน", limits: "ข้อจำกัด", none: "ไม่มี",
+    notRun: "ขั้นตอนที่ไม่ได้รัน", limits: "ข้อจำกัด", timeline: "ไทม์ไลน์การเล่นซ้ำ", expected: "สิ่งที่คาดไว้", observed: "สิ่งที่พบ",
+    timelineNote: "ภาพหน้าจอจากเบราว์เซอร์ headless หลังแต่ละขั้นตอน เพื่อให้เห็นว่า NavSentry คลิกอะไรและหน้าเว็บแสดงอะไร ขั้นที่ FAIL จะเห็นหน้าเว็บตอนที่ล้มเหลว ถ้าอยากดูทีละขั้นเอง ใช้ `navsentry browse start` ภาพอาจมีข้อมูลส่วนบุคคล โฟลเดอร์ shots ถูก gitignore ไว้", none: "ไม่มี",
     disclaimer: "ผล PASS ของโฟลว์หมายถึงพฤติกรรมที่ระบุตรงตามที่คาดในขอบเขตที่ทดสอบเท่านั้น ไม่ได้รับรองว่าฟีเจอร์ถูกต้องทั้งหมดหรือปลอดภัย การตรวจหน้าเว็บระดับ HTTP เห็นเฉพาะ HTML ที่ server ส่งมา",
     secFirst: "อ่านรายงานความปลอดภัยก่อน:",
   },
@@ -59,6 +61,16 @@ export function renderTestMarkdown(fr: FlowRunResult, run: RunResult | undefined
     if (f.findings.length) out.push("", `**${t.findings}:**`, ...f.findings.map((fp) => `- \`${fp}\` (REPORT.md)`));
     if (f.manualReplay.length) out.push("", `**${t.manual}:**`, `> ${t.manualNote}`, ...f.manualReplay.map((x, i) => `${i + 1}. ${esc(x)}`));
     out.push("");
+  }
+  const shot = fr.flows.flatMap((f) => f.steps.filter((s) => s.screenshot).map((s) => ({ f, s })));
+  if (shot.length) {
+    out.push(`## ${t.timeline}`, "", `> ${t.timelineNote}`, "");
+    for (const { f, s } of shot) {
+      out.push(`### ${f.id} / ${s.id} — ${esc(s.title)} · **${s.status}**`, "");
+      const bad = s.assertions.find((a) => a.status !== "PASS");
+      if (bad) out.push(`${t.expected}: ${esc(bad.expected)} · ${t.observed}: ${esc(bad.observed)}`, "");
+      out.push(`![${f.id} ${s.id} ${s.status}](shots/${s.screenshot})`, "");
+    }
   }
   out.push(`## ${t.limits}`, "", `- ${t.disclaimer}`, "");
   return out.join("\n");
