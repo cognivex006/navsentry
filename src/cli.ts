@@ -74,7 +74,7 @@ Usage:
   navsentry browse start [--config <manifest.json>] --url <in-scope URL> [--actor <name>] [--idle-seconds <n>] [--out <dir>] [--project <dir>] [--headed]
   navsentry browse screenshot|snapshot|status --session <id> [--project <dir>]
   navsentry browse click --ref <e12> | --x <px> --y <px> --session <id>      (refs come from snapshot)
-  navsentry browse type --ref <e12> --env <VAR> | --text <text> --session <id>   (no values in logs; no literal text in password fields)
+  navsentry browse type --ref <e12> --env NAVSENTRY_<NAME> | --text <text> --session <id>   (no values in logs; no literal text in password fields)
   navsentry browse key --key Enter|Tab|Escape|Backspace|Arrow*|PageUp|PageDown|Home|End --session <id>
   navsentry browse scroll --dx <px> --dy <px> --session <id>
   navsentry browse end --session <id> [--save-flow <dir>]   (writes a draft flow from the action log)
@@ -521,7 +521,7 @@ async function browseCommand(argv: string[]): Promise<number> {
   else if (sub === "scroll") cmd = { cmd: "scroll", dx: num("--dx"), dy: num("--dy") };
   else if (sub === "type") {
     // The value never travels on the command line for --env: only the variable name does.
-    if (rest.includes("--env") === rest.includes("--text")) throw new UsageError("browse type needs --ref and exactly one of --env <VAR> or --text <text>");
+    if (rest.includes("--env") === rest.includes("--text")) throw new UsageError("browse type needs --ref and exactly one of --env NAVSENTRY_<NAME> or --text <text>");
     const i = rest.indexOf("--text");
     if (i >= 0 && (rest[i + 1] === undefined || rest[i + 1]!.startsWith("--"))) throw new UsageError("--text needs a value that does not start with --");
     cmd ={ cmd: "type", ref: need(rest, "--ref"), ...(i >= 0 ? { text: rest[i + 1] ?? "" } : { env: need(rest, "--env") }) };

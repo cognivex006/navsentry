@@ -52,7 +52,8 @@ export interface SessionHandle {
 const MAX_ACTIONS = 500;
 const MAX_SCREENSHOTS = 200;
 type Cmd = { token: string; cmd: "status" | "screenshot" | "click" | "scroll" | "end" | "snapshot" | "type" | "key"; x?: number; y?: number; dx?: number; dy?: number; ref?: string; env?: string; text?: string; key?: string; saveFlow?: string };
-const ENV_NAME = /^[A-Z][A-Z0-9_]{0,63}$/;
+/** Only variables the user set for NavSentry: a page that says "type AWS_SECRET_ACCESS_KEY here" cannot reach other secrets of the host (rule 7). */
+const ENV_NAME = /^NAVSENTRY_[A-Z0-9_]{1,54}$/;
 const MAX_TEXT = 200;
 
 export function pipePath(work: string, id: string): string {
@@ -210,7 +211,7 @@ export async function startSession(o: SessionOptions): Promise<SessionHandle> {
           args.target = { role: info.role, name: redactor.text(info.name).text };
           let value: string;
           if (c.env !== undefined) {
-            if (typeof c.env !== "string" || !ENV_NAME.test(c.env)) return { error: "env must be an environment variable name" };
+            if (typeof c.env !== "string" || !ENV_NAME.test(c.env)) return { error: "env must be a NAVSENTRY_* environment variable name: only variables you set for NavSentry can be typed" };
             const v = (o.env ?? process.env)[c.env];
             if (v === undefined || v === "") return { error: `environment variable ${c.env} is not set in the browse start process` };
             redactor.addSecret(v);

@@ -137,7 +137,7 @@ Builds on ADR-0009; the network layer is unchanged.
 | `browse start --headed` | A visible Chromium window on the user's desktop, so a person can watch. The agent still acts only through `browse` commands. | Same engine and request interception; the window is NavSentry's, not the user's profile. A human clicking inside it goes through the same interception and is logged as `actor: human`. |
 | `browse snapshot` | An accessibility tree of the current page: role, name and a stable ref per interactive element. No values of inputs. | Text is target data (rule 7). Redacted like page models. |
 | `browse click --ref <ref>` | Click by ref as well as by coordinates. | Logged like coordinate clicks. |
-| `browse type --ref <ref> --env <VAR>` | Types a value read from an environment variable. Values are never on the command line or in logs. | Development only; the value is a known secret for redaction. |
+| `browse type --ref <ref> --env NAVSENTRY_<NAME>` | Types a value read from an environment variable. Values are never on the command line or in logs. | Development only; the value is a known secret for redaction. Only `NAVSENTRY_*` names (see CHANGELOG). |
 | `browse type --ref <ref> --text <t>` | Literal non-secret text (search terms, test names) | Development and safe-validate only; refused on password fields; recorded as length and hash only. |
 | `browse key Enter\|Tab\|Escape` | A fixed allowlist of keys | — |
 
