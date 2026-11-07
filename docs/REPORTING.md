@@ -14,6 +14,7 @@
 `navsentry report --input run.json --format markdown|html|json|sarif [--lang th] [--out <file>]` re-renders from a validated run file. `--out` writes the file and never overwrites one; without it, HTML is refused on a terminal (scan already wrote `REPORT.html`) and every format still goes to stdout when piped. `--input flows.json --format markdown|json|junit` re-renders a flow result.
 
 ## Reading a report
+- **Replay timeline** (browser flows): TEST-REPORT.md shows a screenshot of the headless browser after each browser step, from `<run>/shots/` (git-ignored, at most 60 per run). It is evidence of what NavSentry clicked and what the page showed, including the page at a failed step. To drive a page step by step yourself, use `navsentry browse start`.
 - **Verdict:** the first line of the Summary answers "Do I need to fix something now?": 🔴 yes (an IMMEDIATE or CAUTION finding, or test objects left behind), 🟡 schedule it (PLANNED findings only), 🟢 no fix needed in the tested scope (not proof of security), ⚪ can't tell (an incomplete run, or flows that failed or did not run, when nothing needs a fix now). `scan` prints the same line, and `scan --json` has it as `verdict`.
 - **Execution status** (COMPLETE/PARTIAL/FAILED) is about the tool; **security result** (FINDINGS / NO_FINDINGS_IN_TESTED_SCOPE / INCOMPLETE) is about the target.
 - Coverage lists every catalog case; NOT_TESTED rows carry a reason (manual-active, sast-only, planned, disabled…).

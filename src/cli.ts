@@ -296,11 +296,14 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
   const ws = beginRun(arg(argv, "--project") ?? process.cwd(), runId, m.workspace.ignore, { coordinatedSignals: sv });
   const coord = sv ? new SignalCoordinator((code, lines) => { for (const l of lines) process.stderr.write(`${l}\n`); process.stderr.write("second signal: cleanup skipped; fixtures.pending.json kept for the next run's sweep\n"); process.exit(code); }).install() : undefined;
   let res: Awaited<ReturnType<typeof executeTest>>;
+  // Replay timeline: step screenshots go to the run work dir first, then into <run>/shots/ (git-ignored).
+  const shotsWork = join(ws.work.path, "shots");
+  if (o.browser) mkdirSync(shotsWork, { recursive: true });
   const analyzer: AnalyzerResult | undefined = o.analyze ? { engine: "node-page-model", pages: 0, withheld: 0, incomplete: 0, includeText: m.analyzer.include_text, extractors: [], refused: [] } : undefined;
   let specs: ExtractorSpec[] = [];
   if (o.analyze && analyzer) specs = loadExtractors(ws.root, ws.work.path, o.analyze.draftsDir, analyzer);
   try {
-    res = await executeTest(m, { ...(sv ? { fixtureWorkDir: ws.work.path, onFixtures: (l: FixtureLifecycle) => coord!.attach(l), pendingFromPreviousRuns: ws.sweep.pendingFixtures } : {}), ...(o.analyze ? { analyze: { extractors: specs } } : {}), runId, ...(o.flows ? { flows: o.flows, flowsOnly: !!o.flowsOnly } : {}), ...(o.scanMode ? { scanMode: o.scanMode } : {}), ...(o.engine ? { engine: o.engine } : {}), ...(o.urls ? { urls: o.urls } : {}), ...(o.spider ? { spider: true } : {}), ...(o.browser ? { browser: {} } : {}),
+    res = await executeTest(m, { ...(sv ? { fixtureWorkDir: ws.work.path, onFixtures: (l: FixtureLifecycle) => coord!.attach(l), pendingFromPreviousRuns: ws.sweep.pendingFixtures } : {}), ...(o.analyze ? { analyze: { extractors: specs } } : {}), runId, ...(o.flows ? { flows: o.flows, flowsOnly: !!o.flowsOnly } : {}), ...(o.scanMode ? { scanMode: o.scanMode } : {}), ...(o.engine ? { engine: o.engine } : {}), ...(o.urls ? { urls: o.urls } : {}), ...(o.spider ? { spider: true } : {}), ...(o.browser ? { browser: { shotsDir: shotsWork } } : {}),
       ...(o.assets ? { assets: true, workDir: ws.work.path, cacheDir: join(ws.root, ".navsentry", "cache", "assets") } : {}) });
   } catch (e) {
     coord?.dispose();
@@ -309,6 +312,11 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
     throw e;
   }
   const { run: r, flowRun, clientFindings, proposals, pageModels } = res;
+  const shots = new Map<string, Buffer>();
+  for (const s of flowRun?.flows.flatMap((f) => f.steps) ?? []) {
+    if (!s.screenshot) continue;
+    try { shots.set(s.screenshot, readFileSync(join(shotsWork, s.screenshot))); } catch { delete s.screenshot; }
+  }
   // Page models are promoted only after the Redactor and the artifact leak scan (§7.2 step 5).
   const models: [string, string][] = [];
   if (analyzer && pageModels) {
@@ -361,6 +369,13 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
     }
     if (models.length) mkdirSync(join(out, "page-models"), { recursive: true });
     for (const [n, c] of files) { authorize(ws, join(out, n)); writeFileSync(join(out, n), c); }
+    if (shots.size) {
+      // Screenshots can show personal data from the page: kept beside the report, never committed.
+      mkdirSync(join(out, "shots"), { recursive: true });
+      authorize(ws, join(out, "shots", ".gitignore"));
+      writeFileSync(join(out, "shots", ".gitignore"), "*\n");
+      for (const [n, b] of shots) { authorize(ws, join(out, "shots", n)); writeFileSync(join(out, "shots", n), b); }
+    }
     return files.length;
   };
   // Reports are written first so the second snapshot sees them as authorized writes,
