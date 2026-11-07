@@ -6,7 +6,7 @@
  */
 import { isIP } from "node:net";
 import { existsSync } from "node:fs";
-import { isAbsolute, join, relative, resolve } from "node:path";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parseManifest, profileOf, type Manifest } from "./config.js";
 import { classifyAddress } from "./scope.js";
 
@@ -80,7 +80,7 @@ export function insideNavSentryCheckout(file: string, root: string): boolean {
   const r = resolve(root);
   const f = resolve(file);
   const rel = relative(r, f);
-  return !rel.startsWith("..") && !isAbsolute(rel) && existsSync(join(r, ".git"));
+  return rel !== ".." && !rel.startsWith(".." + sep) && !isAbsolute(rel) && existsSync(join(r, ".git"));
 }
 
 /** Builds the manifest object and validates it with the normal parser (throws ConfigError). */
@@ -105,7 +105,7 @@ export function buildInitManifest(a: InitAnswers): Record<string, unknown> {
     targets: { origins: [t.origin], allowed_paths: ["/**"], denied_paths: [], seed_paths: [t.seedPath] },
     ...(t.privateLabel ? { network: { allow_private: [{ host: t.host, approved_by: owner, reason: "approved at navsentry init" }] } } : {}),
     safety: { mode: "observe" },
-    // The approved headless shell is offered only on the development profile (scan refuses it on production).
+    // The approved headless shell is offered on every non-production profile (development today); scan refuses it on production.
     transports: { order: production ? ["direct-http"] : ["direct-http", "playwright-browser"], visual_computer_use: false },
     checks: { disabled: [] },
     report: { language: a.language ?? "en", formats: ["json", "markdown", "sarif"], evidence: "redacted-only" },

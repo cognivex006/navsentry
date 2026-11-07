@@ -140,5 +140,6 @@ test("init: development profile on a public host warns and asks; browser engine 
     mkdirSync(join(dir, ".git"));
     assert.equal(insideNavSentryCheckout(join(dir, "navsentry.json"), dir), true);
     assert.equal(insideNavSentryCheckout(join(dir, "..", "elsewhere.json"), dir), false);
+    assert.equal(insideNavSentryCheckout(join(dir, "..cfg", "x.json"), dir), true, "a child folder named ..cfg is inside");
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
