@@ -22,7 +22,7 @@ import { CASES, CATEGORIES } from "./catalog.js";
 import { compareRuns, renderCompareMarkdown } from "./compare.js";
 import { ConfigError, loadManifest } from "./config.js";
 import { DoctorError, HOSTS, applySkillUpdate, doctorReport, normalizeHost, planSkillUpdate, pluginCommands, type Host } from "./doctor.js";
-import { renderJson, renderMarkdown, renderSarif, securityResult, validateRunResult } from "./report/render.js";
+import { renderJson, renderMarkdown, renderSarif, securityResult, validateRunResult, verdict, VERDICT_MARK } from "./report/render.js";
 import { executeTest, planRun } from "./runner.js";
 import { analyzeRun } from "./flow/analyze.js";
 import { approveText, initTemplate } from "./flow/author.js";
@@ -84,7 +84,7 @@ Usage:
   navsentry knowledge status [--json]
   navsentry knowledge lookup --product <name> [--version <v>] | --id <CVE|advisory|alias> [--json]
   navsentry knowledge propose --input <file.json> [--config <manifest.json>] [--project <dir>]   (offline)
-  navsentry report --input <run.json|flows.json> --format markdown|html|json|sarif|junit [--lang en|th]   (--no-color on any command)
+  navsentry report --input <run.json|flows.json> --format markdown|html|json|sarif|junit [--lang en|th] [--out <file>]   (--no-color on any command)
   navsentry compare --before <dir|run.json> --after <dir|run.json>   (reads flows.json beside run.json)
   navsentry catalog [--category <CODE>]
 
@@ -217,11 +217,21 @@ export async function main(argv: string[]): Promise<number> {
           return 0;
         }
         const r = validateRunResult(input);
-        if (fmt === "markdown") print(renderMarkdown(r, lang));
-        else if (fmt === "html") print(renderHtml(renderMarkdown(r, lang), `NavSentry report — ${r.project}`, lang));
-        else if (fmt === "json") print(renderJson(r));
-        else if (fmt === "sarif") print(JSON.stringify(renderSarif(r), null, 2));
+        let body: string;
+        if (fmt === "markdown") body = renderMarkdown(r, lang);
+        else if (fmt === "html") body = renderHtml(renderMarkdown(r, lang), `NavSentry report — ${r.project}`, lang);
+        else if (fmt === "json") body = renderJson(r);
+        else if (fmt === "sarif") body = JSON.stringify(renderSarif(r), null, 2);
         else throw new UsageError("format must be markdown|html|json|sarif");
+        const outFile = arg(rest, "--out");
+        if (outFile) {
+          // Never overwrite: the run directory already holds reports written by scan.
+          if (existsSync(resolve(outFile))) throw new UsageError(`${resolve(outFile)} already exists; NavSentry never overwrites a report (choose another --out path)`);
+          writeFileSync(resolve(outFile), body.endsWith("\n") ? body : body + "\n", { flag: "wx" });
+          print(`Wrote ${resolve(outFile)}`);
+        } else if (fmt === "html" && process.stdout.isTTY) {
+          throw new UsageError("HTML is a file to open in a browser, not terminal output. Add --out <file>.html (scan already wrote REPORT.html in the run folder)");
+        } else print(body);
         return 0;
       }
       case "compare": {
@@ -340,7 +350,7 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
     if (cf) files.push(["client-findings.json", cf]);
     files.push(...models);
     if (m.report.formats.includes("markdown")) {
-      const md = renderMarkdown(r, lang) + (flowRun ? "\n" + renderFlowSection(flowRun, r, lang) : "");
+      const md = renderMarkdown(r, lang, flowRun?.functionalResult) + (flowRun ? "\n" + renderFlowSection(flowRun, r, lang) : "");
       files.push(["REPORT.md", md], ["REPORT.html", renderHtml(md, `NavSentry report — ${r.project}`, lang)]);
     }
     if (m.report.formats.includes("sarif")) files.push(["report.sarif", JSON.stringify(renderSarif(r), null, 2)]);
@@ -367,11 +377,14 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
   if (argv.includes("--json")) {
     // Machine-readable summary for agents (SPEC-0.3.0 §3.2): paths, counts by level, gaps and next commands.
     const n = nextSteps(r, flowRun, out, sec);
-    print(JSON.stringify({ ...n, kind: "navsentry-run-summary", exitCode: exitCode(r, flowRun), findings: r.findings.length, requests: r.budget.requestsUsed, workspace: r.workspace.status, ...(flowRun ? { functionalResult: flowRun.functionalResult, flows: flowRun.flows.length, testReport: join(out, "TEST-REPORT.md") } : {}), runJson: join(out, "run.json") }, null, 2));
+    const vd = verdict(r, lang, flowRun?.functionalResult);
+    print(JSON.stringify({ ...n, kind: "navsentry-run-summary", verdict: { kind: vd.kind, count: vd.count, text: vd.text }, exitCode: exitCode(r, flowRun), findings: r.findings.length, requests: r.budget.requestsUsed, workspace: r.workspace.status, ...(flowRun ? { functionalResult: flowRun.functionalResult, flows: flowRun.flows.length, testReport: join(out, "TEST-REPORT.md") } : {}), runJson: join(out, "run.json") }, null, 2));
   } else {
     print(paint(`execution=${r.executionStatus} security=${sec} findings=${r.findings.length} requests=${r.budget.requestsUsed}${flowRun ? ` functional=${flowRun.functionalResult} flows=${flowRun.flows.length}` : ""} workspace=${r.workspace.status}`));
+    const vd = verdict(r, lang, flowRun?.functionalResult);
+    print(paint(`${VERDICT_MARK[vd.kind]} ${vd.text}`));
     print(paint(`REPORT: ${join(out, "REPORT.md")}`));
-    if (m.report.formats.includes("markdown")) print(paint(`HTML: ${join(out, "REPORT.html")}`));
+    if (m.report.formats.includes("markdown")) print(paint(`Open in a browser: ${join(out, "REPORT.html")}`));
     if (flowRun) print(`TEST-REPORT: ${join(out, "TEST-REPORT.md")}`);
   }
   for (const x of r.fixtures?.leftovers ?? []) process.stderr.write(`LEFTOVER ${x.fixture} ${x.displayId}: ${x.manualAction}\n`);
