@@ -289,7 +289,7 @@ async function runDoc(doc: FlowDoc, ctx: FlowContext, budget: { exhausted?: stri
       try {
         const nav = await ctx.browser.navigate(s.actor, u.toString(), { id: doc.header.id, step: s.id });
         res.requestIds.push(...nav.requestIds);
-        await stepShot(ctx.browser, s.actor, { id: doc.header.id, step: s.id }, res);
+        if (nav.exchange) await stepShot(ctx.browser, s.actor, { id: doc.header.id, step: s.id }, res); // a refused navigate shows no page of its own
         if (!nav.exchange) { if (nav.error) { res.status = "ERROR"; res.reason = nav.error; } else skip("denied by scope (see run.json denials)"); continue; }
         run.exchange = nav.exchange;
         res.assertions = evaluate(s.expect ?? {}, nav.exchange, origin);
