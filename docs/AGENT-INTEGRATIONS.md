@@ -30,7 +30,7 @@ An existing copy is backed up to a temporary folder outside the skills directory
 
 ## Other agents
 
-`skills/navsentry/SKILL.md` and `skills/navsentry-doctor/SKILL.md` are plain Markdown with `name`, `description` and `metadata.version` front matter. Any agent that supports skill or instruction files can load them. `navsentry doctor --json` returns `packageRoot`, the folder that contains these skills, the case catalog and the example manifest. The CLI is the stable interface: JSON on stdout for `plan`, files for `test`, exit codes 0/1/2/3.
+`skills/navsentry/SKILL.md` and `skills/navsentry-doctor/SKILL.md` are plain Markdown with `name`, `description` and `metadata.version` front matter. Any agent that supports skill or instruction files can load them. `navsentry doctor --json` returns `packageRoot`, the folder that contains these skills, the case catalog and the example manifest. The CLI is the stable interface: JSON on stdout for `plan` and `browse`, files for `test` and `scan`, exit codes 0/1/2/3/4 (see the README).
 
 ## Using a NavSentry checkout with Codex
 
@@ -40,7 +40,15 @@ If discovery fails, check that the installed folder contains SKILL.md with name/
 
 ## Computer Use boundary
 
-The CLI executes HTTP and TLS checks only. A host browser tool and the NavSentry visual adapter are separate capabilities, and neither executes requests today. DOM and visual coverage stays NOT_TESTED; a host tool must not route around ScopeGate or Budget. See the canonical skill for handling separate manual evidence and resuming interrupted work.
+A host's own Computer Use or browser tool must never be pointed at the target: NavSentry cannot enforce scope or the Budget there. Use the NavSentry visual driver instead ([ADR-0009](adr/0009-visual-driver-on-owned-browser.md)): `navsentry browse start` launches a browser that NavSentry owns, and the agent drives it with `browse screenshot`, `click`, `scroll` and `end`. Every request the page makes still goes through ScopeGate and the Budget.
+
+Requirements: development profile (`local` or `dev`), `transports.visual_computer_use: true`, `visual-computer-use` and `playwright-browser` in `transports.order`, and the Chromium headless shell (`navsentry doctor` shows `visual-computer-use USABLE`). The driver is observe-only: no typing. DOM checks inside the browser (CSP violations, cookie visibility, framing) are not implemented yet and stay NOT_TESTED. See the canonical skill for handling separate manual evidence and resuming interrupted work.
+
+### Tips for Claude Code and Codex
+
+- Run `browse start` as a background command; it stays alive until `browse end`, the idle timeout or the deadline. Read the `SESSION:` line from its output.
+- `browse screenshot` returns JSON with a `path` to a PNG. Claude Code reads it with its file-read tool; in Codex, attach it with the `view_image` tool. Coordinates are pixels in the 1280x800 image.
+- If the agent does not pick the skill automatically, name it: "use the navsentry skill" (Claude Code) or `$navsentry` (Codex).
 
 ## Prompts per case
 

@@ -17,7 +17,7 @@ npm ci --ignore-scripts
 | `npm run docs:catalog` | Regenerate `docs/cases/CASE-CATALOG.md` and `docs/ISSUE-CVE-MATRIX.md` from `src/catalog.ts` |
 | `npm run gate` | Local release/PR gate (replaces hosted CI) → `.navsentry/gate/GATE-REPORT.md` |
 | `node dist/scripts/demo.js run` | Regenerate `docs/samples/` from the local fixture app |
-| `node dist/scripts/demo.js serve` | Serve vulnerable (:4173) and secure (:4174) fixtures for browser rechecks |
+| `node dist/scripts/demo.js serve [--variant vulnerable\|secure]` | Serve the demo shop on :4173 (see [TOUR.md](TOUR.md)) |
 
 ## Layout
 

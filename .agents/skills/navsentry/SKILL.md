@@ -1,6 +1,6 @@
 ---
 name: navsentry
-description: Use NavSentry to plan authorized web security checks, read reports, verify fixes, draft and replay story flows as Integration/E2E test cases, or assess browser/Computer Use coverage. Not for general repository maintenance.
+description: Use NavSentry to plan and run authorized web security checks (single page, spider, story flows, Computer Use visual driver), read reports, verify fixes, or draft and replay story flows as Integration/E2E test cases. Not for general repository maintenance.
 metadata:
   version: "0.2.0"
 ---

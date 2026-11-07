@@ -1,6 +1,6 @@
 # Reporting
 
-## Artifacts per run (`navsentry test --out <dir>`)
+## Artifacts per run (`navsentry test` or `navsentry scan`, `--out <dir>`)
 | File | Content |
 |---|---|
 | `run.json` | Full `RunResult` (schema v1): scope, transports, redacted requests with response contracts, checks, findings, coverage, budget, denials, incomplete reasons |
@@ -9,6 +9,9 @@
 | `report.sarif` | SARIF 2.1.0 for code-scanning viewers (findings only) |
 | `flows.json` | With `--flows`: `FlowRunResult` (schema 1) — per flow: level and reasons, executability, review state, status, value-free step assertions, linked finding fingerprints, manual replay checklist |
 | `TEST-REPORT.md` | With `--flows`: functional report (en/th). Security result first, then functional results by level. See [FLOWS.md](FLOWS.md). |
+| `client-findings.json` | `scan --mode page\|spider`: client-asset findings with masked previews only |
+| `page-models/` | With `--analyze`: one redacted page model per HTML page |
+| `VISUAL-SESSION.md`, `session.json` | `navsentry browse`: action log and findings of a visual-driver session |
 | `junit.xml` | With `--flows --junit`: one testsuite per flow, one testcase per step (NOT_TESTED/INCONCLUSIVE → skipped) |
 
 `navsentry report --input run.json --format markdown|html|json|sarif [--lang th] [--out <file>]` re-renders from a validated run file. `--out` writes the file and never overwrites one; without it, HTML is refused on a terminal (scan already wrote `REPORT.html`) and every format still goes to stdout when piped. `--input flows.json --format markdown|json|junit` re-renders a flow result.

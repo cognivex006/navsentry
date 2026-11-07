@@ -10,11 +10,14 @@ AI-assisted security testing for web applications, with automated vulnerability 
 
 - **Scope and authorization gate**: origin, path and method allowlists, checked before each request and again at connect time. It blocks DNS rebinding, private and metadata addresses, and out-of-scope redirects.
 - **Request budget**: limits on request volume, rate and run duration.
-- **20 observe-mode checks**: security headers, cookies, CORS, HTTP methods, caching, information disclosure, PII exposure, JWT handling, HTTPS redirect, plus a TLS handshake probe for protocol versions and certificates.
+- **Observe-mode checks** (26 automated cases): security headers, cookies, CORS, HTTP methods, caching, information disclosure, PII exposure, JWT handling, HTTPS redirect, client-asset secrets and source maps, known-vulnerable client libraries, plus a TLS handshake probe for protocol versions and certificates.
+- **Scan modes**: one page (`scan --mode page`), a template-sampling crawl (`--mode spider`) or story flows (`--mode flow`), over plain HTTP or a NavSentry-controlled Chromium (`--engine playwright`).
+- **Computer Use visual driver**: `navsentry browse` lets an AI agent look at screenshots and click or scroll in a browser that NavSentry owns, so every request still passes the scope gate and budget (development profile).
+- **safe-validate** (development profile): owner-declared test fixtures with tracked cleanup, login actors, CSRF, session-after-logout and business-invariant checks.
 - **Evidence-based reports**: JSON, Markdown (English and Thai) and SARIF 2.1.0. Secrets and personal data are redacted before anything is written.
 - **Story flows (test cases)**: one Markdown file per user story, replayed through the same safety pipeline. Each flow is classified as Integration or E2E automatically. `flow analyze` drafts flows from an earlier run. Owner-declared access expectations check missing authentication, IDOR and missing function-level authorization. See [docs/FLOWS.md](docs/FLOWS.md).
 - **Fix verification**: `compare` shows which issues were fixed, which still fail, any change a legitimate user would notice (contract drift), and any story step that stopped working (functional regression).
-- **Case catalog**: 50 cases mapped to OWASP Top 10 2021 and 2025, CWE, WSTG and ASVS 5.0, each with VERIFY, FIX and RECHECK prompts for AI agents.
+- **Case catalog**: 57 cases mapped to OWASP Top 10 2021 and 2025, CWE, WSTG and ASVS 5.0, each with VERIFY, FIX and RECHECK prompts for AI agents.
 - **Agent plugins** for Claude Code, Codex, Gemini CLI and Antigravity, plus a portable skill for other agents.
 - **Version doctor**: checks the CLI, plugins and skill copies on every host and shows how to update anything out of date.
 
@@ -153,6 +156,39 @@ navsentry scan --deep
    navsentry report --input runs/after/run.json --format markdown --lang th
    ```
 
+### Scan modes at a glance
+
+| Goal | Command | Profile |
+|---|---|---|
+| One page | `navsentry scan --config <m> --mode page --url <in-scope URL>` | any |
+| Seed paths (same as `test`) | `navsentry scan --config <m> --mode page` | any |
+| Crawl, one sample per template | `navsentry scan --config <m> --mode spider` | any |
+| Story flows over HTTP | `navsentry scan --config <m> --mode flow --flows <dir>` | any |
+| Story flows in Chromium | `navsentry scan --config <m> --mode flow --flows <dir> --engine playwright` | development |
+| Agent-driven Computer Use | `navsentry browse start …` then `screenshot` / `click` / `scroll` / `end` (see below) | development |
+
+Add `--analyze` to `page` or `spider` for redacted page models. `--engine computer-use` does not exist; use `browse`.
+
+### Computer Use (visual driver)
+
+The manifest needs `transports.visual_computer_use: true` **and** `visual-computer-use` in `transports.order` (with `playwright-browser`), a `local` or `dev` environment, and the Chromium headless shell. Start the session in a second terminal (it runs until `end`, the idle timeout or the deadline):
+
+```bash
+navsentry browse start --url http://127.0.0.1:4173/
+```
+
+It prints `SESSION: <id>`. Then, from the agent (MCP tools `navsentry_browse_*`) or another terminal, loop `browse snapshot` (elements with refs) and `browse screenshot`, act with `browse click --ref <e12>`, `browse type --ref <e12> --text <t>` (or `--env <VAR>` for secrets), `browse key --key Enter` or `browse scroll`, and finish with `browse end --session <id> --save-flow navsentry/flows/drafts` to keep the session as a draft flow. The report is `VISUAL-SESSION.md`. A POST submit is refused, and `--headed` waits for governance approval of the full Chromium build. See [docs/TOUR.md](docs/TOUR.md).
+
+### Try it locally
+
+A disposable demo shop ships with the repository (synthetic data, 127.0.0.1 only). From a checkout, run `npm run build`, then start it in its own terminal:
+
+```bash
+node dist/scripts/demo.js serve
+```
+
+It serves the vulnerable variant on port 4173 (`--variant secure` serves the fixed one on the same origin, so before/after compare shows only real changes). [examples/demo/](examples/demo/) holds its `navsentry.json`, two approved flows and a sample recording; [docs/TOUR.md](docs/TOUR.md) walks through every mode.
+
 ### Story flows
 
 Draft flows from a run, review them, then replay them with the security checks. None of these commands except `test` sends network traffic.
@@ -173,7 +209,11 @@ navsentry flow approve --flows navsentry/flows/orders-access.flow.md --by "<owne
 navsentry test --config my-manifest.json --flows navsentry/flows --out runs/before
 ```
 
-Open `REPORT.md` (security) and `TEST-REPORT.md` (functional). In this release, UI steps (`click`, `fill`, …) are not executed. An E2E flow that contains them is reported `INCOMPLETE`, with a manual replay checklist.
+Open `REPORT.md` (security) and `TEST-REPORT.md` (functional). With the default http engine, UI steps (`click`, `fill`, …) are not executed and an E2E flow that contains them is reported `INCOMPLETE`, with a manual replay checklist. In the development profile, `scan --mode flow --engine playwright` runs `navigate`, `click`, `see` and `wait_for` (and `fill`, `select`, `submit` in safe-validate) after you install the Chromium headless shell yourself:
+
+```bash
+npx playwright-core install --only-shell chromium
+```
 
 Browse the case catalog:
 
@@ -248,7 +288,7 @@ The previous copy is backed up outside the skills folder. Plugins are owned by t
 | `navsentry compare --before <run.json> --after <run.json>` | Before/after verdict and contract drift |
 | `navsentry catalog [--category <CODE>]` | List catalog cases |
 
-Exit codes: `0` no findings in tested scope · `1` findings · `2` incomplete run · `3` usage or configuration error · `4` workspace dirty (a leftover or unexpected change in the project, or a cleanup failure). When several apply: 3 > 4 > 1 > 2 > 0.
+Exit codes: `0` no findings in tested scope · `1` findings or a failed flow · `2` incomplete or failed run (including safe-validate leftovers) · `3` usage or configuration error · `4` workspace dirty (a leftover or unexpected change in the project, or a cleanup failure). When several apply: 3 > 4 > 1 > 2 > 0.
 
 Profiles: `local` and `dev` manifests use the `development` profile; `staging` and `production` use the `production` profile, which requires `authorization.reference` and `authorization.expires_at` and refuses to run outside that window.
 
@@ -260,8 +300,8 @@ Profiles: `local` and `dev` manifests use the `development` profile; `staging` a
 ## Limitations
 
 - Zero findings does not mean the application is secure. Injection, access control and business-logic issues need authorized manual testing.
-- Checks run over HTTP and TLS. Browser-based (DOM and visual) checks are reported as `NOT_TESTED`.
-- `safe-validate` (development profile only, 0.2.0-a) changes state only through fixtures that the owner declares, and cleans them up by id. Login actors (http or browser) and cookie sessions take credentials from env vars only (0.2.0-b). Side effects such as emails or webhooks are not undone, and a run that leaves data behind is `FAILED`. See [docs/FLOWS.md](docs/FLOWS.md#fixtures-and-mutations-safe-validate-020-a).
+- The default engine is HTTP and TLS. The playwright engine and the visual driver run only in the development profile; DOM checks such as CSP violations, cookie visibility and framing in the browser are not implemented yet and stay `NOT_TESTED`.
+- `safe-validate` (development profile only) changes state only through fixtures that the owner declares, and cleans them up by id. Login actors (http or browser) and cookie sessions take credentials from env vars only. Side effects such as emails or webhooks are not undone, and a run that leaves data behind is `FAILED`. See [docs/FLOWS.md](docs/FLOWS.md#fixtures-and-mutations-safe-validate-020-a).
 
 ## More
 

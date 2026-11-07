@@ -70,6 +70,11 @@ All notable changes to this project are documented here. Format: [Keep a Changel
     - `navsentry report --format html` renders it from a saved run.
   - **Terminal colour:** run summaries and `compare` output are coloured, only on a TTY. `NO_COLOR` or `--no-color` turns it off.
 
+### Fixed
+- Docs out of step with 0.2.0: case counts (57 cases, 26 automated), coverage classes, the transport table and Computer Use boundary, M2 status, exit code 4 in the flow exit table, the test-suite list, GATE-09/10 and report artifacts.
+- The consumer skill says that loopback targets need an owner-confirmed `network.allow_private` entry, and exit codes are a readable list.
+- README gains *Scan modes at a glance*, *Computer Use (visual driver)* and *Try it locally*, written for the demo shop v2 in `examples/demo/`.
+
 ### Changed
 - `navsentry init` safety and defaults:
   - It refuses to write inside a NavSentry source checkout, which is a public repository.
