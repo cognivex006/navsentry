@@ -521,7 +521,7 @@ async function browseCommand(argv: string[]): Promise<number> {
   else if (sub === "scroll") cmd = { cmd: "scroll", dx: num("--dx"), dy: num("--dy") };
   else if (sub === "type") {
     // The value never travels on the command line for --env: only the variable name does.
-    if (rest.includes("--env") === rest.includes("--text")) throw new UsageError("browse type needs --ref and exactly one of --env <VAR> or --text <text>");
+    if (rest.includes("--env") === rest.includes("--text")) throw new UsageError("browse type needs --ref and exactly one of --env NAVSENTRY_<NAME> or --text <text>");
     const i = rest.indexOf("--text");
     if (i >= 0 && (rest[i + 1] === undefined || rest[i + 1]!.startsWith("--"))) throw new UsageError("--text needs a value that does not start with --");
     cmd ={ cmd: "type", ref: need(rest, "--ref"), ...(i >= 0 ? { text: rest[i + 1] ?? "" } : { env: need(rest, "--env") }) };
