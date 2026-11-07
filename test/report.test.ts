@@ -7,7 +7,11 @@ import { compareRuns } from "../src/compare.js";
 import { FIXES, actionLevel } from "../src/fixes.js";
 import { renderHtml, markdownToHtml } from "../src/report/html.js";
 import { colourEnabled, paint } from "../src/report/color.js";
-import { renderMarkdown } from "../src/report/render.js";
+import { renderMarkdown, verdict } from "../src/report/render.js";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { executeTest } from "../src/runner.js";
 import type { RunResult } from "../src/types.js";
 import { startDemo } from "./fixtures/demo-server.js";
@@ -121,4 +125,44 @@ test("compare matches requests by path when the origin changes, and reports the 
   assert.deepEqual(c.missingInAfter, []);
   assert.ok(c.originChange);
   assert.equal(c.verdict, "IMPROVED_NO_DRIFT");
+});
+
+test("verdict answers 'fix now?' in one line: findings first, incomplete runs never read as no-fix", async () => {
+  const vuln = await demoRun("vulnerable");
+  const sec = await demoRun("secure");
+  const v = verdict(vuln, "en");
+  assert.equal(v.kind, "FIX_NOW");
+  assert.ok(v.count > 0);
+  const md = renderMarkdown(vuln, "en");
+  const summary = md.slice(md.indexOf("## Summary"));
+  assert.ok(summary.split("\n")[2]!.startsWith("> 🔴 **Do I need to fix something now?** Yes."), "verdict is the first line of the summary");
+  assert.match(renderMarkdown(vuln, "th"), /> 🔴 \*\*ต้องแก้อะไรตอนนี้ไหม\?\*\* ต้องแก้/);
+  const planned = vuln.findings.filter((f) => actionLevel(f.severity, f.priority) === "PLANNED");
+  if (planned.length) assert.equal(verdict({ ...vuln, findings: planned }).kind, "PLAN");
+  const clean: RunResult = { ...sec, findings: [], executionStatus: "COMPLETE", coverage: sec.coverage.filter((c) => c.status !== "ERROR" && c.status !== "INCONCLUSIVE") };
+  assert.equal(verdict(clean).kind, "NO_URGENT");
+  assert.match(verdict(clean).text, /not proof of security/);
+  assert.equal(verdict({ ...clean, executionStatus: "PARTIAL" }).kind, "CANNOT_TELL");
+  const html = renderHtml(md, "t", "en");
+  assert.match(html, /<blockquote class="verdict v-fix_now">/);
+  assert.match(renderHtml(renderMarkdown({ ...clean, executionStatus: "PARTIAL" }), "t", "en"), /class="verdict v-cannot_tell"/);
+});
+
+test("report --out writes the file, never overwrites, and HTML is not dumped on a terminal", async () => {
+  const run = await demoRun("vulnerable");
+  const dir = mkdtempSync(join(tmpdir(), "navsentry-report-out-"));
+  try {
+    const input = join(dir, "run.json");
+    writeFileSync(input, JSON.stringify(run));
+    const out = join(dir, "r.html");
+    const cli = (args: string[]) => spawnSync(process.execPath, ["dist/src/cli.js", "report", "--input", input, ...args], { encoding: "utf8" });
+    const a = cli(["--format", "html", "--out", out]);
+    assert.equal(a.status, 0, a.stderr);
+    assert.match(a.stdout, /^Wrote /);
+    assert.match(readFileSync(out, "utf8"), /class="verdict v-fix_now"/);
+    const b = cli(["--format", "html", "--out", out]);
+    assert.notEqual(b.status, 0, "an existing file is never overwritten");
+    const piped = cli(["--format", "markdown"]);
+    assert.match(piped.stdout, /Do I need to fix something now\?/, "without --out, stdout still works when piped");
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });

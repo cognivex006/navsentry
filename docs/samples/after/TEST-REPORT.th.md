@@ -1,6 +1,6 @@
 # รายงานการทดสอบ NavSentry — demo-after (local)
 
-- Run ID: `39a332c1-39f9-418b-9528-cd6ed6a05543` · Tool: navsentry 0.2.0 · Node 26.13.0 · Mode: `observe`
+- Run ID: `1ffc3457-161c-46f9-ac69-20c7d1a591b3` · Tool: navsentry 0.2.0 · Node 26.13.0 · Mode: `observe`
 - Flow set: 2 flows, 11 steps · `6f94a62dbe77497f`
 - **ผลด้านความปลอดภัย: FINDINGS** (11 findings) — อ่านรายงานความปลอดภัยก่อน: [REPORT.md](REPORT.md)
 - **ผลการทดสอบการทำงาน: INCOMPLETE**

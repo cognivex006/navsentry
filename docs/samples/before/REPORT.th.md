@@ -1,13 +1,15 @@
 # รายงาน NavSentry — demo-before (local)
 
-- Run ID: `9a2a09b4-fa92-4433-99d5-aa4fb38b16ad`
-- Started: 2026-11-06T07:07:00.924Z · Finished: 2026-11-06T07:07:04.465Z
+- Run ID: `4dec9615-c686-4ef0-9fbf-b6e49d63ed74`
+- Started: 2026-11-07T02:56:33.974Z · Finished: 2026-11-07T02:56:36.546Z
 - Tool: navsentry 0.2.0 · Node 26.13.0 · win32-x64
 - Mode: `observe` · Profile: `development` · Origins: `http://127.0.0.1:4173`
 - สถานะการทำงาน: **COMPLETE** · ผลด้านความปลอดภัย: **FINDINGS**
 - Requests: 39/100 · Denied before execution: 4
 
 ## สรุป
+
+> 🔴 **ต้องแก้อะไรตอนนี้ไหม?** ต้องแก้ 11 เรื่องตอนนี้ ก่อนขึ้นระบบครั้งถัดไป รายการอยู่ใน "ควรทำอะไรก่อน"
 
 | 🔴 IMMEDIATE | 🟠 CAUTION | 🟡 PLANNED | 🔵 OPTIONAL | ⚪ INFO |
 |---|---|---|---|---|

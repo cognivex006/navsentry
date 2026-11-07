@@ -1,7 +1,7 @@
 /** Renders one validated RunResult into JSON, Markdown and SARIF 2.1.0. */
 import { CASE_BY_ID } from "../catalog.js";
 import type { RunResult } from "../types.js";
-export { renderMarkdown, securityResult, groupFindings, ACTION_MARK } from "./markdown.js";
+export { renderMarkdown, securityResult, groupFindings, ACTION_MARK, verdict, VERDICT_MARK, type VerdictKind } from "./markdown.js";
 
 const SARIF_LEVEL = { critical: "error", high: "error", medium: "warning", low: "note", info: "note" } as const;
 

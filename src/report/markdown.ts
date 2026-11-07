@@ -25,6 +25,13 @@ const L = {
     before: "Before", after: "After", recheck: "How to recheck", rerun: "Run the same NavSentry scan again and compare it with this run.",
     accepted: "Fixed when", guard: "Must not break", limitations: "Limitations", refs: "References", leftovers: "test object(s) were left behind. See Run details for the exact manual action.",
     notTested: "NOT_TESTED cases",
+    verdictQ: "Do I need to fix something now?",
+    verdict: {
+      FIX_NOW: (n: number) => `Yes. Fix ${n} issue(s) now, before the next release. They are listed under "What to do first".`,
+      PLAN: (n: number) => `Not urgent. Schedule ${n} fix(es) in normal work. Nothing needs an immediate fix.`,
+      NO_URGENT: () => "No. Nothing in the tested scope needs a fix now. This is not proof of security; see Not tested and limitations.",
+      CANNOT_TELL: () => "Can't tell yet. The run did not finish every check, so a missing finding is not a pass. See Not tested and limitations, then run again.",
+    },
     action: { IMMEDIATE: "Fix now", CAUTION: "Fix carefully: may affect legitimate users", PLANNED: "Schedule the fix", OPTIONAL: "Hardening: may be skipped with a recorded reason", INFO: "Observation only: no action needed" },
   },
   th: {
@@ -42,6 +49,13 @@ const L = {
     before: "ก่อนแก้", after: "หลังแก้", recheck: "วิธีตรวจซ้ำ", rerun: "รัน NavSentry แบบเดิมซ้ำ แล้วเทียบกับการรันนี้",
     accepted: "ถือว่าแก้แล้วเมื่อ", guard: "สิ่งที่ต้องไม่พัง", limitations: "ข้อจำกัด", refs: "อ้างอิง", leftovers: "รายการทดสอบค้างอยู่ ดูวิธีลบเองในหัวข้อรายละเอียดการรัน",
     notTested: "เคสที่ยังไม่ได้ทดสอบ (NOT_TESTED)",
+    verdictQ: "ต้องแก้อะไรตอนนี้ไหม?",
+    verdict: {
+      FIX_NOW: (n: number) => `ต้องแก้ ${n} เรื่องตอนนี้ ก่อนขึ้นระบบครั้งถัดไป รายการอยู่ใน "ควรทำอะไรก่อน"`,
+      PLAN: (n: number) => `ยังไม่เร่งด่วน วางแผนแก้ ${n} เรื่องในงานปกติ ไม่มีเรื่องที่ต้องแก้ทันที`,
+      NO_URGENT: () => "ไม่ต้องแก้ตอนนี้ ไม่พบเรื่องที่ต้องแก้ในขอบเขตที่ทดสอบ แต่ไม่ได้พิสูจน์ว่าปลอดภัย ดูหัวข้อสิ่งที่ยังไม่ได้ทดสอบ",
+      CANNOT_TELL: () => "ยังสรุปไม่ได้ การรันตรวจไม่ครบทุกข้อ การไม่พบปัญหาจึงไม่ใช่ผ่าน ดูหัวข้อสิ่งที่ยังไม่ได้ทดสอบ แล้วรันใหม่",
+    },
     action: { IMMEDIATE: "ต้องแก้ทันที", CAUTION: "แก้อย่างระวัง อาจกระทบผู้ใช้จริง", PLANNED: "วางแผนแก้", OPTIONAL: "การเสริมความแข็งแรง ข้ามได้ถ้าบันทึกเหตุผล", INFO: "ข้อสังเกต ไม่ต้องทำอะไร" },
   },
 } as const;
@@ -53,6 +67,24 @@ export function securityResult(r: RunResult): "FINDINGS" | "NO_FINDINGS_IN_TESTE
   if (r.findings.length) return "FINDINGS";
   if (r.executionStatus !== "COMPLETE" || r.coverage.some((c) => c.status === "ERROR" || c.status === "INCONCLUSIVE")) return "INCOMPLETE";
   return "NO_FINDINGS_IN_TESTED_SCOPE";
+}
+
+export type VerdictKind = "FIX_NOW" | "PLAN" | "NO_URGENT" | "CANNOT_TELL";
+export const VERDICT_MARK: Record<VerdictKind, string> = { FIX_NOW: "🔴", PLAN: "🟡", NO_URGENT: "🟢", CANNOT_TELL: "⚪" };
+
+/**
+ * One-line answer to "do I need to fix something now?", derived only from action levels and
+ * completeness. Findings decide first; without them, an incomplete run is CANNOT_TELL, never NO_URGENT.
+ */
+export function verdict(r: RunResult, lang: "en" | "th" = "en"): { kind: VerdictKind; count: number; text: string } {
+  const groups = groupFindings(r);
+  const now = groups.filter((g) => g.level === "IMMEDIATE" || g.level === "CAUTION").length + (r.fixtures?.leftovers.length ? 1 : 0);
+  const plan = groups.filter((g) => g.level === "PLANNED").length;
+  const v = L[lang].verdict;
+  if (now) return { kind: "FIX_NOW", count: now, text: v.FIX_NOW(now) };
+  if (plan) return { kind: "PLAN", count: plan, text: v.PLAN(plan) };
+  if (securityResult(r) === "INCOMPLETE") return { kind: "CANNOT_TELL", count: 0, text: v.CANNOT_TELL() };
+  return { kind: "NO_URGENT", count: 0, text: v.NO_URGENT() };
 }
 
 const esc = (s: string) => s.replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
@@ -80,6 +112,8 @@ export function renderMarkdown(r: RunResult, lang: "en" | "th" = "en"): string {
 
   // 1. Summary
   out.push(`## ${t.summary}`, "");
+  const vd = verdict(r, lang);
+  out.push(`> ${VERDICT_MARK[vd.kind]} **${t.verdictQ}** ${vd.text}`, "");
   out.push(`| ${ACTION_ORDER.map((a) => `${ACTION_MARK[a]} ${a}`).join(" | ")} |`, `|${ACTION_ORDER.map(() => "---").join("|")}|`, `| ${ACTION_ORDER.map((a) => groups.filter((g) => g.level === a).length).join(" | ")} |`, "");
   out.push("| PASS | FAIL | INCONCLUSIVE | ERROR | NOT_TESTED | Findings |", "|---|---|---|---|---|---|", `| ${counts("PASS")} | ${counts("FAIL")} | ${counts("INCONCLUSIVE")} | ${counts("ERROR")} | ${counts("NOT_TESTED")} | ${r.findings.length} |`, "");
   if (r.fixtures?.leftovers.length) out.push(`> **${r.fixtures.leftovers.length} ${t.leftovers}**`, "");
