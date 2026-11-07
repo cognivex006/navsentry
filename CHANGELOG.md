@@ -5,6 +5,7 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Added
+- [SPEC-0.3.0](docs/specs/SPEC-0.3.0-AGENT-FIRST-AND-RECORDER.md): agent-first use, self-contained reports, a Computer Use middle path and a flow recorder. Accepted 2026-11-06 with owner decisions D1–D10 (recommended options).
 - Replay timeline: `scan --mode flow --engine playwright` takes a viewport screenshot of the headless browser right after every browser step (navigate, click, see, fill, select, submit).
   - The PNGs go to `<run>/shots/`, which has its own `.gitignore`. At most 60 per run.
   - TEST-REPORT.md gets a "Replay timeline" section with each step's status and screenshot. A FAIL step shows what was expected, what was observed and the page at that moment.
