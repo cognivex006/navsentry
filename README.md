@@ -234,6 +234,7 @@ The previous copy is backed up outside the skills folder. Plugins are owned by t
 | `navsentry workspace status\|clean [--project <dir>] [--dry-run]` | Show or remove NavSentry leftovers in a project |
 | `navsentry inventory --config <m> [--project <dir>]` | Read-only code inventory of a development project (routes, OpenAPI, tests, lockfiles) |
 | `navsentry flow import --openapi <spec.json> --config <m> --out <dir>` | Draft flows from a local OpenAPI JSON document |
+| `navsentry flow from-recording --input <recording.json> --out <dir>` | Draft a flow from a Chrome/Edge DevTools Recorder export (values dropped) |
 | `navsentry knowledge status\|lookup\|propose` | Offline vulnerability knowledge base and update proposals |
 | `navsentry report --input <run.json> --format markdown\|html\|json\|sarif [--lang en\|th]` | Render a saved run |
 | `navsentry compare --before <run.json> --after <run.json>` | Before/after verdict and contract drift |

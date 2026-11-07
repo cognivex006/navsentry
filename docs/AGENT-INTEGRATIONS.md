@@ -62,6 +62,7 @@ No hosted service, no GitHub App, no telemetry. `navsentry doctor` makes no netw
 | `navsentry_next` | no | Actions by level, gaps, next commands |
 | `navsentry_compare` | no | Before/after verdict |
 | `navsentry_flow_analyze`, `navsentry_flow_lint` | no | Draft and check flows |
+| `navsentry_flow_from_recording` | no | Draft a flow from a DevTools Recorder export |
 | `navsentry_knowledge_lookup` | no | Offline advisory lookup |
 | `navsentry_browse_start`, `_click`, `_key`, `_scroll` | **yes** | Visual driver on NavSentry's own browser; click by snapshot ref or by coordinates |
 | `navsentry_browse_snapshot` | no | Interactive elements with refs, roles, names and scope flags (no values) |
