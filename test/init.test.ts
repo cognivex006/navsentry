@@ -1,12 +1,12 @@
 /** SPEC-0.3.0 0.3.0-a: `navsentry init`, default navsentry.json, short `scan`, demo v2. 127.0.0.1 only. */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { main } from "../src/cli.js";
 import { parseManifest } from "../src/config.js";
-import { InitError, askInit, buildInitManifest, parseTarget, type Prompter } from "../src/init.js";
+import { InitError, askInit, buildInitManifest, environmentWarning, insideNavSentryCheckout, parseTarget, type Prompter } from "../src/init.js";
 import { startDemoSite } from "./fixtures/demo-site.js";
 
 const scripted = (answers: string[]): Prompter & { asked: string[] } => {
@@ -121,4 +121,24 @@ test("demo v2: secure variant keeps the pages and encodes the search reflection"
     await v.close();
     await s.close();
   }
+});
+
+test("init: development profile on a public host warns and asks; browser engine only on development; never inside a checkout", async () => {
+  assert.match(environmentWarning(parseTarget("https://shop.example.test/"), "local") ?? "", /not a loopback or private address/);
+  assert.equal(environmentWarning(parseTarget("http://127.0.0.1:4173/"), "local"), undefined);
+  assert.equal(environmentWarning(parseTarget("https://shop.example.test/"), "staging"), undefined);
+  await assert.rejects(askInit(scripted(["local", "no"]), "https://shop.example.test/"), /environment not confirmed/);
+  const kept = await askInit(scripted(["dev", "yes", "yes", "Team A"]), "https://shop.example.test/");
+  assert.equal(kept.environment, "dev");
+  const dev = parseManifest(buildInitManifest({ url: "http://127.0.0.1:4173/", environment: "local", owner: "me", allowPrivate: true }));
+  assert.deepEqual(dev.transports.order, ["direct-http", "playwright-browser"]);
+  const st = parseManifest(buildInitManifest({ url: "https://shop.example.test/", environment: "staging", owner: "me", reference: "CHG-1", expiresAt: "2099-01-01" }));
+  assert.deepEqual(st.transports.order, ["direct-http"]);
+  const dir = mkdtempSync(join(tmpdir(), "navsentry-checkout-"));
+  try {
+    assert.equal(insideNavSentryCheckout(join(dir, "navsentry.json"), dir), false, "not a git checkout");
+    mkdirSync(join(dir, ".git"));
+    assert.equal(insideNavSentryCheckout(join(dir, "navsentry.json"), dir), true);
+    assert.equal(insideNavSentryCheckout(join(dir, "..", "elsewhere.json"), dir), false);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });

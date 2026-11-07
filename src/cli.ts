@@ -21,7 +21,7 @@ import { dirname, join, resolve } from "node:path";
 import { CASES, CATEGORIES } from "./catalog.js";
 import { compareRuns, renderCompareMarkdown } from "./compare.js";
 import { ConfigError, loadManifest } from "./config.js";
-import { DoctorError, HOSTS, applySkillUpdate, doctorReport, normalizeHost, planSkillUpdate, pluginCommands, type Host } from "./doctor.js";
+import { DoctorError, HOSTS, applySkillUpdate, doctorReport, packageRoot, normalizeHost, planSkillUpdate, pluginCommands, type Host } from "./doctor.js";
 import { renderJson, renderMarkdown, renderSarif, securityResult, validateRunResult } from "./report/render.js";
 import { executeTest, planRun } from "./runner.js";
 import { analyzeRun } from "./flow/analyze.js";
@@ -49,7 +49,7 @@ import { paint } from "./report/color.js";
 import { nextSteps, renderNext } from "./next.js";
 import { runMcpServer } from "./mcp.js";
 import { fileURLToPath } from "node:url";
-import { DEFAULT_MANIFEST, INIT_ENVIRONMENTS, InitError, askInit, buildInitManifest, type InitEnvironment } from "./init.js";
+import { DEFAULT_MANIFEST, INIT_ENVIRONMENTS, InitError, askInit, buildInitManifest, insideNavSentryCheckout, type InitEnvironment } from "./init.js";
 import { createInterface } from "node:readline/promises";
 
 const HELP = `navsentry ${TOOL_VERSION} — Navigate. Validate. Secure.
@@ -908,6 +908,7 @@ async function initCommand(argv: string[]): Promise<number> {
   if (lang !== undefined && lang !== "en" && lang !== "th") throw new UsageError("--lang must be en or th");
   const out = resolve(argv.includes("--out") ? need(argv, "--out") : DEFAULT_MANIFEST);
   if (existsSync(out)) throw new UsageError(`${out} already exists; NavSentry never overwrites a manifest (edit it, or choose --out)`);
+  if (insideNavSentryCheckout(out, packageRoot())) throw new UsageError(`${out} is inside the NavSentry source checkout (a public repository). Run init from your own project folder, or pass --out <path outside the checkout>`);
   if (!process.stdin.isTTY || !process.stdout.isTTY) throw new UsageError("navsentry init asks you to confirm authorization, so it runs only in an interactive terminal. Run it yourself; an agent must not answer for you");
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   try {

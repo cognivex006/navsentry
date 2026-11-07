@@ -57,6 +57,11 @@ All notable changes to this project are documented here. Format: [Keep a Changel
   - **Terminal colour:** run summaries and `compare` output are coloured, only on a TTY. `NO_COLOR` or `--no-color` turns it off.
 
 ### Changed
+- `navsentry init` safety and defaults:
+  - It refuses to write inside a NavSentry source checkout, which is a public repository.
+  - It warns and asks again when `local` or `dev` is chosen for a host that is not loopback or private.
+  - On the development profile it lists `playwright-browser` in `transports.order`, so `--engine playwright` works without editing the manifest.
+  - `.gitignore` now ignores a root `navsentry.json` and `navsentry/`.
 - `serve` now starts one demo shop on port 4173 instead of two fixtures on 4173 and 4174.
 - The lint warning for E2E flows with UI steps points to `--engine playwright` instead of saying the browser transport does not exist.
 - `compare` matches requests by method, path and actor. A changed origin is reported once, instead of listing every request as missing.
