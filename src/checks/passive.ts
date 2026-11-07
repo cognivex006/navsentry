@@ -18,16 +18,20 @@ function result(ruleId: string, ex: Exchange, status: CheckStatus, summary: stri
   return { ruleId, status, target: `${ex.record.method} ${ex.record.url}`, transport: ex.record.transport, summary, observations, requestIds: [ex.record.id], ...(reason ? { reason } : {}) };
 }
 
+/** Body checks scan the whole retained buffer, up to the default capture.memory_buffer_bytes. */
+export const BODY_SCAN_BYTES = 8 * 1024 * 1024;
 
 /**
- * A body scan that saw only part of the body (capture truncated or aborted, or a body longer than the
- * scanned window) keeps a FAIL (the match is evidence) but never turns "nothing found" into PASS.
+ * A body scan that saw only part of the body (capture truncated or aborted, bytes not decoded, or a
+ * body longer than the scanned window) keeps a FAIL (the match is evidence) but never turns
+ * "nothing found" into PASS.
  */
 export function bodyBound(ex: Exchange, r: CheckResult, scanned: number): CheckResult {
   if (r.status !== "PASS") return r;
   const c = ex.raw?.capture;
   const len = ex.raw?.body.length ?? 0;
-  const why = c && c.status !== "complete" ? `response body ${c.status} (${c.reason ?? "capture stopped"})`
+  const why = c?.encoding ? `content-encoding ${c.encoding} was not decoded, so the body was not readable`
+    : c && c.status !== "complete" ? `response body ${c.status} (${c.reason ?? "capture stopped"})`
     : c && c.retainedBytes < c.decodedBytes ? `only ${c.retainedBytes} of ${c.decodedBytes} body bytes retained`
     : len > scanned ? `only the first ${scanned} of ${len} body bytes were scanned` : undefined;
   if (!why) return r;
@@ -127,11 +131,13 @@ export function checkVersionDisclosure(ex: Exchange): CheckResult {
     }
   }
   if (isHtml(ex) && ex.raw.status >= 400) {
-    const body = ex.raw.body.toString("utf8", 0, 65536);
+    const body = ex.raw.body.toString("utf8", 0, BODY_SCAN_BYTES);
     const m = body.match(/(Apache|nginx|Microsoft-IIS|Apache Tomcat|Jetty|Kestrel|Express)[/ ]v?\d+(\.\d+)+/i);
     if (m) hits.push(`error page: ${m[0].slice(0, 60)}`);
   }
-  return hits.length ? result(id, ex, "FAIL", "Product version disclosed", hits) : isHtml(ex) && ex.raw.status >= 400 ? bodyBound(ex, result(id, ex, "PASS", "No version numbers in headers or error page"), 65536) : result(id, ex, "PASS", "No version numbers in headers or error page");
+  if (hits.length) return result(id, ex, "FAIL", "Product version disclosed", hits);
+  const pass = result(id, ex, "PASS", "No version numbers in headers or error page");
+  return isHtml(ex) && ex.raw.status >= 400 ? bodyBound(ex, pass, BODY_SCAN_BYTES) : pass;
 }
 
 const ERROR_SIGNATURES: [string, RegExp][] = [
@@ -149,10 +155,10 @@ const ERROR_SIGNATURES: [string, RegExp][] = [
 export function checkErrorDisclosure(ex: Exchange): CheckResult {
   const id = "NSC-ERR-001";
   if (!ex.raw) return result(id, ex, "ERROR", "No response", [], ex.record.error);
-  if (!hasBody(ex)) return bodyBound(ex, result(id, ex, "PASS", "No body"), 262144);
-  const body = ex.raw.body.toString("utf8", 0, 262144);
+  if (!hasBody(ex)) return bodyBound(ex, result(id, ex, "PASS", "No body"), BODY_SCAN_BYTES);
+  const body = ex.raw.body.toString("utf8", 0, BODY_SCAN_BYTES);
   const hits = ERROR_SIGNATURES.filter(([, re]) => re.test(body)).map(([n]) => n);
-  return hits.length ? result(id, ex, "FAIL", `Internal error details exposed (HTTP ${ex.raw.status})`, hits) : bodyBound(ex, result(id, ex, "PASS", "No stack trace or internal error signature"), 262144);
+  return hits.length ? result(id, ex, "FAIL", `Internal error details exposed (HTTP ${ex.raw.status})`, hits) : bodyBound(ex, result(id, ex, "PASS", "No stack trace or internal error signature"), BODY_SCAN_BYTES);
 }
 
 const PRIVATE_IP = /\b(10\.(?:\d{1,3}\.){2}\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|127\.\d{1,3}\.\d{1,3}\.\d{1,3}|169\.254\.\d{1,3}\.\d{1,3})\b/g;
@@ -165,8 +171,8 @@ export function checkInternalIp(ex: Exchange): CheckResult {
   const id = "NSC-INFO-003";
   if (!ex.raw) return result(id, ex, "ERROR", "No response", [], ex.record.error);
   const inHeaders = (headerText(ex).match(PRIVATE_IP) ?? []).length;
-  const inBody = (ex.raw.body.toString("utf8", 0, 262144).match(PRIVATE_IP) ?? []).length;
-  if (inHeaders + inBody === 0) return bodyBound(ex, result(id, ex, "PASS", "No private IP literals"), 262144);
+  const inBody = (ex.raw.body.toString("utf8", 0, BODY_SCAN_BYTES).match(PRIVATE_IP) ?? []).length;
+  if (inHeaders + inBody === 0) return bodyBound(ex, result(id, ex, "PASS", "No private IP literals"), BODY_SCAN_BYTES);
   return result(id, ex, "FAIL", "Private IP address literals disclosed", [`headers: ${inHeaders} match(es)`, `body: ${inBody} match(es)`, "values masked"]);
 }
 
@@ -175,8 +181,8 @@ const EMAIL = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
 export function checkEmail(ex: Exchange): CheckResult {
   const id = "NSC-INFO-004";
   if (!ex.raw) return result(id, ex, "ERROR", "No response", [], ex.record.error);
-  const hits = (ex.raw.body.toString("utf8", 0, 262144).match(EMAIL) ?? []).filter((e) => !/\.(png|jpe?g|gif|svg|webp|css|js)$/i.test(e));
-  if (!hits.length) return bodyBound(ex, result(id, ex, "PASS", "No email addresses"), 262144);
+  const hits = (ex.raw.body.toString("utf8", 0, BODY_SCAN_BYTES).match(EMAIL) ?? []).filter((e) => !/\.(png|jpe?g|gif|svg|webp|css|js)$/i.test(e));
+  if (!hits.length) return bodyBound(ex, result(id, ex, "PASS", "No email addresses"), BODY_SCAN_BYTES);
   const domains = [...new Set(hits.map((e) => e.split("@")[1]?.toLowerCase().replace(/^[^.]+\./, "*.")))].slice(0, 5);
   return result(id, ex, "FAIL", `${hits.length} email address(es) in response`, [`count: ${hits.length}`, `domain shapes: ${domains.join(", ")}`, "addresses masked"]);
 }
@@ -184,10 +190,10 @@ export function checkEmail(ex: Exchange): CheckResult {
 export function checkPii(ex: Exchange): CheckResult {
   const id = "NSC-PRIV-001";
   if (!ex.raw) return result(id, ex, "ERROR", "No response", [], ex.record.error);
-  const body = ex.raw.body.toString("utf8", 0, 1048576);
+  const body = ex.raw.body.toString("utf8", 0, BODY_SCAN_BYTES);
   const ids = (body.match(/(?<![\d.])\d[- ]?\d{4}[- ]?\d{5}[- ]?\d{2}[- ]?\d(?![\d.])/g) ?? []).filter(isThaiNationalId).length;
   const cards = (body.match(/(?<![\d.])(?:\d[ -]?){13,19}(?![\d.])/g) ?? []).filter((m) => /^[3-6]/.test(m) && luhn(m)).length;
-  if (ids + cards === 0) return bodyBound(ex, result(id, ex, "PASS", "No checksum-valid national ID or card numbers"), 1048576);
+  if (ids + cards === 0) return bodyBound(ex, result(id, ex, "PASS", "No checksum-valid national ID or card numbers"), BODY_SCAN_BYTES);
   return result(id, ex, "FAIL", "Checksum-valid personal identifiers in response", [`thai-national-id (mod-11 valid): ${ids}`, `card-number (Luhn valid): ${cards}`, "values never stored"]);
 }
 
@@ -266,7 +272,7 @@ function b64json(s: string): Record<string, unknown> | undefined {
 export function checkJwt(ex: Exchange): CheckResult {
   const id = "NSC-SESS-004";
   if (!ex.raw) return result(id, ex, "ERROR", "No response", [], ex.record.error);
-  const text = `${headerText(ex)}\n${ex.raw.body.toString("utf8", 0, 262144)}`;
+  const text = `${headerText(ex)}\n${ex.raw.body.toString("utf8", 0, BODY_SCAN_BYTES)}`;
   const tokens = [...new Set(text.match(JWT_RE) ?? [])].slice(0, 10);
   if (!tokens.length) return result(id, ex, "NOT_TESTED", "No JWT observed in response", [], "no token");
   const problems: string[] = [];
@@ -279,7 +285,7 @@ export function checkJwt(ex: Exchange): CheckResult {
     for (const claim of ["exp", "iss", "aud"]) if (!(claim in payload)) problems.push(`token#${i + 1}: ${claim} claim missing`);
     if (typeof payload.exp === "number" && typeof payload.iat === "number" && payload.exp - payload.iat > 86400) problems.push(`token#${i + 1}: lifetime > 24h`);
   });
-  return problems.length ? result(id, ex, "FAIL", "JWT missing protection claims or weak alg", problems) : result(id, ex, "PASS", `${tokens.length} JWT(s) carry alg/exp/iss/aud`);
+  return problems.length ? result(id, ex, "FAIL", "JWT missing protection claims or weak alg", problems) : bodyBound(ex, result(id, ex, "PASS", `${tokens.length} JWT(s) carry alg/exp/iss/aud`), BODY_SCAN_BYTES);
 }
 
 export function checkHttpsRedirect(ex: Exchange): CheckResult {

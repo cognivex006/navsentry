@@ -1,7 +1,7 @@
 /** Hard rule 5: a body check that saw only part of the body never reports PASS. Synthetic exchanges, no network. */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { checkEmail, checkErrorDisclosure, checkInternalIp, checkPii, checkVersionDisclosure } from "../src/checks/passive.js";
+import { BODY_SCAN_BYTES, checkEmail, checkErrorDisclosure, checkInternalIp, checkJwt, checkPii, checkVersionDisclosure } from "../src/checks/passive.js";
 import type { Exchange } from "../src/transports/types.js";
 import type { CaptureInfo } from "../src/types.js";
 
@@ -31,10 +31,21 @@ test("clean complete body: PASS; truncated, aborted or partly retained body: INC
 });
 
 test("a body longer than the scanned window is not a PASS; a match in the prefix is still a FAIL", () => {
-  const long = "<html>" + "a".repeat(300_000) + "</html>";
+  assert.equal(checkEmail(ex("<html>" + "a".repeat(300_000) + "</html>", {})).status, "PASS", "a 300 KB page in memory is scanned whole");
+  const long = "<html>" + "a".repeat(BODY_SCAN_BYTES + 10) + "</html>";
   assert.equal(checkEmail(ex(long, {})).status, "INCONCLUSIVE");
-  assert.match(checkEmail(ex(long, {})).reason ?? "", /only the first 262144 of/);
+  assert.match(checkEmail(ex(long, {})).reason ?? "", new RegExp(`only the first ${BODY_SCAN_BYTES} of`));
   const leak = "<html>contact admin@example.test " + "a".repeat(10) + "</html>";
   assert.equal(checkEmail(ex(leak, { status: "truncated" })).status, "FAIL", "evidence in the prefix stays a FAIL");
   assert.equal(checkErrorDisclosure(ex("Traceback (most recent call last):\n  x", { status: "truncated" })).status, "FAIL");
+});
+
+test("an undecoded content-encoding is never a body PASS; JWT checks are bounded too", () => {
+  const gz = checkErrorDisclosure(ex("\x1f\x8b compressed", { encoding: "gzip" }));
+  assert.equal(gz.status, "INCONCLUSIVE");
+  assert.match(gz.reason ?? "", /content-encoding gzip was not decoded/);
+  const b64 = (o: object) => Buffer.from(JSON.stringify(o)).toString("base64url");
+  const jwt = `${b64({ alg: "HS256" })}.${b64({ exp: 2, iat: 1, iss: "i", aud: "a" })}.sig`;
+  assert.equal(checkJwt(ex(`token ${jwt}`, {})).status, "PASS");
+  assert.equal(checkJwt(ex(`token ${jwt}`, { status: "truncated" })).status, "INCONCLUSIVE", "a later weak token could be in the cut part");
 });
