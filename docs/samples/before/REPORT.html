@@ -1,0 +1,1571 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'sha256-XfMmKKflGA+hRFp68h7d9gJDZLRkhmH21gqwrdA6Z8w='; script-src 'sha256-KX2FCHgh4nlQkD9jaYPGwmt0THxxynAw54/FqdX6yZA='; img-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NavSentry report — demo-before</title>
+<style>:root{--fg:#1d2433;--muted:#5b6475;--line:#d9dee7;--bg:#f6f7f9;--card:#fff;--red:#b42318;--red-bg:#fde8e7;--green:#067647;--green-bg:#e3f6ec;--amber:#b54708;--amber-bg:#fef0c7;--yellow:#8a6a00;--yellow-bg:#fff7d1;--blue:#175cd3;--blue-bg:#e5efff;--grey:#475467;--grey-bg:#eef0f3}
+*{box-sizing:border-box}body{margin:0;font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--fg);background:var(--bg)}
+.bar{position:sticky;top:0;z-index:2;display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 24px;background:#1d2433;color:#fff}
+.bar strong{margin-right:auto}.bar button{font:inherit;border:1px solid #fff4;background:#ffffff14;color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer}.bar button[aria-pressed=false]{opacity:.45}
+main{max-width:1180px;margin:0 auto;padding:18px 24px 60px}h1{font-size:24px}
+details.section{background:var(--card);border:1px solid var(--line);border-radius:10px;margin:14px 0;padding:0 16px}
+summary{cursor:pointer;list-style:none}summary h2{display:inline-block;font-size:19px;margin:12px 0}summary::before{content:"▸ ";color:var(--muted)}details[open]>summary::before{content:"▾ "}
+h3{font-size:17px;margin:18px 0 6px}h4.card{font-size:16px;margin:16px 0 8px;padding:8px 12px;border-left:5px solid var(--grey);background:var(--grey-bg);border-radius:6px}
+.lv-immediate{border-color:var(--red)!important;background:var(--red-bg)!important}.lv-caution{border-color:var(--amber)!important;background:var(--amber-bg)!important}
+.lv-planned{border-color:var(--yellow)!important;background:var(--yellow-bg)!important}.lv-optional{border-color:var(--blue)!important;background:var(--blue-bg)!important}.lv-info{border-color:var(--grey)!important}
+h3.lv{padding:6px 12px;border-radius:6px;border-left:5px solid}
+.tw{overflow-x:auto}table{border-collapse:collapse;margin:8px 0;font-size:14px}th,td{border:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}th{background:var(--grey-bg)}
+code{font:13px ui-monospace,Consolas,monospace;background:var(--grey-bg);padding:1px 4px;border-radius:4px;word-break:break-word}
+pre.code{background:#101828;color:#e4e7ec;padding:10px 12px;border-radius:8px;overflow-x:auto}pre.code code{background:none;color:inherit;padding:0}
+blockquote{margin:8px 0;padding:8px 12px;border-left:4px solid var(--amber);background:var(--amber-bg);border-radius:4px}
+blockquote.verdict{font-size:18px;padding:14px 16px;border-left-width:8px}.v-fix_now{border-color:var(--red);background:var(--red-bg)}.v-plan{border-color:var(--yellow);background:var(--yellow-bg)}
+.v-no_urgent{border-color:var(--green);background:var(--green-bg)}.v-cannot_tell{border-color:var(--grey);background:var(--grey-bg)}
+.st{display:inline-block;padding:0 6px;border-radius:4px;font-weight:600;font-size:12.5px;letter-spacing:.2px}
+.st-pass,.st-complete,.st-improved_no_drift,.st-no_findings_in_tested_scope,.st-validated{color:var(--green);background:var(--green-bg)}
+.st-fail,.st-failed,.st-immediate,.st-critical,.st-high,.st-regressed,.st-functional_regression,.st-findings{color:var(--red);background:var(--red-bg)}
+.st-inconclusive,.st-caution,.st-medium,.st-partial,.st-suspected,.st-improved_with_drift,.st-drift_only,.st-needs_review,.st-incomplete{color:var(--amber);background:var(--amber-bg)}
+.st-planned,.st-low{color:var(--yellow);background:var(--yellow-bg)}.st-optional{color:var(--blue);background:var(--blue-bg)}
+.st-not_tested,.st-info,.st-error,.st-dismissed,.st-no_change{color:var(--grey);background:var(--grey-bg)}.st-error{color:var(--red)}
+.li-text{margin-left:4px}.hidden{display:none}
+@media print{.bar{display:none}body{background:#fff}details.section{border:none;padding:0}summary::before{content:""}pre.code{white-space:pre-wrap;background:#f2f4f7;color:#101828}}</style>
+</head>
+<body>
+<div class="bar"><strong>NavSentry</strong><button type="button" data-level="IMMEDIATE" aria-pressed="true">IMMEDIATE</button><button type="button" data-level="CAUTION" aria-pressed="true">CAUTION</button><button type="button" data-level="PLANNED" aria-pressed="true">PLANNED</button><button type="button" data-level="OPTIONAL" aria-pressed="true">OPTIONAL</button><button type="button" data-level="INFO" aria-pressed="true">INFO</button><button type="button" id="export-md">Export Markdown</button><button type="button" id="print">Print / PDF</button></div>
+<main>
+<h1>NavSentry Report — demo-before (local)</h1>
+<ul>
+<li>Run ID: <code>0858cfcf-c21b-49f2-9ae1-4207ddb50e1d</code></li>
+<li>Started: 2026-11-07T15:14:15.944Z · Finished: 2026-11-07T15:14:18.570Z</li>
+<li>Tool: navsentry 0.2.0 · Node 26.13.0 · win32-x64</li>
+<li>Mode: <code>observe</code> · Profile: <code>development</code> · Origins: <code>http://127.0.0.1:4173</code></li>
+<li>Execution status: <strong><span class="st st-complete">COMPLETE</span></strong> · Security result: <strong><span class="st st-findings">FINDINGS</span></strong></li>
+<li>Requests: 39/100 · Denied before execution: 4</li>
+</ul>
+<details open class="section"><summary><h2>Summary</h2></summary><div class="body">
+<blockquote class="verdict v-fix_now">🔴 <strong>Do I need to fix something now?</strong> Yes. Fix 11 issue(s) now, before the next release. They are listed under &quot;What to do first&quot;.</blockquote>
+<div class="tw"><table>
+<thead><tr><th>🔴 <span class="st st-immediate">IMMEDIATE</span></th><th>🟠 <span class="st st-caution">CAUTION</span></th><th>🟡 <span class="st st-planned">PLANNED</span></th><th>🔵 <span class="st st-optional">OPTIONAL</span></th><th>⚪ <span class="st st-info">INFO</span></th></tr></thead>
+<tbody>
+<tr><td>6</td><td>5</td><td>1</td><td>5</td><td>1</td></tr>
+</tbody></table></div>
+<div class="tw"><table>
+<thead><tr><th><span class="st st-pass">PASS</span></th><th><span class="st st-fail">FAIL</span></th><th><span class="st st-inconclusive">INCONCLUSIVE</span></th><th><span class="st st-error">ERROR</span></th><th><span class="st st-not_tested">NOT_TESTED</span></th><th>Findings</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>18</td><td>0</td><td>0</td><td>38</td><td>58</td></tr>
+</tbody></table></div>
+<p><strong>What to do first:</strong></p>
+<ul>
+<li>🔴 <span class="st st-immediate">IMMEDIATE</span> · NSC-AC-002 — Missing authentication on API endpoint (2)</li>
+<li>🔴 <span class="st st-immediate">IMMEDIATE</span> · NSC-AC-003 — IDOR / BOLA (cross-user object access) (1)</li>
+<li>🔴 <span class="st st-immediate">IMMEDIATE</span> · NSC-AC-007 — Missing function-level authorization (vertical privilege escalation) (1)</li>
+<li>🔴 <span class="st st-immediate">IMMEDIATE</span> · NSC-PRIV-001 — National ID / personal identifier disclosure (1)</li>
+<li>🔴 <span class="st st-immediate">IMMEDIATE</span> · NSC-CRYPT-006 — Cleartext HTTP served without redirect to HTTPS (10)</li>
+<li>🔴 <span class="st st-immediate">IMMEDIATE</span> · NSC-ERR-001 — Verbose error, stack trace or unhandled exception exposed (1)</li>
+<li>🟠 <span class="st st-caution">CAUTION</span> · NSC-AC-004 — Permissive CORS policy (5)</li>
+<li>🟠 <span class="st st-caution">CAUTION</span> · NSC-CONF-002 — Content Security Policy missing or unsafe (2)</li>
+<li>🟠 <span class="st st-caution">CAUTION</span> · NSC-CONF-003 — Clickjacking protection missing (2)</li>
+<li>🟠 <span class="st st-caution">CAUTION</span> · NSC-SESS-002 — Cookie without HttpOnly flag (1)</li>
+<li>🟠 <span class="st st-caution">CAUTION</span> · NSC-SESS-003 — Cookie SameSite missing or contradictory (1)</li>
+</ul>
+<blockquote>Zero findings does not mean the application is secure. <span class="st st-not_tested">NOT_TESTED</span>, <span class="st st-inconclusive">INCONCLUSIVE</span> and <span class="st st-error">ERROR</span> rows are gaps, not passes.</blockquote>
+</div></details>
+<details open class="section"><summary><h2>Findings</h2></summary><div class="body">
+<div class="group" data-level="IMMEDIATE">
+<h3 class="lv lv-immediate">🔴 <span class="st st-immediate">IMMEDIATE</span> — Fix now</h3>
+<h4 class="card lv-immediate">🔴 NSC-AC-002 — Missing authentication on API endpoint</h4>
+<div class="tw"><table>
+<thead><tr><th>Action</th><th>Severity</th><th>Category</th><th>Affected targets</th></tr></thead>
+<tbody>
+<tr><td><strong><span class="st st-immediate">IMMEDIATE</span></strong></td><td><strong><span class="st st-high">high</span></strong></td><td>AC</td><td>2</td></tr>
+</tbody></table></div>
+<p><strong>Why it matters:</strong> An endpoint that returns non-public data responds 2xx to an anonymous actor.</p>
+<p><strong>Expected:</strong> Anonymous requests to protected endpoints return 401 | Authenticated legitimate actor still gets the same 2xx contract</p>
+<p><strong>Observed (redacted):</strong></p>
+<div class="tw"><table>
+<thead><tr><th>Target</th><th>Confidence</th><th>Lifecycle</th><th>Observed</th></tr></thead>
+<tbody>
+<tr><td><code>GET http://127.0.0.1:4173/api/me</code></td><td><span class="st st-medium">medium</span></td><td><span class="st st-suspected">SUSPECTED</span></td><td>Missing authentication on API endpoint: access was granted; actor anonymous received 200 application/json with the same response contract as positive control S4 (reader_a); flow orders-access step S5</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/app/profile</code></td><td><span class="st st-medium">medium</span></td><td><span class="st st-suspected">SUSPECTED</span></td><td>Missing authentication on API endpoint: access was granted; actor anonymous received 200 text/html with the same response contract as positive control S1 (reader_a); flow profile-journey step S4</td></tr>
+</tbody></table></div>
+<p><strong>How to reproduce:</strong></p>
+<ul>
+<li>navsentry test --config &lt;manifest&gt; --flows &lt;flows-dir&gt;  (rule NSC-AC-002, flow orders-access step S5)</li>
+<li>Open the endpoint in a private browser window: 401/redirect to login</li>
+</ul>
+<p><strong>How to fix:</strong> Apply authentication middleware with deny-by-default to the whole API group; whitelist truly public routes explicitly.</p>
+<p><strong>Fix examples (reviewed examples; NavSentry does not execute them):</strong></p>
+<ul>
+<li><strong>Node.js / Express</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="js"><code>app.get(&quot;/api/me&quot;, meHandler);</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="js"><code>app.use(&quot;/api&quot;, requireAuth); // deny by default
+app.get(&quot;/api/me&quot;, meHandler);
+// public routes are registered before requireAuth, explicitly</code></pre>
+</ul>
+<ul>
+<li><strong>ASP.NET Core</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="csharp"><code>builder.Services.AddAuthorization();</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="csharp"><code>builder.Services.AddAuthorization(o =&gt; o.FallbackPolicy =
+    new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
+// mark public endpoints with [AllowAnonymous]</code></pre>
+</ul>
+<ul>
+<li><strong>Spring Boot / Spring Security</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="java"><code>http.authorizeHttpRequests(a -&gt; a.anyRequest().permitAll());</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="java"><code>http.authorizeHttpRequests(a -&gt; a
+    .requestMatchers(&quot;/api/public/**&quot;).permitAll()
+    .anyRequest().authenticated());</code></pre>
+</ul>
+<p><strong>How to recheck:</strong></p>
+<ul>
+<li>Open the endpoint in a private browser window: 401/redirect to login</li>
+<li>Logged-in user still sees data</li>
+<li>Run the same NavSentry scan again and compare it with this run.</li>
+</ul>
+<p><strong>Fixed when:</strong></p>
+<ul>
+<li>Anonymous requests to protected endpoints return 401</li>
+<li>Authenticated legitimate actor still gets the same 2xx contract</li>
+</ul>
+<p><strong>Must not break:</strong> Public endpoints used before login (health, login config, static config) must be explicitly allow-listed; compare anonymous and authenticated runs before/after.</p>
+<p><strong>Limitations:</strong></p>
+<ul>
+<li>Evaluated only where a flow declares anonymous <code>access: denied</code> with an authenticated positive control; a 2xx with a different contract (login page) is <span class="st st-inconclusive">INCONCLUSIVE</span>, not <span class="st st-fail">FAIL</span>.</li>
+</ul>
+<p>References: OWASP A01:2025 Broken Access Control; A07:2025 Authentication Failures; A01:2021 Broken Access Control; A07:2021 Identification and Authentication Failures · CWE CWE-306 · WSTG WSTG-ATHZ-02 · ASVS 5.0 V8 Authorization, V4 API and Web Service</p>
+<p>Fingerprints: <code>2ed31545305ed6fa20e0a163</code> <code>fee0a4fff083aa2abb24c113</code></p>
+<h4 class="card lv-immediate">🔴 NSC-AC-003 — IDOR / BOLA (cross-user object access)</h4>
+<div class="tw"><table>
+<thead><tr><th>Action</th><th>Severity</th><th>Category</th><th>Affected targets</th></tr></thead>
+<tbody>
+<tr><td><strong><span class="st st-immediate">IMMEDIATE</span></strong></td><td><strong><span class="st st-high">high</span></strong></td><td>AC</td><td>1</td></tr>
+</tbody></table></div>
+<p><strong>Why it matters:</strong> An actor can read or modify an object owned by another actor by changing an identifier, because ownership is not checked server-side.</p>
+<p><strong>Expected:</strong> Actor B receives 403/404 for actor A&#39;s fixture object | Actor A still receives 200 for its own object (positive control)</p>
+<p><strong>Observed (redacted):</strong></p>
+<div class="tw"><table>
+<thead><tr><th>Target</th><th>Confidence</th><th>Lifecycle</th><th>Observed</th></tr></thead>
+<tbody>
+<tr><td><code>GET http://127.0.0.1:4173/api/orders/{{orderA}}</code></td><td><span class="st st-medium">medium</span></td><td><span class="st st-suspected">SUSPECTED</span></td><td>IDOR / BOLA (cross-user object access): access was granted; actor reader_b received 200 application/json with the same response contract as positive control S2 (reader_a); flow orders-access step S3</td></tr>
+</tbody></table></div>
+<p><strong>How to reproduce:</strong></p>
+<ul>
+<li>navsentry test --config &lt;manifest&gt; --flows &lt;flows-dir&gt;  (rule NSC-AC-003, flow orders-access step S3)</li>
+<li>As actor B in a separate browser profile, paste actor A&#39;s object URL: access denied</li>
+</ul>
+<p><strong>How to fix:</strong> Enforce ownership/tenant checks in the service layer for every object lookup; prefer scoped queries (WHERE owner_id = current_user).</p>
+<p><strong>Fix examples (reviewed examples; NavSentry does not execute them):</strong></p>
+<ul>
+<li><strong>Node.js / Express</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="js"><code>const order = await db.orders.findById(req.params.id);
+res.json(order);</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="js"><code>const order = await db.orders.findOne({ id: req.params.id, ownerId: req.user.id });
+if (!order) return res.status(404).json({ error: &quot;not found&quot; });
+res.json(order);</code></pre>
+</ul>
+<ul>
+<li><strong>ASP.NET Core</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="csharp"><code>var order = await db.Orders.FindAsync(id);</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="csharp"><code>var order = await db.Orders.SingleOrDefaultAsync(o =&gt; o.Id == id &amp;&amp; o.OwnerId == userId);
+if (order is null) return NotFound();</code></pre>
+</ul>
+<ul>
+<li><strong>Spring Boot / Spring Security</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="java"><code>Order order = repo.findById(id).orElseThrow();</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="java"><code>Order order = repo.findByIdAndOwnerId(id, currentUser.getId())
+    .orElseThrow(() -&gt; new ResponseStatusException(HttpStatus.NOT_FOUND));</code></pre>
+</ul>
+<p><strong>How to recheck:</strong></p>
+<ul>
+<li>As actor B in a separate browser profile, paste actor A&#39;s object URL: access denied</li>
+<li>Run the same NavSentry scan again and compare it with this run.</li>
+</ul>
+<p><strong>Fixed when:</strong></p>
+<ul>
+<li>Actor B receives 403/404 for actor A&#39;s fixture object</li>
+<li>Actor A still receives 200 for its own object (positive control)</li>
+</ul>
+<p><strong>Must not break:</strong> Shared/delegated objects (team, admin, delegated approver) must keep access — encode those rules explicitly and test them as positive controls.</p>
+<p><strong>Limitations:</strong></p>
+<ul>
+<li>UI hiding alone NEVER proves authorization.</li>
+<li>Read access: a flow step with object_owner and access: denied. Modification (safe-validate, 0.2.0-c): the same step as a declared fixture mutation, with the owner&#39;s own mutation as the positive control.</li>
+<li>Whether actor B&#39;s change took effect is not compared: NavSentry does not record response body values.</li>
+</ul>
+<p>References: OWASP A01:2025 Broken Access Control; A01:2021 Broken Access Control · CWE CWE-639, CWE-284 · WSTG WSTG-ATHZ-04 · ASVS 5.0 V8 Authorization</p>
+<p>Fingerprints: <code>3eef519c1454dd179dcdf801</code></p>
+<h4 class="card lv-immediate">🔴 NSC-AC-007 — Missing function-level authorization (vertical privilege escalation)</h4>
+<div class="tw"><table>
+<thead><tr><th>Action</th><th>Severity</th><th>Category</th><th>Affected targets</th></tr></thead>
+<tbody>
+<tr><td><strong><span class="st st-immediate">IMMEDIATE</span></strong></td><td><strong><span class="st st-high">high</span></strong></td><td>AC</td><td>1</td></tr>
+</tbody></table></div>
+<p><strong>Why it matters:</strong> A lower-privileged authenticated actor receives the same 2xx contract as a privileged actor on a privileged function, because the server does not check the role or permission.</p>
+<p><strong>Expected:</strong> Lower role receives 401/403 | Privileged role keeps its 2xx contract (positive control)</p>
+<p><strong>Observed (redacted):</strong></p>
+<div class="tw"><table>
+<thead><tr><th>Target</th><th>Confidence</th><th>Lifecycle</th><th>Observed</th></tr></thead>
+<tbody>
+<tr><td><code>GET http://127.0.0.1:4173/api/admin/stats</code></td><td><span class="st st-medium">medium</span></td><td><span class="st st-suspected">SUSPECTED</span></td><td>Missing function-level authorization (vertical privilege escalation): access was granted; actor reader_a received 200 application/json with the same response contract as positive control S6 (admin); flow orders-access step S7</td></tr>
+</tbody></table></div>
+<p><strong>How to reproduce:</strong></p>
+<ul>
+<li>navsentry test --config &lt;manifest&gt; --flows &lt;flows-dir&gt;  (rule NSC-AC-007, flow orders-access step S7)</li>
+<li>As the lower-role user in a separate browser profile, open the privileged URL: access denied</li>
+</ul>
+<p><strong>How to fix:</strong> Enforce deny-by-default role/permission checks on the server for every privileged route or handler; do not rely on hidden menus.</p>
+<p><strong>Fix examples (reviewed examples; NavSentry does not execute them):</strong></p>
+<ul>
+<li><strong>Node.js / Express</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="js"><code>app.get(&quot;/api/admin/stats&quot;, requireAuth, stats);</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="js"><code>const requireRole = (role) =&gt; (req, res, next) =&gt;
+  req.user?.roles.includes(role) ? next() : res.sendStatus(403);
+app.get(&quot;/api/admin/stats&quot;, requireAuth, requireRole(&quot;admin&quot;), stats);</code></pre>
+</ul>
+<ul>
+<li><strong>ASP.NET Core</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="csharp"><code>[Authorize]
+[HttpGet(&quot;admin/stats&quot;)]</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="csharp"><code>[Authorize(Roles = &quot;Admin&quot;)]
+[HttpGet(&quot;admin/stats&quot;)]</code></pre>
+</ul>
+<ul>
+<li><strong>Spring Boot / Spring Security</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="java"><code>.requestMatchers(&quot;/api/admin/**&quot;).authenticated()</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="java"><code>.requestMatchers(&quot;/api/admin/**&quot;).hasRole(&quot;ADMIN&quot;)</code></pre>
+</ul>
+<p><strong>How to recheck:</strong></p>
+<ul>
+<li>As the lower-role user in a separate browser profile, open the privileged URL: access denied</li>
+<li>The privileged user still sees the function</li>
+<li>Run the same NavSentry scan again and compare it with this run.</li>
+</ul>
+<p><strong>Fixed when:</strong></p>
+<ul>
+<li>Lower role receives 401/403</li>
+<li>Privileged role keeps its 2xx contract (positive control)</li>
+</ul>
+<p><strong>Must not break:</strong> Delegated or support roles that legitimately use the function must be encoded as positive controls before tightening.</p>
+<p><strong>Limitations:</strong></p>
+<ul>
+<li>Hidden menus or disabled buttons never prove authorization.</li>
+<li>Evaluated only where a flow declares access: denied for the lower role with a privileged positive control.</li>
+</ul>
+<p>References: OWASP A01:2025 Broken Access Control; A01:2021 Broken Access Control · CWE CWE-285, CWE-862 · WSTG WSTG-ATHZ-03 · ASVS 5.0 V8 Authorization</p>
+<p>Fingerprints: <code>4394e9188345a42229ec9d40</code></p>
+<h4 class="card lv-immediate">🔴 NSC-PRIV-001 — National ID / personal identifier disclosure</h4>
+<div class="tw"><table>
+<thead><tr><th>Action</th><th>Severity</th><th>Category</th><th>Affected targets</th></tr></thead>
+<tbody>
+<tr><td><strong><span class="st st-immediate">IMMEDIATE</span></strong></td><td><strong><span class="st st-high">high</span></strong></td><td>PRIV</td><td>1</td></tr>
+</tbody></table></div>
+<p><strong>Why it matters:</strong> API or page responses contain 13-digit values that pass the Thai national ID checksum (or card numbers passing Luhn), exposing PII regulated by PDPA.</p>
+<p><strong>Expected:</strong> No checksum-valid national ID / card number appears in responses to actors not entitled to it | Where required for the owner, values are masked (e.g. x-xxxx-xxxxx-12-3)</p>
+<p><strong>Observed (redacted):</strong></p>
+<div class="tw"><table>
+<thead><tr><th>Target</th><th>Confidence</th><th>Lifecycle</th><th>Observed</th></tr></thead>
+<tbody>
+<tr><td><code>GET http://127.0.0.1:4173/api/profile</code></td><td><span class="st st-medium">medium</span></td><td><span class="st st-suspected">SUSPECTED</span></td><td>Checksum-valid personal identifiers in response; thai-national-id (mod-11 valid): 1; card-number (Luhn valid): 0; values never stored</td></tr>
+</tbody></table></div>
+<p><strong>How to reproduce:</strong></p>
+<ul>
+<li>navsentry test --config &lt;manifest&gt;  (rule NSC-PRIV-001, transport direct-http)</li>
+<li>Open the endpoint as an unentitled actor and confirm the field is absent or masked</li>
+</ul>
+<p><strong>How to fix:</strong> Remove or mask the field in the response DTO for unentitled callers; enforce field-level authorization server-side.</p>
+<p><strong>Fix examples (reviewed examples; NavSentry does not execute them):</strong></p>
+<ul>
+<li><strong>Node.js / Express</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="js"><code>res.json({ name: u.name, nationalId: u.nationalId });</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="js"><code>const mask = (v) =&gt; &quot;x&quot;.repeat(v.length - 4) + v.slice(-4);
+res.json({ name: u.name, nationalId: canSeeId(req.user, u) ? u.nationalId : mask(u.nationalId) });</code></pre>
+</ul>
+<ul>
+<li><strong>ASP.NET Core</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="csharp"><code>return Ok(new { u.Name, u.NationalId });</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="csharp"><code>return Ok(new { u.Name, NationalId = CanSeeId(User, u) ? u.NationalId : Mask(u.NationalId) });</code></pre>
+</ul>
+<ul>
+<li><strong>Spring Boot / Spring Security</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="java"><code>record ProfileDto(String name, String nationalId) {}</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="java"><code>record ProfileDto(String name, String nationalIdMasked) {}
+// map with mask(u.getNationalId()) unless the caller is entitled</code></pre>
+</ul>
+<p><strong>How to recheck:</strong></p>
+<ul>
+<li>Open the endpoint as an unentitled actor and confirm the field is absent or masked</li>
+<li>Re-run → NSC-PRIV-001 <span class="st st-pass">PASS</span></li>
+<li>Run the same NavSentry scan again and compare it with this run.</li>
+</ul>
+<p><strong>Fixed when:</strong></p>
+<ul>
+<li>No checksum-valid national ID / card number appears in responses to actors not entitled to it</li>
+<li>Where required for the owner, values are masked (e.g. x-xxxx-xxxxx-12-3)</li>
+</ul>
+<p><strong>Must not break:</strong> Masking changes values, not keys: keep the field name and type so clients do not break, unless the owner approves removal. Verify JSON shape with <code>navsentry compare</code>.</p>
+<p><strong>Limitations:</strong></p>
+<ul>
+<li>SRC-E accepted this as an Exception because the 13-digit value was an internal function identifier, not a citizen ID. NavSentry applies the mod-11 checksum to cut such false positives, but a checksum-valid match is still <span class="st st-suspected">SUSPECTED</span> until a human confirms the field semantics.</li>
+</ul>
+<p>References: OWASP A01:2025 Broken Access Control; A04:2025 Cryptographic Failures; A01:2021 Broken Access Control; A02:2021 Cryptographic Failures · CWE CWE-359, CWE-200 · WSTG WSTG-INFO-05 · ASVS 5.0 V14 Data Protection, V8 Authorization</p>
+<p>Fingerprints: <code>f41e08127666743eabc5170c</code></p>
+<h4 class="card lv-immediate">🔴 NSC-CRYPT-006 — Cleartext HTTP served without redirect to HTTPS</h4>
+<div class="tw"><table>
+<thead><tr><th>Action</th><th>Severity</th><th>Category</th><th>Affected targets</th></tr></thead>
+<tbody>
+<tr><td><strong><span class="st st-immediate">IMMEDIATE</span></strong></td><td><strong><span class="st st-medium">medium</span></strong></td><td>CRYPT</td><td>10</td></tr>
+</tbody></table></div>
+<p><strong>Why it matters:</strong> An in-scope http:// origin serves application content instead of redirecting to HTTPS.</p>
+<p><strong>Expected:</strong> http:// requests receive 301/308 to the https:// equivalent | No application content or Set-Cookie on http://</p>
+<p><strong>Observed (redacted):</strong></p>
+<div class="tw"><table>
+<thead><tr><th>Target</th><th>Confidence</th><th>Lifecycle</th><th>Observed</th></tr></thead>
+<tbody>
+<tr><td><code>GET http://127.0.0.1:4173/</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Plain HTTP serves content (HTTP 200) without HTTPS redirect; no redirect</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/api/profile</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Plain HTTP serves content (HTTP 200) without HTTPS redirect; no redirect</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/api/error</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Plain HTTP serves content (HTTP 500) without HTTPS redirect; no redirect</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/api/token</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Plain HTTP serves content (HTTP 200) without HTTPS redirect; no redirect</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/go-out</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Plain HTTP serves content (HTTP 302) without HTTPS redirect; Location scheme: http:</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/api/orders</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Plain HTTP serves content (HTTP 200) without HTTPS redirect; no redirect</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/api/orders/{{orderA}}</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Plain HTTP serves content (HTTP 200) without HTTPS redirect; no redirect</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/api/me</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Plain HTTP serves content (HTTP 200) without HTTPS redirect; no redirect</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/api/admin/stats</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Plain HTTP serves content (HTTP 200) without HTTPS redirect; no redirect</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/app/profile</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Plain HTTP serves content (HTTP 200) without HTTPS redirect; no redirect</td></tr>
+</tbody></table></div>
+<p><strong>How to reproduce:</strong></p>
+<ul>
+<li>navsentry test --config &lt;manifest&gt;  (rule NSC-CRYPT-006, transport direct-http)</li>
+<li>Type http://&lt;host&gt;/ in the browser: it switches to https://</li>
+</ul>
+<p><strong>How to fix:</strong> Redirect all HTTP to HTTPS at the edge; for internal service ports, enable TLS or restrict them to the internal network.</p>
+<p><strong>Fix examples (reviewed examples; NavSentry does not execute them):</strong></p>
+<ul>
+<li><strong>nginx</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="nginx"><code>server {
+    listen 80;
+    server_name shop.example.test;
+    location / { proxy_pass http://app; }
+}</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="nginx"><code>server {
+    listen 80;
+    server_name shop.example.test;
+    return 301 https://shop.example.test$request_uri;
+}</code></pre>
+</ul>
+<ul>
+<li><strong>Node.js / Express</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="js"><code>app.listen(80);</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="js"><code>app.set(&quot;trust proxy&quot;, 1);
+app.use((req, res, next) =&gt;
+  req.secure ? next() : res.redirect(301, &quot;https://shop.example.test&quot; + req.originalUrl));</code></pre>
+<div class="li-text">Redirect to a fixed host, never to the request&#39;s Host header.</div>
+</ul>
+<ul>
+<li><strong>ASP.NET Core</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="csharp"><code>app.MapControllers();</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="csharp"><code>app.UseHttpsRedirection();
+app.MapControllers();</code></pre>
+</ul>
+<ul>
+<li><strong>Spring Boot / Spring Security</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="java"><code>http.authorizeHttpRequests(a -&gt; a.anyRequest().authenticated());</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="java"><code>http.requiresChannel(c -&gt; c.anyRequest().requiresSecure())
+    .authorizeHttpRequests(a -&gt; a.anyRequest().authenticated());</code></pre>
+<div class="li-text">Spring Security 6.x; newer versions also offer <code>redirectToHttps</code>.</div>
+</ul>
+<p><strong>How to recheck:</strong></p>
+<ul>
+<li>Type http://&lt;host&gt;/ in the browser: it switches to https://</li>
+<li>Re-run → NSC-CRYPT-006 <span class="st st-pass">PASS</span></li>
+<li>Run the same NavSentry scan again and compare it with this run.</li>
+</ul>
+<p><strong>Fixed when:</strong></p>
+<ul>
+<li>http:// requests receive 301/308 to the https:// equivalent</li>
+<li>No application content or Set-Cookie on http://</li>
+</ul>
+<p><strong>Must not break:</strong> Machine clients that POST to http:// may not follow redirects with a body (use 308 to preserve method) — inventory them first.</p>
+<p>References: OWASP A04:2025 Cryptographic Failures; A02:2021 Cryptographic Failures · CWE CWE-319 · WSTG WSTG-CRYP-03 · ASVS 5.0 V12 Secure Communication</p>
+<p>Fingerprints: <code>32ef940ba82b43d1703edd81</code> <code>60cd89eec0834c6173a1ca52</code> <code>ffd914e5cdf3c67a36d0007d</code> <code>54c1aea904006f550b35a853</code> <code>05f978ecba4b2322dfa90ab1</code> <code>fee4e2b13b1a34242abf2210</code> <code>2f0c13798b3f6290b328e559</code> <code>7c6bc49d2e83bb56b8b62a1f</code> <code>410d1fcc3d4bf29a8b41f77d</code> <code>0e1ff75fa30e8a236884445c</code></p>
+<h4 class="card lv-immediate">🔴 NSC-ERR-001 — Verbose error, stack trace or unhandled exception exposed</h4>
+<div class="tw"><table>
+<thead><tr><th>Action</th><th>Severity</th><th>Category</th><th>Affected targets</th></tr></thead>
+<tbody>
+<tr><td><strong><span class="st st-immediate">IMMEDIATE</span></strong></td><td><strong><span class="st st-medium">medium</span></strong></td><td>ERR</td><td>1</td></tr>
+</tbody></table></div>
+<p><strong>Why it matters:</strong> Error responses include stack traces, exception class names, SQL/ORM messages or framework error pages, leaking internals and indicating failing-open error handling.</p>
+<p><strong>Expected:</strong> No in-scope response contains stack-trace/exception signatures | Errors return a generic message plus a correlation ID; details go to server logs only | HTTP status codes stay meaningful (4xx for client errors, 5xx for server faults)</p>
+<p><strong>Observed (redacted):</strong></p>
+<div class="tw"><table>
+<thead><tr><th>Target</th><th>Confidence</th><th>Lifecycle</th><th>Observed</th></tr></thead>
+<tbody>
+<tr><td><code>GET http://127.0.0.1:4173/api/error</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Internal error details exposed (HTTP 500); Exception class name</td></tr>
+</tbody></table></div>
+<p><strong>How to reproduce:</strong></p>
+<ul>
+<li>navsentry test --config &lt;manifest&gt;  (rule NSC-ERR-001, transport direct-http)</li>
+<li>Reproduce the original error condition with a benign request (e.g. missing parameter) and confirm a generic error body</li>
+</ul>
+<p><strong>How to fix:</strong> Add a global exception handler that logs details server-side and returns a standard error envelope (e.g. RFC 9457 problem+json) without internals; disable framework detailed errors in non-dev environments.</p>
+<p><strong>Fix examples (reviewed examples; NavSentry does not execute them):</strong></p>
+<ul>
+<li><strong>Node.js / Express</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="js"><code>app.use((err, req, res, next) =&gt; {
+  res.status(500).send(err.stack);
+});</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="js"><code>app.use((err, req, res, next) =&gt; {
+  logger.error(err); // details stay in server logs
+  res.status(500).type(&quot;application/problem+json&quot;)
+    .json({ title: &quot;Internal error&quot;, status: 500 });
+});</code></pre>
+</ul>
+<ul>
+<li><strong>ASP.NET Core</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="csharp"><code>app.UseDeveloperExceptionPage();</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="csharp"><code>builder.Services.AddProblemDetails();
+// ...
+if (app.Environment.IsDevelopment()) app.UseDeveloperExceptionPage();
+else app.UseExceptionHandler();</code></pre>
+</ul>
+<ul>
+<li><strong>Spring Boot / Spring Security</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="properties"><code>server.error.include-stacktrace=always
+server.error.include-message=always</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="properties"><code>server.error.include-stacktrace=never
+server.error.include-message=never
+server.error.include-exception=false</code></pre>
+</ul>
+<p><strong>How to recheck:</strong></p>
+<ul>
+<li>Reproduce the original error condition with a benign request (e.g. missing parameter) and confirm a generic error body</li>
+<li>Confirm the detailed exception is present in server logs with the same correlation ID</li>
+<li>Run the same NavSentry scan again and compare it with this run.</li>
+</ul>
+<p><strong>Fixed when:</strong></p>
+<ul>
+<li>No in-scope response contains stack-trace/exception signatures</li>
+<li>Errors return a generic message plus a correlation ID; details go to server logs only</li>
+<li>HTTP status codes stay meaningful (4xx for client errors, 5xx for server faults)</li>
+</ul>
+<p><strong>Must not break:</strong> Keep the SAME status code and the SAME error envelope fields that clients parse (e.g. <code>success</code>, <code>code</code>, <code>message</code>); only remove internal details. Prove it with <code>navsentry compare</code> (status + JSON shape must match).</p>
+<p>References: OWASP A10:2025 Mishandling of Exceptional Conditions; A02:2025 Security Misconfiguration; A05:2021 Security Misconfiguration; A04:2021 Insecure Design · CWE CWE-209, CWE-248, CWE-550 · WSTG WSTG-ERRH-01, WSTG-ERRH-02 · ASVS 5.0 V16 Security Logging and Error Handling</p>
+<p>Fingerprints: <code>678b4c40706a4b10d28bed40</code></p>
+</div>
+<div class="group" data-level="CAUTION">
+<h3 class="lv lv-caution">🟠 <span class="st st-caution">CAUTION</span> — Fix carefully: may affect legitimate users</h3>
+<h4 class="card lv-caution">🟠 NSC-AC-004 — Permissive CORS policy</h4>
+<div class="tw"><table>
+<thead><tr><th>Action</th><th>Severity</th><th>Category</th><th>Affected targets</th></tr></thead>
+<tbody>
+<tr><td><strong><span class="st st-caution">CAUTION</span></strong></td><td><strong><span class="st st-medium">medium</span></strong></td><td>AC</td><td>5</td></tr>
+</tbody></table></div>
+<p><strong>Why it matters:</strong> The server reflects an arbitrary Origin (or &#39;null&#39;) in Access-Control-Allow-Origin, especially together with Access-Control-Allow-Credentials: true.</p>
+<p><strong>Expected:</strong> Untrusted test origins are not reflected | Credentials are never allowed with wildcard or reflected origins | Allowed origins are an explicit allowlist</p>
+<p><strong>Observed (redacted):</strong></p>
+<div class="tw"><table>
+<thead><tr><th>Target</th><th>Confidence</th><th>Lifecycle</th><th>Observed</th></tr></thead>
+<tbody>
+<tr><td><code>GET http://127.0.0.1:4173/</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Untrusted Origin reflected WITH credentials; ACAO reflects probe origin; credentials=true</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/api/profile</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Untrusted Origin reflected WITH credentials; ACAO reflects probe origin; credentials=true</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/api/error</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Untrusted Origin reflected WITH credentials; ACAO reflects probe origin; credentials=true</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/api/token</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Untrusted Origin reflected WITH credentials; ACAO reflects probe origin; credentials=true</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/go-out</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Untrusted Origin reflected WITH credentials; ACAO reflects probe origin; credentials=true</td></tr>
+</tbody></table></div>
+<p><strong>How to reproduce:</strong></p>
+<ul>
+<li>navsentry test --config &lt;manifest&gt;  (rule NSC-AC-004, transport direct-http)</li>
+<li>From the legitimate front-end origin the app still works (no CORS errors in Console)</li>
+</ul>
+<p><strong>How to fix:</strong> Replace origin reflection with an exact-match allowlist; never combine credentials with &#39;*&#39; or &#39;null&#39;.</p>
+<p><strong>Fix examples (reviewed examples; NavSentry does not execute them):</strong></p>
+<ul>
+<li><strong>Node.js / Express</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="js"><code>res.set(&quot;Access-Control-Allow-Origin&quot;, req.headers.origin);
+res.set(&quot;Access-Control-Allow-Credentials&quot;, &quot;true&quot;);</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="js"><code>const ALLOWED = new Set([&quot;https://app.example.test&quot;]);
+if (ALLOWED.has(req.headers.origin)) {
+  res.set(&quot;Access-Control-Allow-Origin&quot;, req.headers.origin);
+  res.set(&quot;Access-Control-Allow-Credentials&quot;, &quot;true&quot;);
+  res.vary(&quot;Origin&quot;);
+}</code></pre>
+</ul>
+<ul>
+<li><strong>ASP.NET Core</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="csharp"><code>p.SetIsOriginAllowed(_ =&gt; true).AllowCredentials();</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="csharp"><code>p.WithOrigins(&quot;https://app.example.test&quot;).AllowCredentials();</code></pre>
+</ul>
+<ul>
+<li><strong>Spring Boot / Spring Security</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="java"><code>config.addAllowedOriginPattern(&quot;*&quot;);
+config.setAllowCredentials(true);</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="java"><code>config.setAllowedOrigins(List.of(&quot;https://app.example.test&quot;));
+config.setAllowCredentials(true);</code></pre>
+</ul>
+<ul>
+<li><strong>nginx</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="nginx"><code>add_header Access-Control-Allow-Origin $http_origin always;</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="nginx"><code>map $http_origin $cors_origin {
+    default &quot;&quot;;
+    &quot;https://app.example.test&quot; $http_origin;
+}
+# in the server block:
+add_header Access-Control-Allow-Origin $cors_origin always;
+add_header Vary Origin always;</code></pre>
+</ul>
+<p><strong>How to recheck:</strong></p>
+<ul>
+<li>From the legitimate front-end origin the app still works (no CORS errors in Console)</li>
+<li>Re-run → NSC-AC-004 <span class="st st-pass">PASS</span></li>
+<li>Run the same NavSentry scan again and compare it with this run.</li>
+</ul>
+<p><strong>Fixed when:</strong></p>
+<ul>
+<li>Untrusted test origins are not reflected</li>
+<li>Credentials are never allowed with wildcard or reflected origins</li>
+<li>Allowed origins are an explicit allowlist</li>
+</ul>
+<p><strong>Must not break:</strong> List every legitimate front-end origin (prod, staging, mobile webviews) before tightening; missing one causes CORS errors only in browsers.</p>
+<p>References: OWASP A01:2025 Broken Access Control; A02:2025 Security Misconfiguration; A01:2021 Broken Access Control; A05:2021 Security Misconfiguration · CWE CWE-942, CWE-346 · WSTG WSTG-CLNT-07 · ASVS 5.0 V3 Web Frontend Security, V4 API and Web Service</p>
+<p>Fingerprints: <code>1165ff5cd1b67e24ef43e674</code> <code>a85dcc5898250cee68ce9f5c</code> <code>3c425a79d30a4412cf0aef98</code> <code>bdbf0331bd0333d584e46a9f</code> <code>8cc7d85071e0e64554baa4e1</code></p>
+<h4 class="card lv-caution">🟠 NSC-CONF-002 — Content Security Policy missing or unsafe</h4>
+<div class="tw"><table>
+<thead><tr><th>Action</th><th>Severity</th><th>Category</th><th>Affected targets</th></tr></thead>
+<tbody>
+<tr><td><strong><span class="st st-caution">CAUTION</span></strong></td><td><strong><span class="st st-medium">medium</span></strong></td><td>CONF</td><td>2</td></tr>
+</tbody></table></div>
+<p><strong>Why it matters:</strong> HTML responses have no enforcing Content-Security-Policy, or the policy allows &#39;unsafe-inline&#39;/&#39;unsafe-eval&#39; scripts or wildcard script sources, so injected script is not contained.</p>
+<p><strong>Expected:</strong> Every HTML response has an enforcing Content-Security-Policy | script-src (or default-src) contains no &#39;unsafe-inline&#39; without nonce/hash, no &#39;unsafe-eval&#39;, no &#39;*&#39; | object-src &#39;none&#39; and base-uri restricted</p>
+<p><strong>Observed (redacted):</strong></p>
+<div class="tw"><table>
+<thead><tr><th>Target</th><th>Confidence</th><th>Lifecycle</th><th>Observed</th></tr></thead>
+<tbody>
+<tr><td><code>GET http://127.0.0.1:4173/</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Content-Security-Policy header missing; header absent</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/app/profile</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Content-Security-Policy header missing; header absent</td></tr>
+</tbody></table></div>
+<p><strong>How to reproduce:</strong></p>
+<ul>
+<li>navsentry test --config &lt;manifest&gt;  (rule NSC-CONF-002, transport direct-http)</li>
+<li>Load each main page with DevTools Console open: no CSP violation errors for legitimate functionality</li>
+</ul>
+<p><strong>How to fix:</strong> Deploy Content-Security-Policy-Report-Only first, collect violations from real traffic, refactor inline scripts to nonces/hashes, then switch to the enforcing header.</p>
+<p><strong>Fix examples (reviewed examples; NavSentry does not execute them):</strong></p>
+<ul>
+<li><strong>nginx</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="nginx"><code>server {
+    listen 443 ssl;
+    # no Content-Security-Policy header
+}</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="nginx"><code>server {
+    listen 443 ssl;
+    add_header Content-Security-Policy &quot;default-src &#39;self&#39;; object-src &#39;none&#39;; base-uri &#39;self&#39;; frame-ancestors &#39;self&#39;&quot; always;
+}</code></pre>
+<div class="li-text">Deploy as Content-Security-Policy-Report-Only first and move inline scripts to nonces or hashes before enforcing.</div>
+</ul>
+<ul>
+<li><strong>Node.js / Express</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="js"><code>app.use(express.static(&quot;public&quot;));</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="js"><code>app.use((req, res, next) =&gt; {
+  res.setHeader(&quot;Content-Security-Policy&quot;, &quot;default-src &#39;self&#39;; object-src &#39;none&#39;; base-uri &#39;self&#39;; frame-ancestors &#39;self&#39;&quot;);
+  next();
+});
+app.use(express.static(&quot;public&quot;));</code></pre>
+<div class="li-text">Deploy as Content-Security-Policy-Report-Only first and move inline scripts to nonces or hashes before enforcing.</div>
+</ul>
+<ul>
+<li><strong>ASP.NET Core</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="csharp"><code>app.UseStaticFiles();</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="csharp"><code>app.Use(async (context, next) =&gt;
+{
+    context.Response.Headers[&quot;Content-Security-Policy&quot;] = &quot;default-src &#39;self&#39;; object-src &#39;none&#39;; base-uri &#39;self&#39;; frame-ancestors &#39;self&#39;&quot;;
+    await next();
+});
+app.UseStaticFiles();</code></pre>
+<div class="li-text">Deploy as Content-Security-Policy-Report-Only first and move inline scripts to nonces or hashes before enforcing.</div>
+</ul>
+<ul>
+<li><strong>Spring Boot / Spring Security</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="java"><code>http.headers(Customizer.withDefaults());</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="java"><code>http.headers(h -&gt; h
+    .contentSecurityPolicy(csp -&gt; csp.policyDirectives(&quot;default-src &#39;self&#39;; object-src &#39;none&#39;; base-uri &#39;self&#39;; frame-ancestors &#39;self&#39;&quot;)));</code></pre>
+<div class="li-text">Deploy as Content-Security-Policy-Report-Only first and move inline scripts to nonces or hashes before enforcing.</div>
+</ul>
+<p><strong>How to recheck:</strong></p>
+<ul>
+<li>Load each main page with DevTools Console open: no CSP violation errors for legitimate functionality</li>
+<li>Exercise main user flows (login, search, forms, maps) and confirm they still work</li>
+<li>Re-run <code>navsentry test</code> → NSC-CONF-002 <span class="st st-pass">PASS</span></li>
+<li>Run the same NavSentry scan again and compare it with this run.</li>
+</ul>
+<p><strong>Fixed when:</strong></p>
+<ul>
+<li>Every HTML response has an enforcing Content-Security-Policy</li>
+<li>script-src (or default-src) contains no &#39;unsafe-inline&#39; without nonce/hash, no &#39;unsafe-eval&#39;, no &#39;*&#39;</li>
+<li>object-src &#39;none&#39; and base-uri restricted</li>
+</ul>
+<p><strong>Must not break:</strong> An enforcing CSP that is too strict silently breaks scripts, maps, analytics and third-party widgets. Always ship Report-Only first and test every <span class="st st-critical">critical</span> page in a real browser. Run <code>navsentry compare</code> between the pre-fix and post-fix runs: every legitimate request must keep the same status, content type, non-security header set and JSON shape; only security headers may differ.</p>
+<p>References: OWASP A02:2025 Security Misconfiguration; A05:2025 Injection; A05:2021 Security Misconfiguration; A03:2021 Injection · CWE CWE-693, CWE-1021 · WSTG WSTG-CONF-12 · ASVS 5.0 V3 Web Frontend Security</p>
+<p>Fingerprints: <code>22fb68e2405cb97eec3d9987</code> <code>86733b9437764e1560fc2e38</code></p>
+<h4 class="card lv-caution">🟠 NSC-CONF-003 — Clickjacking protection missing</h4>
+<div class="tw"><table>
+<thead><tr><th>Action</th><th>Severity</th><th>Category</th><th>Affected targets</th></tr></thead>
+<tbody>
+<tr><td><strong><span class="st st-caution">CAUTION</span></strong></td><td><strong><span class="st st-low">low</span></strong></td><td>CONF</td><td>2</td></tr>
+</tbody></table></div>
+<p><strong>Why it matters:</strong> HTML responses can be framed by any origin: neither CSP frame-ancestors nor X-Frame-Options is set.</p>
+<p><strong>Expected:</strong> HTML responses send CSP frame-ancestors &#39;self&#39; (or an explicit allowlist) and/or X-Frame-Options DENY|SAMEORIGIN</p>
+<p><strong>Observed (redacted):</strong></p>
+<div class="tw"><table>
+<thead><tr><th>Target</th><th>Confidence</th><th>Lifecycle</th><th>Observed</th></tr></thead>
+<tbody>
+<tr><td><code>GET http://127.0.0.1:4173/</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>No frame-ancestors or valid X-Frame-Options; frame-ancestors absent; X-Frame-Options absent</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/app/profile</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>No frame-ancestors or valid X-Frame-Options; frame-ancestors absent; X-Frame-Options absent</td></tr>
+</tbody></table></div>
+<p><strong>How to reproduce:</strong></p>
+<ul>
+<li>navsentry test --config &lt;manifest&gt;  (rule NSC-CONF-003, transport direct-http)</li>
+<li>From a different local origin, embed the page in an &lt;iframe&gt;: the browser refuses to render it</li>
+</ul>
+<p><strong>How to fix:</strong> Send <code>Content-Security-Policy: frame-ancestors &#39;self&#39; &lt;approved-parents&gt;</code> plus <code>X-Frame-Options: SAMEORIGIN</code> for legacy browsers.</p>
+<p><strong>Fix examples (reviewed examples; NavSentry does not execute them):</strong></p>
+<ul>
+<li><strong>nginx</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="nginx"><code>server {
+    listen 443 ssl;
+    # no X-Frame-Options header
+}</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="nginx"><code>server {
+    listen 443 ssl;
+    add_header X-Frame-Options &quot;SAMEORIGIN&quot; always;
+}</code></pre>
+<div class="li-text">Also send <code>Content-Security-Policy: frame-ancestors &#39;self&#39;</code> for current browsers.</div>
+</ul>
+<ul>
+<li><strong>Node.js / Express</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="js"><code>app.use(express.static(&quot;public&quot;));</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="js"><code>app.use((req, res, next) =&gt; {
+  res.setHeader(&quot;X-Frame-Options&quot;, &quot;SAMEORIGIN&quot;);
+  next();
+});
+app.use(express.static(&quot;public&quot;));</code></pre>
+<div class="li-text">Also send <code>Content-Security-Policy: frame-ancestors &#39;self&#39;</code> for current browsers.</div>
+</ul>
+<ul>
+<li><strong>ASP.NET Core</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="csharp"><code>app.UseStaticFiles();</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="csharp"><code>app.Use(async (context, next) =&gt;
+{
+    context.Response.Headers[&quot;X-Frame-Options&quot;] = &quot;SAMEORIGIN&quot;;
+    await next();
+});
+app.UseStaticFiles();</code></pre>
+<div class="li-text">Also send <code>Content-Security-Policy: frame-ancestors &#39;self&#39;</code> for current browsers.</div>
+</ul>
+<ul>
+<li><strong>Spring Boot / Spring Security</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="java"><code>http.headers(Customizer.withDefaults());</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="java"><code>http.headers(h -&gt; h
+    .frameOptions(f -&gt; f.sameOrigin()));</code></pre>
+<div class="li-text">Also send <code>Content-Security-Policy: frame-ancestors &#39;self&#39;</code> for current browsers.</div>
+</ul>
+<p><strong>How to recheck:</strong></p>
+<ul>
+<li>From a different local origin, embed the page in an &lt;iframe&gt;: the browser refuses to render it</li>
+<li>Pages that are legitimately embedded (e.g. portal widgets) still render inside their approved parent</li>
+<li>Run the same NavSentry scan again and compare it with this run.</li>
+</ul>
+<p><strong>Fixed when:</strong></p>
+<ul>
+<li>HTML responses send CSP frame-ancestors &#39;self&#39; (or an explicit allowlist) and/or X-Frame-Options DENY|SAMEORIGIN</li>
+</ul>
+<p><strong>Must not break:</strong> Inventory legitimate embedding (portals, SSO, map widgets) before choosing DENY. Run <code>navsentry compare</code> between the pre-fix and post-fix runs: every legitimate request must keep the same status, content type, non-security header set and JSON shape; only security headers may differ.</p>
+<p>References: OWASP A02:2025 Security Misconfiguration; A05:2021 Security Misconfiguration · CWE CWE-1021 · WSTG WSTG-CLNT-09 · ASVS 5.0 V3 Web Frontend Security</p>
+<p>Fingerprints: <code>e8e83ba35b2ee4153cc31db5</code> <code>537cf1850c28c8f706b2ddec</code></p>
+<h4 class="card lv-caution">🟠 NSC-SESS-002 — Cookie without HttpOnly flag</h4>
+<div class="tw"><table>
+<thead><tr><th>Action</th><th>Severity</th><th>Category</th><th>Affected targets</th></tr></thead>
+<tbody>
+<tr><td><strong><span class="st st-caution">CAUTION</span></strong></td><td><strong><span class="st st-low">low</span></strong></td><td>SESS</td><td>1</td></tr>
+</tbody></table></div>
+<p><strong>Why it matters:</strong> Session-like cookies are readable by JavaScript (no HttpOnly), so any XSS can steal them.</p>
+<p><strong>Expected:</strong> Session/auth cookies have HttpOnly | Cookies intentionally read by JS (e.g. double-submit CSRF token) are documented exceptions</p>
+<p><strong>Observed (redacted):</strong></p>
+<div class="tw"><table>
+<thead><tr><th>Target</th><th>Confidence</th><th>Lifecycle</th><th>Observed</th></tr></thead>
+<tbody>
+<tr><td><code>GET http://127.0.0.1:4173/</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Session-like cookie(s) readable by JavaScript; SESSIONID: HttpOnly missing on session-like cookie</td></tr>
+</tbody></table></div>
+<p><strong>How to reproduce:</strong></p>
+<ul>
+<li>navsentry test --config &lt;manifest&gt;  (rule NSC-SESS-002, transport direct-http)</li>
+<li>DevTools &gt; Application &gt; Cookies: HttpOnly ticked for session cookies</li>
+</ul>
+<p><strong>How to fix:</strong> Enable HttpOnly for session/auth cookies in the framework configuration.</p>
+<p><strong>Fix examples (reviewed examples; NavSentry does not execute them):</strong></p>
+<ul>
+<li><strong>Node.js / Express</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="js"><code>res.cookie(&quot;sid&quot;, sessionId);</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="js"><code>res.cookie(&quot;sid&quot;, sessionId, { secure: true, httpOnly: true, sameSite: &quot;lax&quot;, path: &quot;/&quot; });</code></pre>
+</ul>
+<ul>
+<li><strong>ASP.NET Core</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="csharp"><code>builder.Services.AddAuthentication().AddCookie();</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="csharp"><code>builder.Services.AddAuthentication().AddCookie(o =&gt;
+{
+    o.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    o.Cookie.HttpOnly = true;
+    o.Cookie.SameSite = SameSiteMode.Lax;
+});</code></pre>
+</ul>
+<ul>
+<li><strong>Spring Boot / Spring Security</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="properties"><code># application.properties: session cookie defaults</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="properties"><code>server.servlet.session.cookie.secure=true
+server.servlet.session.cookie.http-only=true
+server.servlet.session.cookie.same-site=lax</code></pre>
+</ul>
+<ul>
+<li><strong>nginx</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="nginx"><code>location / {
+    proxy_pass http://app;
+}</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="nginx"><code>location / {
+    proxy_pass http://app;
+    proxy_cookie_flags ~ secure httponly samesite=lax;
+}</code></pre>
+<div class="li-text">For cookies the application cannot change. Needs nginx 1.19.3 or newer.</div>
+</ul>
+<p><strong>How to recheck:</strong></p>
+<ul>
+<li>DevTools &gt; Application &gt; Cookies: HttpOnly ticked for session cookies</li>
+<li>In Console, document.cookie does not show the session cookie</li>
+<li>Login/logout still work</li>
+<li>Run the same NavSentry scan again and compare it with this run.</li>
+</ul>
+<p><strong>Fixed when:</strong></p>
+<ul>
+<li>Session/auth cookies have HttpOnly</li>
+<li>Cookies intentionally read by JS (e.g. double-submit CSRF token) are documented exceptions</li>
+</ul>
+<p><strong>Must not break:</strong> Front-end code that reads the cookie will break — search the client code for document.cookie usage first and move it to a header/endpoint.</p>
+<p>References: OWASP A02:2025 Security Misconfiguration; A07:2025 Authentication Failures; A05:2021 Security Misconfiguration; A07:2021 Identification and Authentication Failures · CWE CWE-1004 · WSTG WSTG-SESS-02 · ASVS 5.0 V3 Web Frontend Security, V7 Session Management</p>
+<p>Fingerprints: <code>61ec1e54ebcfb120565cf348</code></p>
+<h4 class="card lv-caution">🟠 NSC-SESS-003 — Cookie SameSite missing or contradictory</h4>
+<div class="tw"><table>
+<thead><tr><th>Action</th><th>Severity</th><th>Category</th><th>Affected targets</th></tr></thead>
+<tbody>
+<tr><td><strong><span class="st st-caution">CAUTION</span></strong></td><td><strong><span class="st st-low">low</span></strong></td><td>SESS</td><td>1</td></tr>
+</tbody></table></div>
+<p><strong>Why it matters:</strong> Cookies omit SameSite, or set SameSite=None without Secure (rejected by modern browsers), weakening CSRF defences.</p>
+<p><strong>Expected:</strong> Session cookies set SameSite=Lax or Strict | Any SameSite=None cookie also has Secure and a documented cross-site need</p>
+<p><strong>Observed (redacted):</strong></p>
+<div class="tw"><table>
+<thead><tr><th>Target</th><th>Confidence</th><th>Lifecycle</th><th>Observed</th></tr></thead>
+<tbody>
+<tr><td><code>GET http://127.0.0.1:4173/</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>SameSite missing or contradictory; SESSIONID: SameSite missing</td></tr>
+</tbody></table></div>
+<p><strong>How to reproduce:</strong></p>
+<ul>
+<li>navsentry test --config &lt;manifest&gt;  (rule NSC-SESS-003, transport direct-http)</li>
+<li>DevTools &gt; Application &gt; Cookies: SameSite column</li>
+</ul>
+<p><strong>How to fix:</strong> Set SameSite=Lax by default; use None; Secure only for cookies that must travel cross-site (SSO, embedded apps).</p>
+<p><strong>Fix examples (reviewed examples; NavSentry does not execute them):</strong></p>
+<ul>
+<li><strong>Node.js / Express</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="js"><code>res.cookie(&quot;sid&quot;, sessionId);</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="js"><code>res.cookie(&quot;sid&quot;, sessionId, { secure: true, httpOnly: true, sameSite: &quot;lax&quot;, path: &quot;/&quot; });</code></pre>
+</ul>
+<ul>
+<li><strong>ASP.NET Core</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="csharp"><code>builder.Services.AddAuthentication().AddCookie();</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="csharp"><code>builder.Services.AddAuthentication().AddCookie(o =&gt;
+{
+    o.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    o.Cookie.HttpOnly = true;
+    o.Cookie.SameSite = SameSiteMode.Lax;
+});</code></pre>
+</ul>
+<ul>
+<li><strong>Spring Boot / Spring Security</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="properties"><code># application.properties: session cookie defaults</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="properties"><code>server.servlet.session.cookie.secure=true
+server.servlet.session.cookie.http-only=true
+server.servlet.session.cookie.same-site=lax</code></pre>
+</ul>
+<ul>
+<li><strong>nginx</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="nginx"><code>location / {
+    proxy_pass http://app;
+}</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="nginx"><code>location / {
+    proxy_pass http://app;
+    proxy_cookie_flags ~ secure httponly samesite=lax;
+}</code></pre>
+<div class="li-text">For cookies the application cannot change. Needs nginx 1.19.3 or newer.</div>
+</ul>
+<p><strong>How to recheck:</strong></p>
+<ul>
+<li>DevTools &gt; Application &gt; Cookies: SameSite column</li>
+<li>Test SSO/IdP callbacks and cross-site POST flows still keep the session</li>
+<li>Run the same NavSentry scan again and compare it with this run.</li>
+</ul>
+<p><strong>Fixed when:</strong></p>
+<ul>
+<li>Session cookies set SameSite=Lax or Strict</li>
+<li>Any SameSite=None cookie also has Secure and a documented cross-site need</li>
+</ul>
+<p><strong>Must not break:</strong> SameSite=Strict/Lax can break SAML/OIDC form_post callbacks and payment redirects; test every external login/redirect flow.</p>
+<p>References: OWASP A01:2025 Broken Access Control; A02:2025 Security Misconfiguration; A01:2021 Broken Access Control; A05:2021 Security Misconfiguration · CWE CWE-1275, CWE-352 · WSTG WSTG-SESS-02, WSTG-SESS-05 · ASVS 5.0 V3 Web Frontend Security, V7 Session Management</p>
+<p>Fingerprints: <code>3ef098d4f9d97c697a600f59</code></p>
+</div>
+<div class="group" data-level="PLANNED">
+<h3 class="lv lv-planned">🟡 <span class="st st-planned">PLANNED</span> — Schedule the fix</h3>
+<h4 class="card lv-planned">🟡 NSC-SESS-004 — JWT missing protection claims or weak algorithm</h4>
+<div class="tw"><table>
+<thead><tr><th>Action</th><th>Severity</th><th>Category</th><th>Affected targets</th></tr></thead>
+<tbody>
+<tr><td><strong><span class="st st-planned">PLANNED</span></strong></td><td><strong><span class="st st-medium">medium</span></strong></td><td>SESS</td><td>1</td></tr>
+</tbody></table></div>
+<p><strong>Why it matters:</strong> Observed JWTs use alg &#39;none&#39;, omit exp, or lack audience/issuer binding, so tokens live forever or can be replayed to other services.</p>
+<p><strong>Expected:</strong> alg is not &#39;none&#39; | exp present and lifetime appropriate (e.g. &lt;= 1h for access tokens) | aud and iss present and validated server-side</p>
+<p><strong>Observed (redacted):</strong></p>
+<div class="tw"><table>
+<thead><tr><th>Target</th><th>Confidence</th><th>Lifecycle</th><th>Observed</th></tr></thead>
+<tbody>
+<tr><td><code>GET http://127.0.0.1:4173/api/token</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>JWT missing protection claims or weak alg; token#1: alg=none; token#1: exp claim missing; token#1: iss claim missing; token#1: aud claim missing</td></tr>
+</tbody></table></div>
+<p><strong>How to reproduce:</strong></p>
+<ul>
+<li>navsentry test --config &lt;manifest&gt;  (rule NSC-SESS-004, transport direct-http)</li>
+<li>Log in, copy the token from DevTools &gt; Network/Storage into a local decoder (offline), check claims</li>
+</ul>
+<p><strong>How to fix:</strong> Issue tokens with exp/iat/aud/iss; validate them on every API; reject alg none and unexpected algorithms.</p>
+<p><strong>Fix examples (reviewed examples; NavSentry does not execute them):</strong></p>
+<ul>
+<li><strong>Node.js / Express</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="js"><code>const claims = jwt.decode(token); // not verified</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="js"><code>const claims = jwt.verify(token, key, {
+  algorithms: [&quot;HS256&quot;],
+  audience: &quot;shop-api&quot;,
+  issuer: &quot;shop-auth&quot;,
+});
+// issue with: jwt.sign({ sub }, key, { algorithm: &quot;HS256&quot;, expiresIn: &quot;15m&quot;, audience: &quot;shop-api&quot;, issuer: &quot;shop-auth&quot; })</code></pre>
+<div class="li-text">Uses the jsonwebtoken package. Never accept <code>alg: none</code>.</div>
+</ul>
+<ul>
+<li><strong>ASP.NET Core</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="csharp"><code>o.TokenValidationParameters = new() { ValidateIssuer = false, ValidateAudience = false, ValidateLifetime = false };</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="csharp"><code>o.TokenValidationParameters = new()
+{
+    ValidateIssuer = true, ValidIssuer = &quot;shop-auth&quot;,
+    ValidateAudience = true, ValidAudience = &quot;shop-api&quot;,
+    ValidateLifetime = true, RequireExpirationTime = true,
+    ValidAlgorithms = new[] { SecurityAlgorithms.HmacSha256 },
+};</code></pre>
+</ul>
+<ul>
+<li><strong>Spring Boot / Spring Security</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="properties"><code># resource server without issuer validation</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="properties"><code>spring.security.oauth2.resourceserver.jwt.issuer-uri=https://auth.example.test/
+spring.security.oauth2.resourceserver.jwt.audiences=shop-api</code></pre>
+</ul>
+<p><strong>How to recheck:</strong></p>
+<ul>
+<li>Log in, copy the token from DevTools &gt; Network/Storage into a local decoder (offline), check claims</li>
+<li>Use an expired test token: API returns 401</li>
+<li>Run the same NavSentry scan again and compare it with this run.</li>
+</ul>
+<p><strong>Fixed when:</strong></p>
+<ul>
+<li>alg is not &#39;none&#39;</li>
+<li>exp present and lifetime appropriate (e.g. &lt;= 1h for access tokens)</li>
+<li>aud and iss present and validated server-side</li>
+</ul>
+<p><strong>Must not break:</strong> Adding aud/exp validation rejects old long-lived tokens: plan a token refresh window and communicate client changes.</p>
+<p><strong>Limitations:</strong></p>
+<ul>
+<li>NavSentry decodes but never verifies or forges tokens.</li>
+</ul>
+<p>References: OWASP A07:2025 Authentication Failures; A04:2025 Cryptographic Failures; A07:2021 Identification and Authentication Failures; A02:2021 Cryptographic Failures · CWE CWE-347, CWE-613 · WSTG WSTG-SESS-10 · ASVS 5.0 V9 Self-contained Tokens</p>
+<p>Fingerprints: <code>f5515664499e6e3369c2e269</code></p>
+</div>
+<div class="group" data-level="OPTIONAL">
+<h3 class="lv lv-optional">🔵 <span class="st st-optional">OPTIONAL</span> — Hardening: may be skipped with a recorded reason</h3>
+<h4 class="card lv-optional">🔵 NSC-CONF-004 — MIME sniffing not disabled / insecure Content-Type</h4>
+<div class="tw"><table>
+<thead><tr><th>Action</th><th>Severity</th><th>Category</th><th>Affected targets</th></tr></thead>
+<tbody>
+<tr><td><strong><span class="st st-optional">OPTIONAL</span></strong></td><td><strong><span class="st st-low">low</span></strong></td><td>CONF</td><td>9</td></tr>
+</tbody></table></div>
+<p><strong>Why it matters:</strong> Responses with a body lack <code>X-Content-Type-Options: nosniff</code>, or omit Content-Type / charset, letting browsers guess the type.</p>
+<p><strong>Expected:</strong> Every response with a body has an explicit Content-Type | X-Content-Type-Options: nosniff on every response | text/html responses declare a charset</p>
+<p><strong>Observed (redacted):</strong></p>
+<div class="tw"><table>
+<thead><tr><th>Target</th><th>Confidence</th><th>Lifecycle</th><th>Observed</th></tr></thead>
+<tbody>
+<tr><td><code>GET http://127.0.0.1:4173/</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>text response without charset; X-Content-Type-Options: nosniff missing; text response without charset; X-Content-Type-Options: nosniff missing</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/api/profile</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>X-Content-Type-Options: nosniff missing</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/api/error</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>X-Content-Type-Options: nosniff missing</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/api/token</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>X-Content-Type-Options: nosniff missing</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/api/orders</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>X-Content-Type-Options: nosniff missing; X-Content-Type-Options: nosniff missing</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/api/orders/{{orderA}}</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>X-Content-Type-Options: nosniff missing</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/api/me</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>X-Content-Type-Options: nosniff missing</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/api/admin/stats</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>X-Content-Type-Options: nosniff missing</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/app/profile</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>X-Content-Type-Options: nosniff missing</td></tr>
+</tbody></table></div>
+<p><strong>How to reproduce:</strong></p>
+<ul>
+<li>navsentry test --config &lt;manifest&gt;  (rule NSC-CONF-004, transport direct-http)</li>
+<li>DevTools &gt; Network: each document, script and JSON response shows Content-Type and nosniff</li>
+</ul>
+<p><strong>How to fix:</strong> Add <code>X-Content-Type-Options: nosniff</code> globally and make every handler set an accurate Content-Type (with charset for text).</p>
+<p><strong>Fix examples (reviewed examples; NavSentry does not execute them):</strong></p>
+<ul>
+<li><strong>nginx</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="nginx"><code>server {
+    listen 443 ssl;
+    # no X-Content-Type-Options header
+}</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="nginx"><code>server {
+    listen 443 ssl;
+    add_header X-Content-Type-Options &quot;nosniff&quot; always;
+}</code></pre>
+<div class="li-text">Every handler must also send an accurate Content-Type, with charset for text.</div>
+</ul>
+<ul>
+<li><strong>Node.js / Express</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="js"><code>app.use(express.static(&quot;public&quot;));</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="js"><code>app.use((req, res, next) =&gt; {
+  res.setHeader(&quot;X-Content-Type-Options&quot;, &quot;nosniff&quot;);
+  next();
+});
+app.use(express.static(&quot;public&quot;));</code></pre>
+<div class="li-text">Every handler must also send an accurate Content-Type, with charset for text.</div>
+</ul>
+<ul>
+<li><strong>ASP.NET Core</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="csharp"><code>app.UseStaticFiles();</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="csharp"><code>app.Use(async (context, next) =&gt;
+{
+    context.Response.Headers[&quot;X-Content-Type-Options&quot;] = &quot;nosniff&quot;;
+    await next();
+});
+app.UseStaticFiles();</code></pre>
+<div class="li-text">Every handler must also send an accurate Content-Type, with charset for text.</div>
+</ul>
+<ul>
+<li><strong>Spring Boot / Spring Security</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="java"><code>http.headers(Customizer.withDefaults());</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="java"><code>http.headers(h -&gt; h
+    .contentTypeOptions(Customizer.withDefaults()));</code></pre>
+<div class="li-text">Every handler must also send an accurate Content-Type, with charset for text.</div>
+</ul>
+<p><strong>How to recheck:</strong></p>
+<ul>
+<li>DevTools &gt; Network: each document, script and JSON response shows Content-Type and nosniff</li>
+<li>Re-run → NSC-CONF-004 <span class="st st-pass">PASS</span></li>
+<li>Run the same NavSentry scan again and compare it with this run.</li>
+</ul>
+<p><strong>Fixed when:</strong></p>
+<ul>
+<li>Every response with a body has an explicit Content-Type</li>
+<li>X-Content-Type-Options: nosniff on every response</li>
+<li>text/html responses declare a charset</li>
+</ul>
+<p><strong>Must not break:</strong> nosniff blocks scripts/styles served with a wrong type: fix wrong Content-Type on static files first. Run <code>navsentry compare</code> between the pre-fix and post-fix runs: every legitimate request must keep the same status, content type, non-security header set and JSON shape; only security headers may differ.</p>
+<p>References: OWASP A02:2025 Security Misconfiguration; A05:2021 Security Misconfiguration · CWE CWE-16, CWE-430 · WSTG WSTG-CONF-12 · ASVS 5.0 V3 Web Frontend Security, V4 API and Web Service</p>
+<p>Fingerprints: <code>524856164cab65da7f0ca455</code> <code>aef9e8a5b6b1e659dadc2fa1</code> <code>a2f6a8f688dc2ea498a0a7a9</code> <code>81e4f06fbc3ebd6e19ad70a2</code> <code>8abac78f653ee5b014e2f490</code> <code>887c9e474229a3f22403e9f7</code> <code>6b1e8104436e4050b9e69aea</code> <code>b8fb462c3914484b16461887</code> <code>61ef9ac144885a9aee7c1d64</code></p>
+<h4 class="card lv-optional">🔵 NSC-CONF-006 — Unnecessary HTTP methods or method override enabled</h4>
+<div class="tw"><table>
+<thead><tr><th>Action</th><th>Severity</th><th>Category</th><th>Affected targets</th></tr></thead>
+<tbody>
+<tr><td><strong><span class="st st-optional">OPTIONAL</span></strong></td><td><strong><span class="st st-low">low</span></strong></td><td>CONF</td><td>5</td></tr>
+</tbody></table></div>
+<p><strong>Why it matters:</strong> The server advertises (Allow / Access-Control-Allow-Methods) methods such as TRACE, TRACK, PUT or DELETE on resources that do not need them, or honours X-HTTP-Method-Override.</p>
+<p><strong>Expected:</strong> OPTIONS on in-scope resources does not advertise TRACE/TRACK/CONNECT | Only methods actually used by the resource are advertised | Method-override headers are ignored (verified manually under safe-validate)</p>
+<p><strong>Observed (redacted):</strong></p>
+<div class="tw"><table>
+<thead><tr><th>Target</th><th>Confidence</th><th>Lifecycle</th><th>Observed</th></tr></thead>
+<tbody>
+<tr><td><code>OPTIONS http://127.0.0.1:4173/</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Dangerous methods advertised: TRACE; advertised: GET, POST, OPTIONS, TRACE</td></tr>
+<tr><td><code>OPTIONS http://127.0.0.1:4173/api/profile</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Dangerous methods advertised: TRACE; advertised: GET, POST, OPTIONS, TRACE</td></tr>
+<tr><td><code>OPTIONS http://127.0.0.1:4173/api/error</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Dangerous methods advertised: TRACE; advertised: GET, POST, OPTIONS, TRACE</td></tr>
+<tr><td><code>OPTIONS http://127.0.0.1:4173/api/token</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Dangerous methods advertised: TRACE; advertised: GET, POST, OPTIONS, TRACE</td></tr>
+<tr><td><code>OPTIONS http://127.0.0.1:4173/go-out</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Dangerous methods advertised: TRACE; advertised: GET, POST, OPTIONS, TRACE</td></tr>
+</tbody></table></div>
+<p><strong>How to reproduce:</strong></p>
+<ul>
+<li>navsentry test --config &lt;manifest&gt;  (rule NSC-CONF-006, transport direct-http)</li>
+<li>Send OPTIONS to the resource (NavSentry or curl -X OPTIONS -i) and inspect Allow</li>
+</ul>
+<p><strong>How to fix:</strong> Restrict methods per route at the web server/framework; disable TRACE; remove method-override middleware unless strictly required.</p>
+<p><strong>Fix examples (reviewed examples; NavSentry does not execute them):</strong></p>
+<ul>
+<li><strong>nginx</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="nginx"><code>location / {
+    proxy_pass http://app;
+}</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="nginx"><code>location / {
+    limit_except GET HEAD POST { deny all; }
+    proxy_pass http://app;
+}</code></pre>
+</ul>
+<ul>
+<li><strong>Node.js / Express</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="js"><code>app.use(methodOverride(&quot;_method&quot;));</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="js"><code>// method-override removed
+app.use((req, res, next) =&gt;
+  [&quot;TRACE&quot;, &quot;TRACK&quot;].includes(req.method) ? res.sendStatus(405) : next());</code></pre>
+</ul>
+<p><strong>How to recheck:</strong></p>
+<ul>
+<li>Send OPTIONS to the resource (NavSentry or curl -X OPTIONS -i) and inspect Allow</li>
+<li>Re-run → NSC-CONF-006 <span class="st st-pass">PASS</span></li>
+<li>Run the same NavSentry scan again and compare it with this run.</li>
+</ul>
+<p><strong>Fixed when:</strong></p>
+<ul>
+<li>OPTIONS on in-scope resources does not advertise TRACE/TRACK/CONNECT</li>
+<li>Only methods actually used by the resource are advertised</li>
+<li>Method-override headers are ignored (verified manually under safe-validate)</li>
+</ul>
+<p><strong>Must not break:</strong> CORS preflight legitimately needs OPTIONS: do not block OPTIONS globally, only restrict what it advertises. Keep the methods real clients use.</p>
+<p><strong>Limitations:</strong></p>
+<ul>
+<li>OPTIONS itself being enabled is normal for CORS; SRC-E recorded it as an accepted Exception. NavSentry fails only on dangerous advertised methods.</li>
+</ul>
+<p>References: OWASP A02:2025 Security Misconfiguration; A05:2021 Security Misconfiguration · CWE CWE-650, CWE-16 · WSTG WSTG-CONF-06 · ASVS 5.0 V13 Configuration, V4 API and Web Service</p>
+<p>Fingerprints: <code>2c67c0722e7817b6d2c8bf9d</code> <code>2c2f89f8d79380769fbb925a</code> <code>c7c1849474ca4043dcd3c780</code> <code>82249f07a283138dc5d24c22</code> <code>5937abdc7d03f39d27e36260</code></p>
+<h4 class="card lv-optional">🔵 NSC-CONF-007 — Insecure cache policy for sensitive responses</h4>
+<div class="tw"><table>
+<thead><tr><th>Action</th><th>Severity</th><th>Category</th><th>Affected targets</th></tr></thead>
+<tbody>
+<tr><td><strong><span class="st st-optional">OPTIONAL</span></strong></td><td><strong><span class="st st-low">low</span></strong></td><td>CONF</td><td>4</td></tr>
+</tbody></table></div>
+<p><strong>Why it matters:</strong> Authenticated or personal API/document responses are cacheable (no <code>Cache-Control: no-store</code>/<code>private</code>), so shared caches or the browser can retain them.</p>
+<p><strong>Expected:</strong> Responses served to authenticated actors or setting session cookies send <code>Cache-Control: no-store</code> (or <code>private, no-cache</code> where justified) | Static public assets may stay cacheable</p>
+<p><strong>Observed (redacted):</strong></p>
+<div class="tw"><table>
+<thead><tr><th>Target</th><th>Confidence</th><th>Lifecycle</th><th>Observed</th></tr></thead>
+<tbody>
+<tr><td><code>GET http://127.0.0.1:4173/</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Sensitive response is cacheable; Cache-Control absent</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/api/profile</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Sensitive response is cacheable; Cache-Control: public, max-age=600</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/api/error</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Sensitive response is cacheable; Cache-Control absent</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/app/profile</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Sensitive response is cacheable; Cache-Control absent</td></tr>
+</tbody></table></div>
+<p><strong>How to reproduce:</strong></p>
+<ul>
+<li>navsentry test --config &lt;manifest&gt;  (rule NSC-CONF-007, transport direct-http)</li>
+<li>DevTools &gt; Network: authenticated API responses show no-store</li>
+</ul>
+<p><strong>How to fix:</strong> Add no-store on authenticated/sensitive routes (middleware by route group); keep long caching only for fingerprinted static assets.</p>
+<p><strong>Fix examples (reviewed examples; NavSentry does not execute them):</strong></p>
+<ul>
+<li><strong>nginx</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="nginx"><code>location /api/ {
+    proxy_pass http://app;
+}</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="nginx"><code>location /api/ {
+    proxy_pass http://app;
+    add_header Cache-Control &quot;no-store&quot; always;
+}</code></pre>
+</ul>
+<ul>
+<li><strong>Node.js / Express</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="js"><code>app.use(&quot;/api&quot;, apiRouter);</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="js"><code>app.use(&quot;/api&quot;, (req, res, next) =&gt; { res.set(&quot;Cache-Control&quot;, &quot;no-store&quot;); next(); }, apiRouter);</code></pre>
+</ul>
+<ul>
+<li><strong>ASP.NET Core</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="csharp"><code>[HttpGet(&quot;profile&quot;)]
+public IActionResult Profile() =&gt; Ok(_svc.Profile());</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="csharp"><code>[HttpGet(&quot;profile&quot;)]
+[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+public IActionResult Profile() =&gt; Ok(_svc.Profile());</code></pre>
+</ul>
+<ul>
+<li><strong>Spring Boot / Spring Security</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="java"><code>http.headers(h -&gt; h.cacheControl(c -&gt; c.disable()));</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="java"><code>http.headers(h -&gt; h.cacheControl(Customizer.withDefaults())); // no-cache, no-store</code></pre>
+</ul>
+<p><strong>How to recheck:</strong></p>
+<ul>
+<li>DevTools &gt; Network: authenticated API responses show no-store</li>
+<li>Log out, press Back: sensitive pages are not shown from cache</li>
+<li>Run the same NavSentry scan again and compare it with this run.</li>
+</ul>
+<p><strong>Fixed when:</strong></p>
+<ul>
+<li>Responses served to authenticated actors or setting session cookies send <code>Cache-Control: no-store</code> (or <code>private, no-cache</code> where justified)</li>
+<li>Static public assets may stay cacheable</li>
+</ul>
+<p><strong>Must not break:</strong> Do not apply no-store to static assets (performance regression). Scope the header by route. Verify with <code>navsentry compare</code> and page-load timing.</p>
+<p>References: OWASP A06:2025 Insecure Design; A02:2025 Security Misconfiguration; A04:2021 Insecure Design; A05:2021 Security Misconfiguration · CWE CWE-524, CWE-525 · WSTG WSTG-ATHN-06 · ASVS 5.0 V14 Data Protection</p>
+<p>Fingerprints: <code>78cfb26ba86a9c964485e562</code> <code>973b78c7baf56069037bc3e8</code> <code>b2ae6e48d832d0fbdb60a801</code> <code>82c6f694fc9f9f46f387b272</code></p>
+<h4 class="card lv-optional">🔵 NSC-INFO-001 — Server / framework version disclosure</h4>
+<div class="tw"><table>
+<thead><tr><th>Action</th><th>Severity</th><th>Category</th><th>Affected targets</th></tr></thead>
+<tbody>
+<tr><td><strong><span class="st st-optional">OPTIONAL</span></strong></td><td><strong><span class="st st-low">low</span></strong></td><td><span class="st st-info">INFO</span></td><td>10</td></tr>
+</tbody></table></div>
+<p><strong>Why it matters:</strong> Headers (Server, X-Powered-By, X-AspNet-Version, X-AspNetMvc-Version) or error pages reveal product versions, helping attackers pick exploits.</p>
+<p><strong>Expected:</strong> No response header or default error page exposes a product version number | X-Powered-By / X-AspNet-Version headers removed</p>
+<p><strong>Observed (redacted):</strong></p>
+<div class="tw"><table>
+<thead><tr><th>Target</th><th>Confidence</th><th>Lifecycle</th><th>Observed</th></tr></thead>
+<tbody>
+<tr><td><code>GET http://127.0.0.1:4173/</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Product version disclosed; server: Apache/2.4.29 (Ubuntu); x-powered-by: PHP/7.2.1</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/api/profile</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Product version disclosed; server: Apache/2.4.29 (Ubuntu); x-powered-by: PHP/7.2.1</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/api/error</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Product version disclosed; server: Apache/2.4.29 (Ubuntu); x-powered-by: PHP/7.2.1</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/api/token</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Product version disclosed; server: Apache/2.4.29 (Ubuntu); x-powered-by: PHP/7.2.1</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/go-out</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Product version disclosed; server: Apache/2.4.29 (Ubuntu); x-powered-by: PHP/7.2.1</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/api/orders</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Product version disclosed; server: Apache/2.4.29 (Ubuntu); x-powered-by: PHP/7.2.1</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/api/orders/{{orderA}}</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Product version disclosed; server: Apache/2.4.29 (Ubuntu); x-powered-by: PHP/7.2.1</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/api/me</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Product version disclosed; server: Apache/2.4.29 (Ubuntu); x-powered-by: PHP/7.2.1</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/api/admin/stats</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Product version disclosed; server: Apache/2.4.29 (Ubuntu); x-powered-by: PHP/7.2.1</td></tr>
+<tr><td><code>GET http://127.0.0.1:4173/app/profile</code></td><td><span class="st st-high">high</span></td><td><span class="st st-validated">VALIDATED</span></td><td>Product version disclosed; server: Apache/2.4.29 (Ubuntu); x-powered-by: PHP/7.2.1</td></tr>
+</tbody></table></div>
+<p><strong>How to reproduce:</strong></p>
+<ul>
+<li>navsentry test --config &lt;manifest&gt;  (rule NSC-INFO-001, transport direct-http)</li>
+<li>DevTools &gt; Network &gt; Response Headers: no version numbers</li>
+</ul>
+<p><strong>How to fix:</strong> Remove/blank version headers at the server/proxy (e.g. server_tokens off, removeServerHeader, enableVersionHeader=false) and use custom error pages.</p>
+<p><strong>Fix examples (reviewed examples; NavSentry does not execute them):</strong></p>
+<ul>
+<li><strong>nginx</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="nginx"><code>http {
+}</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="nginx"><code>http {
+    server_tokens off;
+    proxy_hide_header X-Powered-By;
+}</code></pre>
+</ul>
+<ul>
+<li><strong>Node.js / Express</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="js"><code>const app = express();</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="js"><code>const app = express();
+app.disable(&quot;x-powered-by&quot;);</code></pre>
+</ul>
+<ul>
+<li><strong>ASP.NET Core</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="csharp"><code>var builder = WebApplication.CreateBuilder(args);</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="csharp"><code>var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.ConfigureKestrel(o =&gt; o.AddServerHeader = false);</code></pre>
+</ul>
+<p><strong>How to recheck:</strong></p>
+<ul>
+<li>DevTools &gt; Network &gt; Response Headers: no version numbers</li>
+<li>Request a non-existent path: error page shows no version</li>
+<li>Run the same NavSentry scan again and compare it with this run.</li>
+</ul>
+<p><strong>Fixed when:</strong></p>
+<ul>
+<li>No response header or default error page exposes a product version number</li>
+<li>X-Powered-By / X-AspNet-Version headers removed</li>
+</ul>
+<p><strong>Must not break:</strong> Header removal does not change bodies; confirm with <code>navsentry compare</code> (Server/X-Powered-By are excluded from the contract).</p>
+<p><strong>Limitations:</strong></p>
+<ul>
+<li>Version hiding is defence in depth, not a fix for an unpatched component (see NSC-SUPPLY-001).</li>
+</ul>
+<p>References: OWASP A02:2025 Security Misconfiguration; A05:2021 Security Misconfiguration · CWE CWE-200, CWE-497 · WSTG WSTG-INFO-02 · ASVS 5.0 V13 Configuration</p>
+<p>Fingerprints: <code>65014b06eef67557fa1224fa</code> <code>96c85dadbfe772b1946bb878</code> <code>81615fe0efd01296eabb4b0e</code> <code>567f8480c5da9b5ed13762ea</code> <code>40d2944d5782beb316fdf3df</code> <code>b6438cdb4cfb8485c2c39cb4</code> <code>10818924dc8a1a6ca8a01ce1</code> <code>557b65c1e49e747d5e8b1ff7</code> <code>f3e727a639f1686ee83fcfde</code> <code>4bab2545a1262edeea8cda03</code></p>
+<h4 class="card lv-optional">🔵 NSC-INFO-003 — Internal IP address disclosure</h4>
+<div class="tw"><table>
+<thead><tr><th>Action</th><th>Severity</th><th>Category</th><th>Affected targets</th></tr></thead>
+<tbody>
+<tr><td><strong><span class="st st-optional">OPTIONAL</span></strong></td><td><strong><span class="st st-low">low</span></strong></td><td><span class="st st-info">INFO</span></td><td>1</td></tr>
+</tbody></table></div>
+<p><strong>Why it matters:</strong> Response headers or bodies contain RFC 1918 / loopback / link-local addresses, revealing internal topology.</p>
+<p><strong>Expected:</strong> No in-scope response contains private IPv4/IPv6 literals in headers or bodies</p>
+<p><strong>Observed (redacted):</strong></p>
+<div class="tw"><table>
+<thead><tr><th>Target</th><th>Confidence</th><th>Lifecycle</th><th>Observed</th></tr></thead>
+<tbody>
+<tr><td><code>GET http://127.0.0.1:4173/api/profile</code></td><td><span class="st st-medium">medium</span></td><td><span class="st st-suspected">SUSPECTED</span></td><td>Private IP address literals disclosed; headers: 0 match(es); body: 1 match(es); values masked</td></tr>
+</tbody></table></div>
+<p><strong>How to reproduce:</strong></p>
+<ul>
+<li>navsentry test --config &lt;manifest&gt;  (rule NSC-INFO-003, transport direct-http)</li>
+<li>Search the raw response (DevTools &gt; Network &gt; Response) for 10./172.16-31./192.168. patterns</li>
+</ul>
+<p><strong>How to fix:</strong> Stop echoing upstream addresses (Via, X-Backend-Server, error messages, config endpoints); configure the proxy to strip them.</p>
+<p><strong>Fix examples (reviewed examples; NavSentry does not execute them):</strong></p>
+<ul>
+<li><strong>nginx</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="nginx"><code>location / {
+    proxy_pass http://10.0.0.12:8080;
+}</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="nginx"><code>location / {
+    proxy_pass http://10.0.0.12:8080;
+    proxy_hide_header X-Backend-Server;
+    proxy_hide_header Via;
+}</code></pre>
+</ul>
+<ul>
+<li><strong>Node.js / Express</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="js"><code>res.json({ ok: true, node: os.hostname(), ip: req.socket.localAddress });</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="js"><code>res.json({ ok: true });</code></pre>
+</ul>
+<p><strong>How to recheck:</strong></p>
+<ul>
+<li>Search the raw response (DevTools &gt; Network &gt; Response) for 10./172.16-31./192.168. patterns</li>
+<li>Re-run → NSC-INFO-003 <span class="st st-pass">PASS</span></li>
+<li>Run the same NavSentry scan again and compare it with this run.</li>
+</ul>
+<p><strong>Fixed when:</strong></p>
+<ul>
+<li>No in-scope response contains private IPv4/IPv6 literals in headers or bodies</li>
+</ul>
+<p><strong>Must not break:</strong> If a client legitimately consumes an address field (e.g. a config endpoint), replace it with a public hostname rather than removing the field; verify JSON shape with <code>navsentry compare</code>.</p>
+<p><strong>Limitations:</strong></p>
+<ul>
+<li>Dotted version/build strings that start with 10. or 192.168. can match; review context before <span class="st st-validated">VALIDATED</span>.</li>
+</ul>
+<p>References: OWASP A02:2025 Security Misconfiguration; A05:2021 Security Misconfiguration · CWE CWE-200 · WSTG WSTG-INFO-05 · ASVS 5.0 V13 Configuration</p>
+<p>Fingerprints: <code>3cb08c2e2fd70219f7d3f68a</code></p>
+</div>
+<div class="group" data-level="INFO">
+<h3 class="lv lv-info">⚪ <span class="st st-info">INFO</span> — Observation only: no action needed</h3>
+<h4 class="card lv-info">⚪ NSC-INFO-004 — Email address disclosure</h4>
+<div class="tw"><table>
+<thead><tr><th>Action</th><th>Severity</th><th>Category</th><th>Affected targets</th></tr></thead>
+<tbody>
+<tr><td><strong><span class="st st-info">INFO</span></strong></td><td><strong class="st st-info">info</strong></td><td><span class="st st-info">INFO</span></td><td>1</td></tr>
+</tbody></table></div>
+<p><strong>Why it matters:</strong> Responses expose email addresses (often staff/developer addresses in config or API payloads) that enable phishing and enumeration.</p>
+<p><strong>Expected:</strong> Anonymous responses expose no personal/staff email except intentional public contact addresses listed by the owner</p>
+<p><strong>Observed (redacted):</strong></p>
+<div class="tw"><table>
+<thead><tr><th>Target</th><th>Confidence</th><th>Lifecycle</th><th>Observed</th></tr></thead>
+<tbody>
+<tr><td><code>GET http://127.0.0.1:4173/api/profile</code></td><td><span class="st st-medium">medium</span></td><td><span class="st st-suspected">SUSPECTED</span></td><td>1 email address(es) in response; count: 1; domain shapes: *.example; addresses masked</td></tr>
+</tbody></table></div>
+<p><strong>How to reproduce:</strong></p>
+<ul>
+<li>navsentry test --config &lt;manifest&gt;  (rule NSC-INFO-004, transport direct-http)</li>
+<li>Open the endpoint anonymously and search the response for &#39;@&#39;</li>
+</ul>
+<p><strong>How to fix:</strong> Remove addresses from config/diagnostic endpoints; return them only to authorized users who need them.</p>
+<p><strong>Fix examples (reviewed examples; NavSentry does not execute them):</strong></p>
+<ul>
+<li><strong>Any stack</strong></li>
+<div class="li-text">Before:</div>
+<pre class="code" data-lang="js"><code>res.json({ app: &quot;shop&quot;, support: &quot;&lt;staff-email&gt;&quot; });</code></pre>
+<div class="li-text">After:</div>
+<pre class="code" data-lang="js"><code>res.json({ app: &quot;shop&quot; }); // contact details only for authorized users</code></pre>
+</ul>
+<p><strong>How to recheck:</strong></p>
+<ul>
+<li>Open the endpoint anonymously and search the response for &#39;@&#39;</li>
+<li>Re-run → NSC-INFO-004 <span class="st st-pass">PASS</span> or reviewed <span class="st st-dismissed">DISMISSED</span> for intentional contacts</li>
+<li>Run the same NavSentry scan again and compare it with this run.</li>
+</ul>
+<p><strong>Fixed when:</strong></p>
+<ul>
+<li>Anonymous responses expose no personal/staff email except intentional public contact addresses listed by the owner</li>
+</ul>
+<p><strong>Must not break:</strong> If a UI shows an email field to its owner, keep it for the authenticated owner; remove it only from anonymous/other-user responses.</p>
+<p><strong>Limitations:</strong></p>
+<ul>
+<li>Public contact addresses are expected; record them as reviewed exceptions instead of failing forever.</li>
+</ul>
+<p>References: OWASP A01:2025 Broken Access Control; A01:2021 Broken Access Control · CWE CWE-200, CWE-359 · WSTG WSTG-INFO-05 · ASVS 5.0 V14 Data Protection</p>
+<p>Fingerprints: <code>8d3f0ad3b969625397e56ce9</code></p>
+</div>
+</div></details>
+<details open class="section"><summary><h2>Fix verification</h2></summary><div class="body">
+<p>No previous run compared. After a fix, run the same scan again and use <code>navsentry compare --before &lt;dir&gt; --after &lt;dir&gt;</code>.</p>
+</div></details>
+<details open class="section"><summary><h2>Known vulnerabilities</h2></summary><div class="body">
+<ul>
+<li>Snapshot <code>2026-11-04.1</code> · sha256 <code>42e5d2a7d39cf6e2</code> · 3 record(s), 3 reviewed, 0 stale · oldest verification 2026-11-03</li>
+<li>Offline snapshot: it cannot prove that no newer advisory exists. Zero matches never means no vulnerabilities.</li>
+</ul>
+<h3>Known vulnerability applicability</h3>
+<div class="tw"><table>
+<thead><tr><th>Product (evidence)</th><th>Record</th><th>Identifiers</th><th>Severity (source)</th><th>Applicability</th><th>Case</th><th>Caveats</th></tr></thead>
+<tbody>
+<tr><td>server/apache-httpd 2.4.29 (http-banner)</td><td>—</td><td>—</td><td>—</td><td><strong>unknown</strong></td><td>NSC-SUPPLY-001</td><td>no records in the snapshot</td></tr>
+<tr><td>runtime/php 7.2.1 (http-banner)</td><td>—</td><td>—</td><td>—</td><td><strong>unknown</strong></td><td>NSC-SUPPLY-001</td><td>no records in the snapshot</td></tr>
+</tbody></table></div>
+</div></details>
+<details open class="section"><summary><h2>Coverage</h2></summary><div class="body">
+<div class="tw"><table>
+<thead><tr><th>Case</th><th>Title</th><th>Status</th><th>Targets</th><th>Reason</th></tr></thead>
+<tbody>
+<tr><td>NSC-CONF-001</td><td>HSTS missing or weak</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>plain HTTP target</td></tr>
+<tr><td>NSC-CONF-002</td><td>Content Security Policy missing or unsafe</td><td><span class="st st-fail">FAIL</span></td><td>6</td><td></td></tr>
+<tr><td>NSC-CONF-003</td><td>Clickjacking protection missing</td><td><span class="st st-fail">FAIL</span></td><td>6</td><td></td></tr>
+<tr><td>NSC-CONF-004</td><td>MIME sniffing not disabled / insecure Content-Type</td><td><span class="st st-fail">FAIL</span></td><td>25</td><td></td></tr>
+<tr><td>NSC-CONF-009</td><td>Configuration or VCS files publicly reachable</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>not exercised by this run&#39;s targets</td></tr>
+<tr><td>NSC-CONF-005</td><td>Debug mode / development features enabled</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>evidence collection needs an operator/agent; see the case&#39;s agent prompt</td></tr>
+<tr><td>NSC-CONF-006</td><td>Unnecessary HTTP methods or method override enabled</td><td><span class="st st-fail">FAIL</span></td><td>5</td><td></td></tr>
+<tr><td>NSC-CONF-007</td><td>Insecure cache policy for sensitive responses</td><td><span class="st st-fail">FAIL</span></td><td>20</td><td></td></tr>
+<tr><td>NSC-CONF-008</td><td>HTTP request smuggling / desync</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>requires active payloads; never automated without active-approved authorization</td></tr>
+<tr><td>NSC-INFO-001</td><td>Server / framework version disclosure</td><td><span class="st st-fail">FAIL</span></td><td>29</td><td></td></tr>
+<tr><td>NSC-INFO-007</td><td>Secrets embedded in client-side assets</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>not exercised by this run&#39;s targets</td></tr>
+<tr><td>NSC-INFO-006</td><td>Sensitive data written to the browser console</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>no JS runtime (http engine)</td></tr>
+<tr><td>NSC-INFO-008</td><td>Source maps with source content served publicly</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>not exercised by this run&#39;s targets</td></tr>
+<tr><td>NSC-INFO-003</td><td>Internal IP address disclosure</td><td><span class="st st-fail">FAIL</span></td><td>29</td><td></td></tr>
+<tr><td>NSC-INFO-004</td><td>Email address disclosure</td><td><span class="st st-fail">FAIL</span></td><td>29</td><td></td></tr>
+<tr><td>NSC-ERR-001</td><td>Verbose error, stack trace or unhandled exception exposed</td><td><span class="st st-fail">FAIL</span></td><td>29</td><td></td></tr>
+<tr><td>NSC-ERR-002</td><td>Denial of service via expensive input parsing</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>requires active payloads; never automated without active-approved authorization</td></tr>
+<tr><td>NSC-PRIV-001</td><td>National ID / personal identifier disclosure</td><td><span class="st st-fail">FAIL</span></td><td>29</td><td></td></tr>
+<tr><td>NSC-PRIV-002</td><td>Sensitive data in URL / GET query</td><td><span class="st st-pass">PASS</span></td><td>29</td><td></td></tr>
+<tr><td>NSC-SESS-001</td><td>Cookie without Secure flag</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>plain HTTP target</td></tr>
+<tr><td>NSC-SESS-002</td><td>Cookie without HttpOnly flag</td><td><span class="st st-fail">FAIL</span></td><td>4</td><td></td></tr>
+<tr><td>NSC-SESS-003</td><td>Cookie SameSite missing or contradictory</td><td><span class="st st-fail">FAIL</span></td><td>4</td><td></td></tr>
+<tr><td>NSC-SESS-004</td><td>JWT missing protection claims or weak algorithm</td><td><span class="st st-fail">FAIL</span></td><td>4</td><td></td></tr>
+<tr><td>NSC-CRYPT-001</td><td>Legacy TLS/SSL protocol versions enabled</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>not exercised by this run&#39;s targets</td></tr>
+<tr><td>NSC-CRYPT-002</td><td>Weak TLS cipher suites or key exchange</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>evidence collection needs an operator/agent; see the case&#39;s agent prompt</td></tr>
+<tr><td>NSC-CRYPT-003</td><td>Insufficient certificate key size or weak signature</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>not exercised by this run&#39;s targets</td></tr>
+<tr><td>NSC-CRYPT-004</td><td>Missing public key pinning (deprecated control)</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>evidence collection needs an operator/agent; see the case&#39;s agent prompt</td></tr>
+<tr><td>NSC-CRYPT-005</td><td>Hardcoded encryption key</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>source-code finding; use a SAST tool / DevSift</td></tr>
+<tr><td>NSC-CRYPT-006</td><td>Cleartext HTTP served without redirect to HTTPS</td><td><span class="st st-fail">FAIL</span></td><td>29</td><td></td></tr>
+<tr><td>NSC-AC-001</td><td>Authorization bypass through test/debug endpoint</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>evidence collection needs an operator/agent; see the case&#39;s agent prompt</td></tr>
+<tr><td>NSC-AC-002</td><td>Missing authentication on API endpoint</td><td><span class="st st-fail">FAIL</span></td><td>2</td><td></td></tr>
+<tr><td>NSC-AC-003</td><td>IDOR / BOLA (cross-user object access)</td><td><span class="st st-fail">FAIL</span></td><td>1</td><td></td></tr>
+<tr><td>NSC-AC-007</td><td>Missing function-level authorization (vertical privilege escalation)</td><td><span class="st st-fail">FAIL</span></td><td>1</td><td></td></tr>
+<tr><td>NSC-AC-008</td><td>Open redirect</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>not exercised by this run&#39;s targets</td></tr>
+<tr><td>NSC-AC-004</td><td>Permissive CORS policy</td><td><span class="st st-fail">FAIL</span></td><td>5</td><td></td></tr>
+<tr><td>NSC-AC-005</td><td>Server-side request forgery (SSRF)</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>requires active payloads; never automated without active-approved authorization</td></tr>
+<tr><td>NSC-AC-006</td><td>Missing CSRF protection on state-changing requests</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>needs a flow with an access expectation (docs/FLOWS.md)</td></tr>
+<tr><td>NSC-AUTH-001</td><td>Hardcoded API credentials</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>source-code finding; use a SAST tool / DevSift</td></tr>
+<tr><td>NSC-AUTH-002</td><td>Session not invalidated after logout / stale session</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>needs a flow with an access expectation (docs/FLOWS.md)</td></tr>
+<tr><td>NSC-INJ-001</td><td>SQL injection</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>requires active payloads; never automated without active-approved authorization</td></tr>
+<tr><td>NSC-INJ-002</td><td>Server-side script / template / code injection</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>requires active payloads; never automated without active-approved authorization</td></tr>
+<tr><td>NSC-INJ-003</td><td>LDAP injection</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>requires active payloads; never automated without active-approved authorization</td></tr>
+<tr><td>NSC-INJ-004</td><td>Reflected / DOM cross-site scripting</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>deterministic check planned for active-approved (design)</td></tr>
+<tr><td>NSC-INJ-005</td><td>HTTP header manipulation / CRLF injection / unvalidated header forwarding</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>source-code finding; use a SAST tool / DevSift</td></tr>
+<tr><td>NSC-INJ-006</td><td>Local file inclusion / path traversal</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>requires active payloads; never automated without active-approved authorization</td></tr>
+<tr><td>NSC-SUPPLY-001</td><td>Unpatched server component with known vulnerabilities</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>applicability unknown: no records in the snapshot</td></tr>
+<tr><td>NSC-SUPPLY-002</td><td>Client-side library with known vulnerabilities</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>not exercised by this run&#39;s targets</td></tr>
+<tr><td>NSC-LOG-001</td><td>Security logging and alerting gaps</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>evidence collection needs an operator/agent; see the case&#39;s agent prompt</td></tr>
+<tr><td>NSC-BIZ-001</td><td>Business logic flaw</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>needs a flow with an access expectation (docs/FLOWS.md)</td></tr>
+<tr><td>NSC-INFRA-001</td><td>ICMP timestamp response enabled</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>network/host VA item outside web scope</td></tr>
+<tr><td>NSC-INFRA-002</td><td>ICMP redirects accepted</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>network/host VA item outside web scope</td></tr>
+<tr><td>NSC-INFRA-003</td><td>Unsafe default umask / home directory permissions</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>network/host VA item outside web scope</td></tr>
+<tr><td>NSC-INFRA-004</td><td>Weak SSH MAC algorithms</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>network/host VA item outside web scope</td></tr>
+<tr><td>NSC-INFRA-005</td><td>FTP credentials transmitted in cleartext</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>network/host VA item outside web scope</td></tr>
+<tr><td>NSC-INFRA-006</td><td>Database ports reachable from untrusted networks</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>network/host VA item outside web scope</td></tr>
+<tr><td>NSC-INFRA-007</td><td>OS package vulnerabilities / untrusted package repository</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>network/host VA item outside web scope</td></tr>
+<tr><td>NSC-INFO-005</td><td>WAF / reverse proxy detected (informational)</td><td><span class="st st-not_tested">NOT_TESTED</span></td><td>0</td><td>evidence collection needs an operator/agent; see the case&#39;s agent prompt</td></tr>
+</tbody></table></div>
+<h3>Coverage by template</h3>
+<p>Not a spider run: only the requested pages were scanned.</p>
+</div></details>
+<details open class="section"><summary><h2>Not tested and limitations</h2></summary><div class="body">
+<p>None.</p>
+<ul>
+<li><span class="st st-not_tested">NOT_TESTED</span> cases: 38 (Coverage)</li>
+</ul>
+</div></details>
+<details open class="section"><summary><h2>Transports and engine</h2></summary><div class="body">
+<div class="tw"><table>
+<thead><tr><th>Transport</th><th>Available</th><th>Usable</th><th>Version</th><th>Reason</th></tr></thead>
+<tbody>
+<tr><td>direct-http</td><td>true</td><td>true</td><td>26.13.0</td><td>built-in node:http/https</td></tr>
+<tr><td>playwright-browser</td><td>true</td><td>true</td><td>1.64.1</td><td>playwright-core with Chromium headless shell; every request is fulfilled through ScopeGate and Budget (S1)</td></tr>
+<tr><td>curl-cli</td><td>true</td><td>false</td><td>curl 8.22.0 (Windows) libcurl/8.22.0 Schannel zlib/1.3.2 WinIDN WinLDAP</td><td>detected; request execution is scheduled for milestone M3 (argv builder implemented and tested)</td></tr>
+<tr><td>powershell-http</td><td>true</td><td>false</td><td>7.6.9</td><td>detected; request execution is scheduled for milestone M3 (argv builder implemented and tested)</td></tr>
+<tr><td>visual-computer-use</td><td>true</td><td>true</td><td>1.64.1</td><td>visual driver over playwright-browser: <code>navsentry browse</code> (development; needs transports.visual_computer_use: true)</td></tr>
+<tr><td>zap-passive</td><td>false</td><td>false</td><td>—</td><td>phase-2 integration; not implemented</td></tr>
+</tbody></table></div>
+</div></details>
+<details open class="section"><summary><h2>Requests refused before sending</h2></summary><div class="body">
+<ul>
+<li>GET <code>http://evil.example/steal</code> — redirect not followed: origin http://evil.example is not in targets.origins</li>
+<li>GET <code>http://evil.example/steal</code> — redirect not followed: origin http://evil.example is not in targets.origins</li>
+<li>GET <code>http://evil.example/steal</code> — redirect not followed: origin http://evil.example is not in targets.origins</li>
+<li>GET <code>http://evil.example/steal</code> — redirect not followed: origin http://evil.example is not in targets.origins</li>
+</ul>
+</div></details>
+<details open class="section"><summary><h2>Redirect chains</h2></summary><div class="body">
+<p>Every hop was checked by ScopeGate before it was requested.</p>
+<ul>
+<li><code>http://127.0.0.1:4173/go-out</code> as anonymous</li>
+<ul>
+<li>302 <code>http://127.0.0.1:4173/go-out</code> → <code>http://evil.example/steal</code> · not followed: origin http://evil.example is not in targets.origins</li>
+</ul>
+<li><code>http://127.0.0.1:4173/go-out</code> as reader_a</li>
+<ul>
+<li>302 <code>http://127.0.0.1:4173/go-out</code> → <code>http://evil.example/steal</code> · not followed: origin http://evil.example is not in targets.origins</li>
+</ul>
+<li><code>http://127.0.0.1:4173/go-out</code> as reader_b</li>
+<ul>
+<li>302 <code>http://127.0.0.1:4173/go-out</code> → <code>http://evil.example/steal</code> · not followed: origin http://evil.example is not in targets.origins</li>
+</ul>
+<li><code>http://127.0.0.1:4173/go-out</code> as admin</li>
+<ul>
+<li>302 <code>http://127.0.0.1:4173/go-out</code> → <code>http://evil.example/steal</code> · not followed: origin http://evil.example is not in targets.origins</li>
+</ul>
+</ul>
+</div></details>
+<details open class="section"><summary><h2>Client assets and browser</h2></summary><div class="body">
+<h3>Client assets</h3>
+<p>Not scanned in this mode.</p>
+<h3>Browser console</h3>
+<p>Not captured (no browser engine in this run).</p>
+<h3>Analyzer</h3>
+<p>Not run (add <code>--analyze</code>).</p>
+</div></details>
+<details open class="section"><summary><h2>Knowledge gaps</h2></summary><div class="body">
+<h3>Knowledge gaps / proposed updates</h3>
+<div class="tw"><table>
+<thead><tr><th>Gap</th><th>Product</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td>unknown-product</td><td>server/apache-httpd 2.4.29</td><td>no records for this product in the snapshot (not proof of absence)</td></tr>
+<tr><td>unknown-product</td><td>runtime/php 7.2.1</td><td>no records for this product in the snapshot (not proof of absence)</td></tr>
+</tbody></table></div>
+</div></details>
+<details open class="section"><summary><h2>Run details</h2></summary><div class="body">
+<ul>
+<li>Budget: 39/100 requests · denied before execution 4</li>
+</ul>
+<h3>Fixtures and cleanup</h3>
+<p>Not used (observe mode).</p>
+<h3>Capture</h3>
+<div class="tw"><table>
+<thead><tr><th>Wire bytes</th><th>Decoded bytes</th><th>Truncated</th><th>Aborted</th><th>Partially inspected bodies</th></tr></thead>
+<tbody>
+<tr><td>2067</td><td>2067</td><td>0</td><td>0</td><td>0</td></tr>
+</tbody></table></div>
+<h3>Workspace</h3>
+<p>None.</p>
+</div></details>
+<details open class="section"><summary><h2>Flows</h2></summary><div class="body">
+<ul>
+<li>2 flows / 11 steps · Functional result: <strong><span class="st st-fail">FAIL</span></strong></li>
+<li>URLs covered beyond seed paths: 5</li>
+<li>Findings raised by flow requests: 22</li>
+<li>Details: [TEST-REPORT.md](TEST-REPORT.md)</li>
+</ul>
+</div></details>
+</main>
+<script type="application/json" id="report-md">"# NavSentry Report — demo-before (local)\n\n- Run ID: `0858cfcf-c21b-49f2-9ae1-4207ddb50e1d`\n- Started: 2026-11-07T15:14:15.944Z · Finished: 2026-11-07T15:14:18.570Z\n- Tool: navsentry 0.2.0 · Node 26.13.0 · win32-x64\n- Mode: `observe` · Profile: `development` · Origins: `http://127.0.0.1:4173`\n- Execution status: **COMPLETE** · Security result: **FINDINGS**\n- Requests: 39/100 · Denied before execution: 4\n\n## Summary\n\n\u003e 🔴 **Do I need to fix something now?** Yes. Fix 11 issue(s) now, before the next release. They are listed under \"What to do first\".\n\n| 🔴 IMMEDIATE | 🟠 CAUTION | 🟡 PLANNED | 🔵 OPTIONAL | ⚪ INFO |\n|---|---|---|---|---|\n| 6 | 5 | 1 | 5 | 1 |\n\n| PASS | FAIL | INCONCLUSIVE | ERROR | NOT_TESTED | Findings |\n|---|---|---|---|---|---|\n| 1 | 18 | 0 | 0 | 38 | 58 |\n\n**What to do first:**\n\n- 🔴 IMMEDIATE · NSC-AC-002 — Missing authentication on API endpoint (2)\n- 🔴 IMMEDIATE · NSC-AC-003 — IDOR / BOLA (cross-user object access) (1)\n- 🔴 IMMEDIATE · NSC-AC-007 — Missing function-level authorization (vertical privilege escalation) (1)\n- 🔴 IMMEDIATE · NSC-PRIV-001 — National ID / personal identifier disclosure (1)\n- 🔴 IMMEDIATE · NSC-CRYPT-006 — Cleartext HTTP served without redirect to HTTPS (10)\n- 🔴 IMMEDIATE · NSC-ERR-001 — Verbose error, stack trace or unhandled exception exposed (1)\n- 🟠 CAUTION · NSC-AC-004 — Permissive CORS policy (5)\n- 🟠 CAUTION · NSC-CONF-002 — Content Security Policy missing or unsafe (2)\n- 🟠 CAUTION · NSC-CONF-003 — Clickjacking protection missing (2)\n- 🟠 CAUTION · NSC-SESS-002 — Cookie without HttpOnly flag (1)\n- 🟠 CAUTION · NSC-SESS-003 — Cookie SameSite missing or contradictory (1)\n\n\u003e Zero findings does not mean the application is secure. NOT_TESTED, INCONCLUSIVE and ERROR rows are gaps, not passes.\n\n## Findings\n\n### 🔴 IMMEDIATE — Fix now\n\n#### 🔴 NSC-AC-002 — Missing authentication on API endpoint\n\n| Action | Severity | Category | Affected targets |\n|---|---|---|---|\n| **IMMEDIATE** | **high** | AC | 2 |\n\n**Why it matters:** An endpoint that returns non-public data responds 2xx to an anonymous actor.\n\n**Expected:** Anonymous requests to protected endpoints return 401 | Authenticated legitimate actor still gets the same 2xx contract\n\n**Observed (redacted):**\n\n| Target | Confidence | Lifecycle | Observed |\n|---|---|---|---|\n| `GET http://127.0.0.1:4173/api/me` | medium | SUSPECTED | Missing authentication on API endpoint: access was granted; actor anonymous received 200 application/json with the same response contract as positive control S4 (reader_a); flow orders-access step S5 |\n| `GET http://127.0.0.1:4173/app/profile` | medium | SUSPECTED | Missing authentication on API endpoint: access was granted; actor anonymous received 200 text/html with the same response contract as positive control S1 (reader_a); flow profile-journey step S4 |\n\n**How to reproduce:**\n\n- navsentry test --config \u003cmanifest\u003e --flows \u003cflows-dir\u003e  (rule NSC-AC-002, flow orders-access step S5)\n- Open the endpoint in a private browser window: 401/redirect to login\n\n**How to fix:** Apply authentication middleware with deny-by-default to the whole API group; whitelist truly public routes explicitly.\n\n**Fix examples (reviewed examples; NavSentry does not execute them):**\n\n- **Node.js / Express**\n\n  Before:\n\n  ```js\n  app.get(\"/api/me\", meHandler);\n  ```\n\n  After:\n\n  ```js\n  app.use(\"/api\", requireAuth); // deny by default\n  app.get(\"/api/me\", meHandler);\n  // public routes are registered before requireAuth, explicitly\n  ```\n\n- **ASP.NET Core**\n\n  Before:\n\n  ```csharp\n  builder.Services.AddAuthorization();\n  ```\n\n  After:\n\n  ```csharp\n  builder.Services.AddAuthorization(o =\u003e o.FallbackPolicy =\n      new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());\n  // mark public endpoints with [AllowAnonymous]\n  ```\n\n- **Spring Boot / Spring Security**\n\n  Before:\n\n  ```java\n  http.authorizeHttpRequests(a -\u003e a.anyRequest().permitAll());\n  ```\n\n  After:\n\n  ```java\n  http.authorizeHttpRequests(a -\u003e a\n      .requestMatchers(\"/api/public/**\").permitAll()\n      .anyRequest().authenticated());\n  ```\n\n**How to recheck:**\n\n- Open the endpoint in a private browser window: 401/redirect to login\n- Logged-in user still sees data\n- Run the same NavSentry scan again and compare it with this run.\n\n**Fixed when:**\n\n- Anonymous requests to protected endpoints return 401\n- Authenticated legitimate actor still gets the same 2xx contract\n\n**Must not break:** Public endpoints used before login (health, login config, static config) must be explicitly allow-listed; compare anonymous and authenticated runs before/after.\n\n**Limitations:**\n\n- Evaluated only where a flow declares anonymous `access: denied` with an authenticated positive control; a 2xx with a different contract (login page) is INCONCLUSIVE, not FAIL.\n\nReferences: OWASP A01:2025 Broken Access Control; A07:2025 Authentication Failures; A01:2021 Broken Access Control; A07:2021 Identification and Authentication Failures · CWE CWE-306 · WSTG WSTG-ATHZ-02 · ASVS 5.0 V8 Authorization, V4 API and Web Service\n\nFingerprints: `2ed31545305ed6fa20e0a163` `fee0a4fff083aa2abb24c113`\n\n#### 🔴 NSC-AC-003 — IDOR / BOLA (cross-user object access)\n\n| Action | Severity | Category | Affected targets |\n|---|---|---|---|\n| **IMMEDIATE** | **high** | AC | 1 |\n\n**Why it matters:** An actor can read or modify an object owned by another actor by changing an identifier, because ownership is not checked server-side.\n\n**Expected:** Actor B receives 403/404 for actor A's fixture object | Actor A still receives 200 for its own object (positive control)\n\n**Observed (redacted):**\n\n| Target | Confidence | Lifecycle | Observed |\n|---|---|---|---|\n| `GET http://127.0.0.1:4173/api/orders/{{orderA}}` | medium | SUSPECTED | IDOR / BOLA (cross-user object access): access was granted; actor reader_b received 200 application/json with the same response contract as positive control S2 (reader_a); flow orders-access step S3 |\n\n**How to reproduce:**\n\n- navsentry test --config \u003cmanifest\u003e --flows \u003cflows-dir\u003e  (rule NSC-AC-003, flow orders-access step S3)\n- As actor B in a separate browser profile, paste actor A's object URL: access denied\n\n**How to fix:** Enforce ownership/tenant checks in the service layer for every object lookup; prefer scoped queries (WHERE owner_id = current_user).\n\n**Fix examples (reviewed examples; NavSentry does not execute them):**\n\n- **Node.js / Express**\n\n  Before:\n\n  ```js\n  const order = await db.orders.findById(req.params.id);\n  res.json(order);\n  ```\n\n  After:\n\n  ```js\n  const order = await db.orders.findOne({ id: req.params.id, ownerId: req.user.id });\n  if (!order) return res.status(404).json({ error: \"not found\" });\n  res.json(order);\n  ```\n\n- **ASP.NET Core**\n\n  Before:\n\n  ```csharp\n  var order = await db.Orders.FindAsync(id);\n  ```\n\n  After:\n\n  ```csharp\n  var order = await db.Orders.SingleOrDefaultAsync(o =\u003e o.Id == id \u0026\u0026 o.OwnerId == userId);\n  if (order is null) return NotFound();\n  ```\n\n- **Spring Boot / Spring Security**\n\n  Before:\n\n  ```java\n  Order order = repo.findById(id).orElseThrow();\n  ```\n\n  After:\n\n  ```java\n  Order order = repo.findByIdAndOwnerId(id, currentUser.getId())\n      .orElseThrow(() -\u003e new ResponseStatusException(HttpStatus.NOT_FOUND));\n  ```\n\n**How to recheck:**\n\n- As actor B in a separate browser profile, paste actor A's object URL: access denied\n- Run the same NavSentry scan again and compare it with this run.\n\n**Fixed when:**\n\n- Actor B receives 403/404 for actor A's fixture object\n- Actor A still receives 200 for its own object (positive control)\n\n**Must not break:** Shared/delegated objects (team, admin, delegated approver) must keep access — encode those rules explicitly and test them as positive controls.\n\n**Limitations:**\n\n- UI hiding alone NEVER proves authorization.\n- Read access: a flow step with object_owner and access: denied. Modification (safe-validate, 0.2.0-c): the same step as a declared fixture mutation, with the owner's own mutation as the positive control.\n- Whether actor B's change took effect is not compared: NavSentry does not record response body values.\n\nReferences: OWASP A01:2025 Broken Access Control; A01:2021 Broken Access Control · CWE CWE-639, CWE-284 · WSTG WSTG-ATHZ-04 · ASVS 5.0 V8 Authorization\n\nFingerprints: `3eef519c1454dd179dcdf801`\n\n#### 🔴 NSC-AC-007 — Missing function-level authorization (vertical privilege escalation)\n\n| Action | Severity | Category | Affected targets |\n|---|---|---|---|\n| **IMMEDIATE** | **high** | AC | 1 |\n\n**Why it matters:** A lower-privileged authenticated actor receives the same 2xx contract as a privileged actor on a privileged function, because the server does not check the role or permission.\n\n**Expected:** Lower role receives 401/403 | Privileged role keeps its 2xx contract (positive control)\n\n**Observed (redacted):**\n\n| Target | Confidence | Lifecycle | Observed |\n|---|---|---|---|\n| `GET http://127.0.0.1:4173/api/admin/stats` | medium | SUSPECTED | Missing function-level authorization (vertical privilege escalation): access was granted; actor reader_a received 200 application/json with the same response contract as positive control S6 (admin); flow orders-access step S7 |\n\n**How to reproduce:**\n\n- navsentry test --config \u003cmanifest\u003e --flows \u003cflows-dir\u003e  (rule NSC-AC-007, flow orders-access step S7)\n- As the lower-role user in a separate browser profile, open the privileged URL: access denied\n\n**How to fix:** Enforce deny-by-default role/permission checks on the server for every privileged route or handler; do not rely on hidden menus.\n\n**Fix examples (reviewed examples; NavSentry does not execute them):**\n\n- **Node.js / Express**\n\n  Before:\n\n  ```js\n  app.get(\"/api/admin/stats\", requireAuth, stats);\n  ```\n\n  After:\n\n  ```js\n  const requireRole = (role) =\u003e (req, res, next) =\u003e\n    req.user?.roles.includes(role) ? next() : res.sendStatus(403);\n  app.get(\"/api/admin/stats\", requireAuth, requireRole(\"admin\"), stats);\n  ```\n\n- **ASP.NET Core**\n\n  Before:\n\n  ```csharp\n  [Authorize]\n  [HttpGet(\"admin/stats\")]\n  ```\n\n  After:\n\n  ```csharp\n  [Authorize(Roles = \"Admin\")]\n  [HttpGet(\"admin/stats\")]\n  ```\n\n- **Spring Boot / Spring Security**\n\n  Before:\n\n  ```java\n  .requestMatchers(\"/api/admin/**\").authenticated()\n  ```\n\n  After:\n\n  ```java\n  .requestMatchers(\"/api/admin/**\").hasRole(\"ADMIN\")\n  ```\n\n**How to recheck:**\n\n- As the lower-role user in a separate browser profile, open the privileged URL: access denied\n- The privileged user still sees the function\n- Run the same NavSentry scan again and compare it with this run.\n\n**Fixed when:**\n\n- Lower role receives 401/403\n- Privileged role keeps its 2xx contract (positive control)\n\n**Must not break:** Delegated or support roles that legitimately use the function must be encoded as positive controls before tightening.\n\n**Limitations:**\n\n- Hidden menus or disabled buttons never prove authorization.\n- Evaluated only where a flow declares access: denied for the lower role with a privileged positive control.\n\nReferences: OWASP A01:2025 Broken Access Control; A01:2021 Broken Access Control · CWE CWE-285, CWE-862 · WSTG WSTG-ATHZ-03 · ASVS 5.0 V8 Authorization\n\nFingerprints: `4394e9188345a42229ec9d40`\n\n#### 🔴 NSC-PRIV-001 — National ID / personal identifier disclosure\n\n| Action | Severity | Category | Affected targets |\n|---|---|---|---|\n| **IMMEDIATE** | **high** | PRIV | 1 |\n\n**Why it matters:** API or page responses contain 13-digit values that pass the Thai national ID checksum (or card numbers passing Luhn), exposing PII regulated by PDPA.\n\n**Expected:** No checksum-valid national ID / card number appears in responses to actors not entitled to it | Where required for the owner, values are masked (e.g. x-xxxx-xxxxx-12-3)\n\n**Observed (redacted):**\n\n| Target | Confidence | Lifecycle | Observed |\n|---|---|---|---|\n| `GET http://127.0.0.1:4173/api/profile` | medium | SUSPECTED | Checksum-valid personal identifiers in response; thai-national-id (mod-11 valid): 1; card-number (Luhn valid): 0; values never stored |\n\n**How to reproduce:**\n\n- navsentry test --config \u003cmanifest\u003e  (rule NSC-PRIV-001, transport direct-http)\n- Open the endpoint as an unentitled actor and confirm the field is absent or masked\n\n**How to fix:** Remove or mask the field in the response DTO for unentitled callers; enforce field-level authorization server-side.\n\n**Fix examples (reviewed examples; NavSentry does not execute them):**\n\n- **Node.js / Express**\n\n  Before:\n\n  ```js\n  res.json({ name: u.name, nationalId: u.nationalId });\n  ```\n\n  After:\n\n  ```js\n  const mask = (v) =\u003e \"x\".repeat(v.length - 4) + v.slice(-4);\n  res.json({ name: u.name, nationalId: canSeeId(req.user, u) ? u.nationalId : mask(u.nationalId) });\n  ```\n\n- **ASP.NET Core**\n\n  Before:\n\n  ```csharp\n  return Ok(new { u.Name, u.NationalId });\n  ```\n\n  After:\n\n  ```csharp\n  return Ok(new { u.Name, NationalId = CanSeeId(User, u) ? u.NationalId : Mask(u.NationalId) });\n  ```\n\n- **Spring Boot / Spring Security**\n\n  Before:\n\n  ```java\n  record ProfileDto(String name, String nationalId) {}\n  ```\n\n  After:\n\n  ```java\n  record ProfileDto(String name, String nationalIdMasked) {}\n  // map with mask(u.getNationalId()) unless the caller is entitled\n  ```\n\n**How to recheck:**\n\n- Open the endpoint as an unentitled actor and confirm the field is absent or masked\n- Re-run → NSC-PRIV-001 PASS\n- Run the same NavSentry scan again and compare it with this run.\n\n**Fixed when:**\n\n- No checksum-valid national ID / card number appears in responses to actors not entitled to it\n- Where required for the owner, values are masked (e.g. x-xxxx-xxxxx-12-3)\n\n**Must not break:** Masking changes values, not keys: keep the field name and type so clients do not break, unless the owner approves removal. Verify JSON shape with `navsentry compare`.\n\n**Limitations:**\n\n- SRC-E accepted this as an Exception because the 13-digit value was an internal function identifier, not a citizen ID. NavSentry applies the mod-11 checksum to cut such false positives, but a checksum-valid match is still SUSPECTED until a human confirms the field semantics.\n\nReferences: OWASP A01:2025 Broken Access Control; A04:2025 Cryptographic Failures; A01:2021 Broken Access Control; A02:2021 Cryptographic Failures · CWE CWE-359, CWE-200 · WSTG WSTG-INFO-05 · ASVS 5.0 V14 Data Protection, V8 Authorization\n\nFingerprints: `f41e08127666743eabc5170c`\n\n#### 🔴 NSC-CRYPT-006 — Cleartext HTTP served without redirect to HTTPS\n\n| Action | Severity | Category | Affected targets |\n|---|---|---|---|\n| **IMMEDIATE** | **medium** | CRYPT | 10 |\n\n**Why it matters:** An in-scope http:// origin serves application content instead of redirecting to HTTPS.\n\n**Expected:** http:// requests receive 301/308 to the https:// equivalent | No application content or Set-Cookie on http://\n\n**Observed (redacted):**\n\n| Target | Confidence | Lifecycle | Observed |\n|---|---|---|---|\n| `GET http://127.0.0.1:4173/` | high | VALIDATED | Plain HTTP serves content (HTTP 200) without HTTPS redirect; no redirect |\n| `GET http://127.0.0.1:4173/api/profile` | high | VALIDATED | Plain HTTP serves content (HTTP 200) without HTTPS redirect; no redirect |\n| `GET http://127.0.0.1:4173/api/error` | high | VALIDATED | Plain HTTP serves content (HTTP 500) without HTTPS redirect; no redirect |\n| `GET http://127.0.0.1:4173/api/token` | high | VALIDATED | Plain HTTP serves content (HTTP 200) without HTTPS redirect; no redirect |\n| `GET http://127.0.0.1:4173/go-out` | high | VALIDATED | Plain HTTP serves content (HTTP 302) without HTTPS redirect; Location scheme: http: |\n| `GET http://127.0.0.1:4173/api/orders` | high | VALIDATED | Plain HTTP serves content (HTTP 200) without HTTPS redirect; no redirect |\n| `GET http://127.0.0.1:4173/api/orders/{{orderA}}` | high | VALIDATED | Plain HTTP serves content (HTTP 200) without HTTPS redirect; no redirect |\n| `GET http://127.0.0.1:4173/api/me` | high | VALIDATED | Plain HTTP serves content (HTTP 200) without HTTPS redirect; no redirect |\n| `GET http://127.0.0.1:4173/api/admin/stats` | high | VALIDATED | Plain HTTP serves content (HTTP 200) without HTTPS redirect; no redirect |\n| `GET http://127.0.0.1:4173/app/profile` | high | VALIDATED | Plain HTTP serves content (HTTP 200) without HTTPS redirect; no redirect |\n\n**How to reproduce:**\n\n- navsentry test --config \u003cmanifest\u003e  (rule NSC-CRYPT-006, transport direct-http)\n- Type http://\u003chost\u003e/ in the browser: it switches to https://\n\n**How to fix:** Redirect all HTTP to HTTPS at the edge; for internal service ports, enable TLS or restrict them to the internal network.\n\n**Fix examples (reviewed examples; NavSentry does not execute them):**\n\n- **nginx**\n\n  Before:\n\n  ```nginx\n  server {\n      listen 80;\n      server_name shop.example.test;\n      location / { proxy_pass http://app; }\n  }\n  ```\n\n  After:\n\n  ```nginx\n  server {\n      listen 80;\n      server_name shop.example.test;\n      return 301 https://shop.example.test$request_uri;\n  }\n  ```\n\n- **Node.js / Express**\n\n  Before:\n\n  ```js\n  app.listen(80);\n  ```\n\n  After:\n\n  ```js\n  app.set(\"trust proxy\", 1);\n  app.use((req, res, next) =\u003e\n    req.secure ? next() : res.redirect(301, \"https://shop.example.test\" + req.originalUrl));\n  ```\n\n  Redirect to a fixed host, never to the request's Host header.\n\n- **ASP.NET Core**\n\n  Before:\n\n  ```csharp\n  app.MapControllers();\n  ```\n\n  After:\n\n  ```csharp\n  app.UseHttpsRedirection();\n  app.MapControllers();\n  ```\n\n- **Spring Boot / Spring Security**\n\n  Before:\n\n  ```java\n  http.authorizeHttpRequests(a -\u003e a.anyRequest().authenticated());\n  ```\n\n  After:\n\n  ```java\n  http.requiresChannel(c -\u003e c.anyRequest().requiresSecure())\n      .authorizeHttpRequests(a -\u003e a.anyRequest().authenticated());\n  ```\n\n  Spring Security 6.x; newer versions also offer `redirectToHttps`.\n\n**How to recheck:**\n\n- Type http://\u003chost\u003e/ in the browser: it switches to https://\n- Re-run → NSC-CRYPT-006 PASS\n- Run the same NavSentry scan again and compare it with this run.\n\n**Fixed when:**\n\n- http:// requests receive 301/308 to the https:// equivalent\n- No application content or Set-Cookie on http://\n\n**Must not break:** Machine clients that POST to http:// may not follow redirects with a body (use 308 to preserve method) — inventory them first.\n\nReferences: OWASP A04:2025 Cryptographic Failures; A02:2021 Cryptographic Failures · CWE CWE-319 · WSTG WSTG-CRYP-03 · ASVS 5.0 V12 Secure Communication\n\nFingerprints: `32ef940ba82b43d1703edd81` `60cd89eec0834c6173a1ca52` `ffd914e5cdf3c67a36d0007d` `54c1aea904006f550b35a853` `05f978ecba4b2322dfa90ab1` `fee4e2b13b1a34242abf2210` `2f0c13798b3f6290b328e559` `7c6bc49d2e83bb56b8b62a1f` `410d1fcc3d4bf29a8b41f77d` `0e1ff75fa30e8a236884445c`\n\n#### 🔴 NSC-ERR-001 — Verbose error, stack trace or unhandled exception exposed\n\n| Action | Severity | Category | Affected targets |\n|---|---|---|---|\n| **IMMEDIATE** | **medium** | ERR | 1 |\n\n**Why it matters:** Error responses include stack traces, exception class names, SQL/ORM messages or framework error pages, leaking internals and indicating failing-open error handling.\n\n**Expected:** No in-scope response contains stack-trace/exception signatures | Errors return a generic message plus a correlation ID; details go to server logs only | HTTP status codes stay meaningful (4xx for client errors, 5xx for server faults)\n\n**Observed (redacted):**\n\n| Target | Confidence | Lifecycle | Observed |\n|---|---|---|---|\n| `GET http://127.0.0.1:4173/api/error` | high | VALIDATED | Internal error details exposed (HTTP 500); Exception class name |\n\n**How to reproduce:**\n\n- navsentry test --config \u003cmanifest\u003e  (rule NSC-ERR-001, transport direct-http)\n- Reproduce the original error condition with a benign request (e.g. missing parameter) and confirm a generic error body\n\n**How to fix:** Add a global exception handler that logs details server-side and returns a standard error envelope (e.g. RFC 9457 problem+json) without internals; disable framework detailed errors in non-dev environments.\n\n**Fix examples (reviewed examples; NavSentry does not execute them):**\n\n- **Node.js / Express**\n\n  Before:\n\n  ```js\n  app.use((err, req, res, next) =\u003e {\n    res.status(500).send(err.stack);\n  });\n  ```\n\n  After:\n\n  ```js\n  app.use((err, req, res, next) =\u003e {\n    logger.error(err); // details stay in server logs\n    res.status(500).type(\"application/problem+json\")\n      .json({ title: \"Internal error\", status: 500 });\n  });\n  ```\n\n- **ASP.NET Core**\n\n  Before:\n\n  ```csharp\n  app.UseDeveloperExceptionPage();\n  ```\n\n  After:\n\n  ```csharp\n  builder.Services.AddProblemDetails();\n  // ...\n  if (app.Environment.IsDevelopment()) app.UseDeveloperExceptionPage();\n  else app.UseExceptionHandler();\n  ```\n\n- **Spring Boot / Spring Security**\n\n  Before:\n\n  ```properties\n  server.error.include-stacktrace=always\n  server.error.include-message=always\n  ```\n\n  After:\n\n  ```properties\n  server.error.include-stacktrace=never\n  server.error.include-message=never\n  server.error.include-exception=false\n  ```\n\n**How to recheck:**\n\n- Reproduce the original error condition with a benign request (e.g. missing parameter) and confirm a generic error body\n- Confirm the detailed exception is present in server logs with the same correlation ID\n- Run the same NavSentry scan again and compare it with this run.\n\n**Fixed when:**\n\n- No in-scope response contains stack-trace/exception signatures\n- Errors return a generic message plus a correlation ID; details go to server logs only\n- HTTP status codes stay meaningful (4xx for client errors, 5xx for server faults)\n\n**Must not break:** Keep the SAME status code and the SAME error envelope fields that clients parse (e.g. `success`, `code`, `message`); only remove internal details. Prove it with `navsentry compare` (status + JSON shape must match).\n\nReferences: OWASP A10:2025 Mishandling of Exceptional Conditions; A02:2025 Security Misconfiguration; A05:2021 Security Misconfiguration; A04:2021 Insecure Design · CWE CWE-209, CWE-248, CWE-550 · WSTG WSTG-ERRH-01, WSTG-ERRH-02 · ASVS 5.0 V16 Security Logging and Error Handling\n\nFingerprints: `678b4c40706a4b10d28bed40`\n\n### 🟠 CAUTION — Fix carefully: may affect legitimate users\n\n#### 🟠 NSC-AC-004 — Permissive CORS policy\n\n| Action | Severity | Category | Affected targets |\n|---|---|---|---|\n| **CAUTION** | **medium** | AC | 5 |\n\n**Why it matters:** The server reflects an arbitrary Origin (or 'null') in Access-Control-Allow-Origin, especially together with Access-Control-Allow-Credentials: true.\n\n**Expected:** Untrusted test origins are not reflected | Credentials are never allowed with wildcard or reflected origins | Allowed origins are an explicit allowlist\n\n**Observed (redacted):**\n\n| Target | Confidence | Lifecycle | Observed |\n|---|---|---|---|\n| `GET http://127.0.0.1:4173/` | high | VALIDATED | Untrusted Origin reflected WITH credentials; ACAO reflects probe origin; credentials=true |\n| `GET http://127.0.0.1:4173/api/profile` | high | VALIDATED | Untrusted Origin reflected WITH credentials; ACAO reflects probe origin; credentials=true |\n| `GET http://127.0.0.1:4173/api/error` | high | VALIDATED | Untrusted Origin reflected WITH credentials; ACAO reflects probe origin; credentials=true |\n| `GET http://127.0.0.1:4173/api/token` | high | VALIDATED | Untrusted Origin reflected WITH credentials; ACAO reflects probe origin; credentials=true |\n| `GET http://127.0.0.1:4173/go-out` | high | VALIDATED | Untrusted Origin reflected WITH credentials; ACAO reflects probe origin; credentials=true |\n\n**How to reproduce:**\n\n- navsentry test --config \u003cmanifest\u003e  (rule NSC-AC-004, transport direct-http)\n- From the legitimate front-end origin the app still works (no CORS errors in Console)\n\n**How to fix:** Replace origin reflection with an exact-match allowlist; never combine credentials with '*' or 'null'.\n\n**Fix examples (reviewed examples; NavSentry does not execute them):**\n\n- **Node.js / Express**\n\n  Before:\n\n  ```js\n  res.set(\"Access-Control-Allow-Origin\", req.headers.origin);\n  res.set(\"Access-Control-Allow-Credentials\", \"true\");\n  ```\n\n  After:\n\n  ```js\n  const ALLOWED = new Set([\"https://app.example.test\"]);\n  if (ALLOWED.has(req.headers.origin)) {\n    res.set(\"Access-Control-Allow-Origin\", req.headers.origin);\n    res.set(\"Access-Control-Allow-Credentials\", \"true\");\n    res.vary(\"Origin\");\n  }\n  ```\n\n- **ASP.NET Core**\n\n  Before:\n\n  ```csharp\n  p.SetIsOriginAllowed(_ =\u003e true).AllowCredentials();\n  ```\n\n  After:\n\n  ```csharp\n  p.WithOrigins(\"https://app.example.test\").AllowCredentials();\n  ```\n\n- **Spring Boot / Spring Security**\n\n  Before:\n\n  ```java\n  config.addAllowedOriginPattern(\"*\");\n  config.setAllowCredentials(true);\n  ```\n\n  After:\n\n  ```java\n  config.setAllowedOrigins(List.of(\"https://app.example.test\"));\n  config.setAllowCredentials(true);\n  ```\n\n- **nginx**\n\n  Before:\n\n  ```nginx\n  add_header Access-Control-Allow-Origin $http_origin always;\n  ```\n\n  After:\n\n  ```nginx\n  map $http_origin $cors_origin {\n      default \"\";\n      \"https://app.example.test\" $http_origin;\n  }\n  # in the server block:\n  add_header Access-Control-Allow-Origin $cors_origin always;\n  add_header Vary Origin always;\n  ```\n\n**How to recheck:**\n\n- From the legitimate front-end origin the app still works (no CORS errors in Console)\n- Re-run → NSC-AC-004 PASS\n- Run the same NavSentry scan again and compare it with this run.\n\n**Fixed when:**\n\n- Untrusted test origins are not reflected\n- Credentials are never allowed with wildcard or reflected origins\n- Allowed origins are an explicit allowlist\n\n**Must not break:** List every legitimate front-end origin (prod, staging, mobile webviews) before tightening; missing one causes CORS errors only in browsers.\n\nReferences: OWASP A01:2025 Broken Access Control; A02:2025 Security Misconfiguration; A01:2021 Broken Access Control; A05:2021 Security Misconfiguration · CWE CWE-942, CWE-346 · WSTG WSTG-CLNT-07 · ASVS 5.0 V3 Web Frontend Security, V4 API and Web Service\n\nFingerprints: `1165ff5cd1b67e24ef43e674` `a85dcc5898250cee68ce9f5c` `3c425a79d30a4412cf0aef98` `bdbf0331bd0333d584e46a9f` `8cc7d85071e0e64554baa4e1`\n\n#### 🟠 NSC-CONF-002 — Content Security Policy missing or unsafe\n\n| Action | Severity | Category | Affected targets |\n|---|---|---|---|\n| **CAUTION** | **medium** | CONF | 2 |\n\n**Why it matters:** HTML responses have no enforcing Content-Security-Policy, or the policy allows 'unsafe-inline'/'unsafe-eval' scripts or wildcard script sources, so injected script is not contained.\n\n**Expected:** Every HTML response has an enforcing Content-Security-Policy | script-src (or default-src) contains no 'unsafe-inline' without nonce/hash, no 'unsafe-eval', no '*' | object-src 'none' and base-uri restricted\n\n**Observed (redacted):**\n\n| Target | Confidence | Lifecycle | Observed |\n|---|---|---|---|\n| `GET http://127.0.0.1:4173/` | high | VALIDATED | Content-Security-Policy header missing; header absent |\n| `GET http://127.0.0.1:4173/app/profile` | high | VALIDATED | Content-Security-Policy header missing; header absent |\n\n**How to reproduce:**\n\n- navsentry test --config \u003cmanifest\u003e  (rule NSC-CONF-002, transport direct-http)\n- Load each main page with DevTools Console open: no CSP violation errors for legitimate functionality\n\n**How to fix:** Deploy Content-Security-Policy-Report-Only first, collect violations from real traffic, refactor inline scripts to nonces/hashes, then switch to the enforcing header.\n\n**Fix examples (reviewed examples; NavSentry does not execute them):**\n\n- **nginx**\n\n  Before:\n\n  ```nginx\n  server {\n      listen 443 ssl;\n      # no Content-Security-Policy header\n  }\n  ```\n\n  After:\n\n  ```nginx\n  server {\n      listen 443 ssl;\n      add_header Content-Security-Policy \"default-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'\" always;\n  }\n  ```\n\n  Deploy as Content-Security-Policy-Report-Only first and move inline scripts to nonces or hashes before enforcing.\n\n- **Node.js / Express**\n\n  Before:\n\n  ```js\n  app.use(express.static(\"public\"));\n  ```\n\n  After:\n\n  ```js\n  app.use((req, res, next) =\u003e {\n    res.setHeader(\"Content-Security-Policy\", \"default-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'\");\n    next();\n  });\n  app.use(express.static(\"public\"));\n  ```\n\n  Deploy as Content-Security-Policy-Report-Only first and move inline scripts to nonces or hashes before enforcing.\n\n- **ASP.NET Core**\n\n  Before:\n\n  ```csharp\n  app.UseStaticFiles();\n  ```\n\n  After:\n\n  ```csharp\n  app.Use(async (context, next) =\u003e\n  {\n      context.Response.Headers[\"Content-Security-Policy\"] = \"default-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'\";\n      await next();\n  });\n  app.UseStaticFiles();\n  ```\n\n  Deploy as Content-Security-Policy-Report-Only first and move inline scripts to nonces or hashes before enforcing.\n\n- **Spring Boot / Spring Security**\n\n  Before:\n\n  ```java\n  http.headers(Customizer.withDefaults());\n  ```\n\n  After:\n\n  ```java\n  http.headers(h -\u003e h\n      .contentSecurityPolicy(csp -\u003e csp.policyDirectives(\"default-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'\")));\n  ```\n\n  Deploy as Content-Security-Policy-Report-Only first and move inline scripts to nonces or hashes before enforcing.\n\n**How to recheck:**\n\n- Load each main page with DevTools Console open: no CSP violation errors for legitimate functionality\n- Exercise main user flows (login, search, forms, maps) and confirm they still work\n- Re-run `navsentry test` → NSC-CONF-002 PASS\n- Run the same NavSentry scan again and compare it with this run.\n\n**Fixed when:**\n\n- Every HTML response has an enforcing Content-Security-Policy\n- script-src (or default-src) contains no 'unsafe-inline' without nonce/hash, no 'unsafe-eval', no '*'\n- object-src 'none' and base-uri restricted\n\n**Must not break:** An enforcing CSP that is too strict silently breaks scripts, maps, analytics and third-party widgets. Always ship Report-Only first and test every critical page in a real browser. Run `navsentry compare` between the pre-fix and post-fix runs: every legitimate request must keep the same status, content type, non-security header set and JSON shape; only security headers may differ.\n\nReferences: OWASP A02:2025 Security Misconfiguration; A05:2025 Injection; A05:2021 Security Misconfiguration; A03:2021 Injection · CWE CWE-693, CWE-1021 · WSTG WSTG-CONF-12 · ASVS 5.0 V3 Web Frontend Security\n\nFingerprints: `22fb68e2405cb97eec3d9987` `86733b9437764e1560fc2e38`\n\n#### 🟠 NSC-CONF-003 — Clickjacking protection missing\n\n| Action | Severity | Category | Affected targets |\n|---|---|---|---|\n| **CAUTION** | **low** | CONF | 2 |\n\n**Why it matters:** HTML responses can be framed by any origin: neither CSP frame-ancestors nor X-Frame-Options is set.\n\n**Expected:** HTML responses send CSP frame-ancestors 'self' (or an explicit allowlist) and/or X-Frame-Options DENY|SAMEORIGIN\n\n**Observed (redacted):**\n\n| Target | Confidence | Lifecycle | Observed |\n|---|---|---|---|\n| `GET http://127.0.0.1:4173/` | high | VALIDATED | No frame-ancestors or valid X-Frame-Options; frame-ancestors absent; X-Frame-Options absent |\n| `GET http://127.0.0.1:4173/app/profile` | high | VALIDATED | No frame-ancestors or valid X-Frame-Options; frame-ancestors absent; X-Frame-Options absent |\n\n**How to reproduce:**\n\n- navsentry test --config \u003cmanifest\u003e  (rule NSC-CONF-003, transport direct-http)\n- From a different local origin, embed the page in an \u003ciframe\u003e: the browser refuses to render it\n\n**How to fix:** Send `Content-Security-Policy: frame-ancestors 'self' \u003capproved-parents\u003e` plus `X-Frame-Options: SAMEORIGIN` for legacy browsers.\n\n**Fix examples (reviewed examples; NavSentry does not execute them):**\n\n- **nginx**\n\n  Before:\n\n  ```nginx\n  server {\n      listen 443 ssl;\n      # no X-Frame-Options header\n  }\n  ```\n\n  After:\n\n  ```nginx\n  server {\n      listen 443 ssl;\n      add_header X-Frame-Options \"SAMEORIGIN\" always;\n  }\n  ```\n\n  Also send `Content-Security-Policy: frame-ancestors 'self'` for current browsers.\n\n- **Node.js / Express**\n\n  Before:\n\n  ```js\n  app.use(express.static(\"public\"));\n  ```\n\n  After:\n\n  ```js\n  app.use((req, res, next) =\u003e {\n    res.setHeader(\"X-Frame-Options\", \"SAMEORIGIN\");\n    next();\n  });\n  app.use(express.static(\"public\"));\n  ```\n\n  Also send `Content-Security-Policy: frame-ancestors 'self'` for current browsers.\n\n- **ASP.NET Core**\n\n  Before:\n\n  ```csharp\n  app.UseStaticFiles();\n  ```\n\n  After:\n\n  ```csharp\n  app.Use(async (context, next) =\u003e\n  {\n      context.Response.Headers[\"X-Frame-Options\"] = \"SAMEORIGIN\";\n      await next();\n  });\n  app.UseStaticFiles();\n  ```\n\n  Also send `Content-Security-Policy: frame-ancestors 'self'` for current browsers.\n\n- **Spring Boot / Spring Security**\n\n  Before:\n\n  ```java\n  http.headers(Customizer.withDefaults());\n  ```\n\n  After:\n\n  ```java\n  http.headers(h -\u003e h\n      .frameOptions(f -\u003e f.sameOrigin()));\n  ```\n\n  Also send `Content-Security-Policy: frame-ancestors 'self'` for current browsers.\n\n**How to recheck:**\n\n- From a different local origin, embed the page in an \u003ciframe\u003e: the browser refuses to render it\n- Pages that are legitimately embedded (e.g. portal widgets) still render inside their approved parent\n- Run the same NavSentry scan again and compare it with this run.\n\n**Fixed when:**\n\n- HTML responses send CSP frame-ancestors 'self' (or an explicit allowlist) and/or X-Frame-Options DENY|SAMEORIGIN\n\n**Must not break:** Inventory legitimate embedding (portals, SSO, map widgets) before choosing DENY. Run `navsentry compare` between the pre-fix and post-fix runs: every legitimate request must keep the same status, content type, non-security header set and JSON shape; only security headers may differ.\n\nReferences: OWASP A02:2025 Security Misconfiguration; A05:2021 Security Misconfiguration · CWE CWE-1021 · WSTG WSTG-CLNT-09 · ASVS 5.0 V3 Web Frontend Security\n\nFingerprints: `e8e83ba35b2ee4153cc31db5` `537cf1850c28c8f706b2ddec`\n\n#### 🟠 NSC-SESS-002 — Cookie without HttpOnly flag\n\n| Action | Severity | Category | Affected targets |\n|---|---|---|---|\n| **CAUTION** | **low** | SESS | 1 |\n\n**Why it matters:** Session-like cookies are readable by JavaScript (no HttpOnly), so any XSS can steal them.\n\n**Expected:** Session/auth cookies have HttpOnly | Cookies intentionally read by JS (e.g. double-submit CSRF token) are documented exceptions\n\n**Observed (redacted):**\n\n| Target | Confidence | Lifecycle | Observed |\n|---|---|---|---|\n| `GET http://127.0.0.1:4173/` | high | VALIDATED | Session-like cookie(s) readable by JavaScript; SESSIONID: HttpOnly missing on session-like cookie |\n\n**How to reproduce:**\n\n- navsentry test --config \u003cmanifest\u003e  (rule NSC-SESS-002, transport direct-http)\n- DevTools \u003e Application \u003e Cookies: HttpOnly ticked for session cookies\n\n**How to fix:** Enable HttpOnly for session/auth cookies in the framework configuration.\n\n**Fix examples (reviewed examples; NavSentry does not execute them):**\n\n- **Node.js / Express**\n\n  Before:\n\n  ```js\n  res.cookie(\"sid\", sessionId);\n  ```\n\n  After:\n\n  ```js\n  res.cookie(\"sid\", sessionId, { secure: true, httpOnly: true, sameSite: \"lax\", path: \"/\" });\n  ```\n\n- **ASP.NET Core**\n\n  Before:\n\n  ```csharp\n  builder.Services.AddAuthentication().AddCookie();\n  ```\n\n  After:\n\n  ```csharp\n  builder.Services.AddAuthentication().AddCookie(o =\u003e\n  {\n      o.Cookie.SecurePolicy = CookieSecurePolicy.Always;\n      o.Cookie.HttpOnly = true;\n      o.Cookie.SameSite = SameSiteMode.Lax;\n  });\n  ```\n\n- **Spring Boot / Spring Security**\n\n  Before:\n\n  ```properties\n  # application.properties: session cookie defaults\n  ```\n\n  After:\n\n  ```properties\n  server.servlet.session.cookie.secure=true\n  server.servlet.session.cookie.http-only=true\n  server.servlet.session.cookie.same-site=lax\n  ```\n\n- **nginx**\n\n  Before:\n\n  ```nginx\n  location / {\n      proxy_pass http://app;\n  }\n  ```\n\n  After:\n\n  ```nginx\n  location / {\n      proxy_pass http://app;\n      proxy_cookie_flags ~ secure httponly samesite=lax;\n  }\n  ```\n\n  For cookies the application cannot change. Needs nginx 1.19.3 or newer.\n\n**How to recheck:**\n\n- DevTools \u003e Application \u003e Cookies: HttpOnly ticked for session cookies\n- In Console, document.cookie does not show the session cookie\n- Login/logout still work\n- Run the same NavSentry scan again and compare it with this run.\n\n**Fixed when:**\n\n- Session/auth cookies have HttpOnly\n- Cookies intentionally read by JS (e.g. double-submit CSRF token) are documented exceptions\n\n**Must not break:** Front-end code that reads the cookie will break — search the client code for document.cookie usage first and move it to a header/endpoint.\n\nReferences: OWASP A02:2025 Security Misconfiguration; A07:2025 Authentication Failures; A05:2021 Security Misconfiguration; A07:2021 Identification and Authentication Failures · CWE CWE-1004 · WSTG WSTG-SESS-02 · ASVS 5.0 V3 Web Frontend Security, V7 Session Management\n\nFingerprints: `61ec1e54ebcfb120565cf348`\n\n#### 🟠 NSC-SESS-003 — Cookie SameSite missing or contradictory\n\n| Action | Severity | Category | Affected targets |\n|---|---|---|---|\n| **CAUTION** | **low** | SESS | 1 |\n\n**Why it matters:** Cookies omit SameSite, or set SameSite=None without Secure (rejected by modern browsers), weakening CSRF defences.\n\n**Expected:** Session cookies set SameSite=Lax or Strict | Any SameSite=None cookie also has Secure and a documented cross-site need\n\n**Observed (redacted):**\n\n| Target | Confidence | Lifecycle | Observed |\n|---|---|---|---|\n| `GET http://127.0.0.1:4173/` | high | VALIDATED | SameSite missing or contradictory; SESSIONID: SameSite missing |\n\n**How to reproduce:**\n\n- navsentry test --config \u003cmanifest\u003e  (rule NSC-SESS-003, transport direct-http)\n- DevTools \u003e Application \u003e Cookies: SameSite column\n\n**How to fix:** Set SameSite=Lax by default; use None; Secure only for cookies that must travel cross-site (SSO, embedded apps).\n\n**Fix examples (reviewed examples; NavSentry does not execute them):**\n\n- **Node.js / Express**\n\n  Before:\n\n  ```js\n  res.cookie(\"sid\", sessionId);\n  ```\n\n  After:\n\n  ```js\n  res.cookie(\"sid\", sessionId, { secure: true, httpOnly: true, sameSite: \"lax\", path: \"/\" });\n  ```\n\n- **ASP.NET Core**\n\n  Before:\n\n  ```csharp\n  builder.Services.AddAuthentication().AddCookie();\n  ```\n\n  After:\n\n  ```csharp\n  builder.Services.AddAuthentication().AddCookie(o =\u003e\n  {\n      o.Cookie.SecurePolicy = CookieSecurePolicy.Always;\n      o.Cookie.HttpOnly = true;\n      o.Cookie.SameSite = SameSiteMode.Lax;\n  });\n  ```\n\n- **Spring Boot / Spring Security**\n\n  Before:\n\n  ```properties\n  # application.properties: session cookie defaults\n  ```\n\n  After:\n\n  ```properties\n  server.servlet.session.cookie.secure=true\n  server.servlet.session.cookie.http-only=true\n  server.servlet.session.cookie.same-site=lax\n  ```\n\n- **nginx**\n\n  Before:\n\n  ```nginx\n  location / {\n      proxy_pass http://app;\n  }\n  ```\n\n  After:\n\n  ```nginx\n  location / {\n      proxy_pass http://app;\n      proxy_cookie_flags ~ secure httponly samesite=lax;\n  }\n  ```\n\n  For cookies the application cannot change. Needs nginx 1.19.3 or newer.\n\n**How to recheck:**\n\n- DevTools \u003e Application \u003e Cookies: SameSite column\n- Test SSO/IdP callbacks and cross-site POST flows still keep the session\n- Run the same NavSentry scan again and compare it with this run.\n\n**Fixed when:**\n\n- Session cookies set SameSite=Lax or Strict\n- Any SameSite=None cookie also has Secure and a documented cross-site need\n\n**Must not break:** SameSite=Strict/Lax can break SAML/OIDC form_post callbacks and payment redirects; test every external login/redirect flow.\n\nReferences: OWASP A01:2025 Broken Access Control; A02:2025 Security Misconfiguration; A01:2021 Broken Access Control; A05:2021 Security Misconfiguration · CWE CWE-1275, CWE-352 · WSTG WSTG-SESS-02, WSTG-SESS-05 · ASVS 5.0 V3 Web Frontend Security, V7 Session Management\n\nFingerprints: `3ef098d4f9d97c697a600f59`\n\n### 🟡 PLANNED — Schedule the fix\n\n#### 🟡 NSC-SESS-004 — JWT missing protection claims or weak algorithm\n\n| Action | Severity | Category | Affected targets |\n|---|---|---|---|\n| **PLANNED** | **medium** | SESS | 1 |\n\n**Why it matters:** Observed JWTs use alg 'none', omit exp, or lack audience/issuer binding, so tokens live forever or can be replayed to other services.\n\n**Expected:** alg is not 'none' | exp present and lifetime appropriate (e.g. \u003c= 1h for access tokens) | aud and iss present and validated server-side\n\n**Observed (redacted):**\n\n| Target | Confidence | Lifecycle | Observed |\n|---|---|---|---|\n| `GET http://127.0.0.1:4173/api/token` | high | VALIDATED | JWT missing protection claims or weak alg; token#1: alg=none; token#1: exp claim missing; token#1: iss claim missing; token#1: aud claim missing |\n\n**How to reproduce:**\n\n- navsentry test --config \u003cmanifest\u003e  (rule NSC-SESS-004, transport direct-http)\n- Log in, copy the token from DevTools \u003e Network/Storage into a local decoder (offline), check claims\n\n**How to fix:** Issue tokens with exp/iat/aud/iss; validate them on every API; reject alg none and unexpected algorithms.\n\n**Fix examples (reviewed examples; NavSentry does not execute them):**\n\n- **Node.js / Express**\n\n  Before:\n\n  ```js\n  const claims = jwt.decode(token); // not verified\n  ```\n\n  After:\n\n  ```js\n  const claims = jwt.verify(token, key, {\n    algorithms: [\"HS256\"],\n    audience: \"shop-api\",\n    issuer: \"shop-auth\",\n  });\n  // issue with: jwt.sign({ sub }, key, { algorithm: \"HS256\", expiresIn: \"15m\", audience: \"shop-api\", issuer: \"shop-auth\" })\n  ```\n\n  Uses the jsonwebtoken package. Never accept `alg: none`.\n\n- **ASP.NET Core**\n\n  Before:\n\n  ```csharp\n  o.TokenValidationParameters = new() { ValidateIssuer = false, ValidateAudience = false, ValidateLifetime = false };\n  ```\n\n  After:\n\n  ```csharp\n  o.TokenValidationParameters = new()\n  {\n      ValidateIssuer = true, ValidIssuer = \"shop-auth\",\n      ValidateAudience = true, ValidAudience = \"shop-api\",\n      ValidateLifetime = true, RequireExpirationTime = true,\n      ValidAlgorithms = new[] { SecurityAlgorithms.HmacSha256 },\n  };\n  ```\n\n- **Spring Boot / Spring Security**\n\n  Before:\n\n  ```properties\n  # resource server without issuer validation\n  ```\n\n  After:\n\n  ```properties\n  spring.security.oauth2.resourceserver.jwt.issuer-uri=https://auth.example.test/\n  spring.security.oauth2.resourceserver.jwt.audiences=shop-api\n  ```\n\n**How to recheck:**\n\n- Log in, copy the token from DevTools \u003e Network/Storage into a local decoder (offline), check claims\n- Use an expired test token: API returns 401\n- Run the same NavSentry scan again and compare it with this run.\n\n**Fixed when:**\n\n- alg is not 'none'\n- exp present and lifetime appropriate (e.g. \u003c= 1h for access tokens)\n- aud and iss present and validated server-side\n\n**Must not break:** Adding aud/exp validation rejects old long-lived tokens: plan a token refresh window and communicate client changes.\n\n**Limitations:**\n\n- NavSentry decodes but never verifies or forges tokens.\n\nReferences: OWASP A07:2025 Authentication Failures; A04:2025 Cryptographic Failures; A07:2021 Identification and Authentication Failures; A02:2021 Cryptographic Failures · CWE CWE-347, CWE-613 · WSTG WSTG-SESS-10 · ASVS 5.0 V9 Self-contained Tokens\n\nFingerprints: `f5515664499e6e3369c2e269`\n\n### 🔵 OPTIONAL — Hardening: may be skipped with a recorded reason\n\n#### 🔵 NSC-CONF-004 — MIME sniffing not disabled / insecure Content-Type\n\n| Action | Severity | Category | Affected targets |\n|---|---|---|---|\n| **OPTIONAL** | **low** | CONF | 9 |\n\n**Why it matters:** Responses with a body lack `X-Content-Type-Options: nosniff`, or omit Content-Type / charset, letting browsers guess the type.\n\n**Expected:** Every response with a body has an explicit Content-Type | X-Content-Type-Options: nosniff on every response | text/html responses declare a charset\n\n**Observed (redacted):**\n\n| Target | Confidence | Lifecycle | Observed |\n|---|---|---|---|\n| `GET http://127.0.0.1:4173/` | high | VALIDATED | text response without charset; X-Content-Type-Options: nosniff missing; text response without charset; X-Content-Type-Options: nosniff missing |\n| `GET http://127.0.0.1:4173/api/profile` | high | VALIDATED | X-Content-Type-Options: nosniff missing |\n| `GET http://127.0.0.1:4173/api/error` | high | VALIDATED | X-Content-Type-Options: nosniff missing |\n| `GET http://127.0.0.1:4173/api/token` | high | VALIDATED | X-Content-Type-Options: nosniff missing |\n| `GET http://127.0.0.1:4173/api/orders` | high | VALIDATED | X-Content-Type-Options: nosniff missing; X-Content-Type-Options: nosniff missing |\n| `GET http://127.0.0.1:4173/api/orders/{{orderA}}` | high | VALIDATED | X-Content-Type-Options: nosniff missing |\n| `GET http://127.0.0.1:4173/api/me` | high | VALIDATED | X-Content-Type-Options: nosniff missing |\n| `GET http://127.0.0.1:4173/api/admin/stats` | high | VALIDATED | X-Content-Type-Options: nosniff missing |\n| `GET http://127.0.0.1:4173/app/profile` | high | VALIDATED | X-Content-Type-Options: nosniff missing |\n\n**How to reproduce:**\n\n- navsentry test --config \u003cmanifest\u003e  (rule NSC-CONF-004, transport direct-http)\n- DevTools \u003e Network: each document, script and JSON response shows Content-Type and nosniff\n\n**How to fix:** Add `X-Content-Type-Options: nosniff` globally and make every handler set an accurate Content-Type (with charset for text).\n\n**Fix examples (reviewed examples; NavSentry does not execute them):**\n\n- **nginx**\n\n  Before:\n\n  ```nginx\n  server {\n      listen 443 ssl;\n      # no X-Content-Type-Options header\n  }\n  ```\n\n  After:\n\n  ```nginx\n  server {\n      listen 443 ssl;\n      add_header X-Content-Type-Options \"nosniff\" always;\n  }\n  ```\n\n  Every handler must also send an accurate Content-Type, with charset for text.\n\n- **Node.js / Express**\n\n  Before:\n\n  ```js\n  app.use(express.static(\"public\"));\n  ```\n\n  After:\n\n  ```js\n  app.use((req, res, next) =\u003e {\n    res.setHeader(\"X-Content-Type-Options\", \"nosniff\");\n    next();\n  });\n  app.use(express.static(\"public\"));\n  ```\n\n  Every handler must also send an accurate Content-Type, with charset for text.\n\n- **ASP.NET Core**\n\n  Before:\n\n  ```csharp\n  app.UseStaticFiles();\n  ```\n\n  After:\n\n  ```csharp\n  app.Use(async (context, next) =\u003e\n  {\n      context.Response.Headers[\"X-Content-Type-Options\"] = \"nosniff\";\n      await next();\n  });\n  app.UseStaticFiles();\n  ```\n\n  Every handler must also send an accurate Content-Type, with charset for text.\n\n- **Spring Boot / Spring Security**\n\n  Before:\n\n  ```java\n  http.headers(Customizer.withDefaults());\n  ```\n\n  After:\n\n  ```java\n  http.headers(h -\u003e h\n      .contentTypeOptions(Customizer.withDefaults()));\n  ```\n\n  Every handler must also send an accurate Content-Type, with charset for text.\n\n**How to recheck:**\n\n- DevTools \u003e Network: each document, script and JSON response shows Content-Type and nosniff\n- Re-run → NSC-CONF-004 PASS\n- Run the same NavSentry scan again and compare it with this run.\n\n**Fixed when:**\n\n- Every response with a body has an explicit Content-Type\n- X-Content-Type-Options: nosniff on every response\n- text/html responses declare a charset\n\n**Must not break:** nosniff blocks scripts/styles served with a wrong type: fix wrong Content-Type on static files first. Run `navsentry compare` between the pre-fix and post-fix runs: every legitimate request must keep the same status, content type, non-security header set and JSON shape; only security headers may differ.\n\nReferences: OWASP A02:2025 Security Misconfiguration; A05:2021 Security Misconfiguration · CWE CWE-16, CWE-430 · WSTG WSTG-CONF-12 · ASVS 5.0 V3 Web Frontend Security, V4 API and Web Service\n\nFingerprints: `524856164cab65da7f0ca455` `aef9e8a5b6b1e659dadc2fa1` `a2f6a8f688dc2ea498a0a7a9` `81e4f06fbc3ebd6e19ad70a2` `8abac78f653ee5b014e2f490` `887c9e474229a3f22403e9f7` `6b1e8104436e4050b9e69aea` `b8fb462c3914484b16461887` `61ef9ac144885a9aee7c1d64`\n\n#### 🔵 NSC-CONF-006 — Unnecessary HTTP methods or method override enabled\n\n| Action | Severity | Category | Affected targets |\n|---|---|---|---|\n| **OPTIONAL** | **low** | CONF | 5 |\n\n**Why it matters:** The server advertises (Allow / Access-Control-Allow-Methods) methods such as TRACE, TRACK, PUT or DELETE on resources that do not need them, or honours X-HTTP-Method-Override.\n\n**Expected:** OPTIONS on in-scope resources does not advertise TRACE/TRACK/CONNECT | Only methods actually used by the resource are advertised | Method-override headers are ignored (verified manually under safe-validate)\n\n**Observed (redacted):**\n\n| Target | Confidence | Lifecycle | Observed |\n|---|---|---|---|\n| `OPTIONS http://127.0.0.1:4173/` | high | VALIDATED | Dangerous methods advertised: TRACE; advertised: GET, POST, OPTIONS, TRACE |\n| `OPTIONS http://127.0.0.1:4173/api/profile` | high | VALIDATED | Dangerous methods advertised: TRACE; advertised: GET, POST, OPTIONS, TRACE |\n| `OPTIONS http://127.0.0.1:4173/api/error` | high | VALIDATED | Dangerous methods advertised: TRACE; advertised: GET, POST, OPTIONS, TRACE |\n| `OPTIONS http://127.0.0.1:4173/api/token` | high | VALIDATED | Dangerous methods advertised: TRACE; advertised: GET, POST, OPTIONS, TRACE |\n| `OPTIONS http://127.0.0.1:4173/go-out` | high | VALIDATED | Dangerous methods advertised: TRACE; advertised: GET, POST, OPTIONS, TRACE |\n\n**How to reproduce:**\n\n- navsentry test --config \u003cmanifest\u003e  (rule NSC-CONF-006, transport direct-http)\n- Send OPTIONS to the resource (NavSentry or curl -X OPTIONS -i) and inspect Allow\n\n**How to fix:** Restrict methods per route at the web server/framework; disable TRACE; remove method-override middleware unless strictly required.\n\n**Fix examples (reviewed examples; NavSentry does not execute them):**\n\n- **nginx**\n\n  Before:\n\n  ```nginx\n  location / {\n      proxy_pass http://app;\n  }\n  ```\n\n  After:\n\n  ```nginx\n  location / {\n      limit_except GET HEAD POST { deny all; }\n      proxy_pass http://app;\n  }\n  ```\n\n- **Node.js / Express**\n\n  Before:\n\n  ```js\n  app.use(methodOverride(\"_method\"));\n  ```\n\n  After:\n\n  ```js\n  // method-override removed\n  app.use((req, res, next) =\u003e\n    [\"TRACE\", \"TRACK\"].includes(req.method) ? res.sendStatus(405) : next());\n  ```\n\n**How to recheck:**\n\n- Send OPTIONS to the resource (NavSentry or curl -X OPTIONS -i) and inspect Allow\n- Re-run → NSC-CONF-006 PASS\n- Run the same NavSentry scan again and compare it with this run.\n\n**Fixed when:**\n\n- OPTIONS on in-scope resources does not advertise TRACE/TRACK/CONNECT\n- Only methods actually used by the resource are advertised\n- Method-override headers are ignored (verified manually under safe-validate)\n\n**Must not break:** CORS preflight legitimately needs OPTIONS: do not block OPTIONS globally, only restrict what it advertises. Keep the methods real clients use.\n\n**Limitations:**\n\n- OPTIONS itself being enabled is normal for CORS; SRC-E recorded it as an accepted Exception. NavSentry fails only on dangerous advertised methods.\n\nReferences: OWASP A02:2025 Security Misconfiguration; A05:2021 Security Misconfiguration · CWE CWE-650, CWE-16 · WSTG WSTG-CONF-06 · ASVS 5.0 V13 Configuration, V4 API and Web Service\n\nFingerprints: `2c67c0722e7817b6d2c8bf9d` `2c2f89f8d79380769fbb925a` `c7c1849474ca4043dcd3c780` `82249f07a283138dc5d24c22` `5937abdc7d03f39d27e36260`\n\n#### 🔵 NSC-CONF-007 — Insecure cache policy for sensitive responses\n\n| Action | Severity | Category | Affected targets |\n|---|---|---|---|\n| **OPTIONAL** | **low** | CONF | 4 |\n\n**Why it matters:** Authenticated or personal API/document responses are cacheable (no `Cache-Control: no-store`/`private`), so shared caches or the browser can retain them.\n\n**Expected:** Responses served to authenticated actors or setting session cookies send `Cache-Control: no-store` (or `private, no-cache` where justified) | Static public assets may stay cacheable\n\n**Observed (redacted):**\n\n| Target | Confidence | Lifecycle | Observed |\n|---|---|---|---|\n| `GET http://127.0.0.1:4173/` | high | VALIDATED | Sensitive response is cacheable; Cache-Control absent |\n| `GET http://127.0.0.1:4173/api/profile` | high | VALIDATED | Sensitive response is cacheable; Cache-Control: public, max-age=600 |\n| `GET http://127.0.0.1:4173/api/error` | high | VALIDATED | Sensitive response is cacheable; Cache-Control absent |\n| `GET http://127.0.0.1:4173/app/profile` | high | VALIDATED | Sensitive response is cacheable; Cache-Control absent |\n\n**How to reproduce:**\n\n- navsentry test --config \u003cmanifest\u003e  (rule NSC-CONF-007, transport direct-http)\n- DevTools \u003e Network: authenticated API responses show no-store\n\n**How to fix:** Add no-store on authenticated/sensitive routes (middleware by route group); keep long caching only for fingerprinted static assets.\n\n**Fix examples (reviewed examples; NavSentry does not execute them):**\n\n- **nginx**\n\n  Before:\n\n  ```nginx\n  location /api/ {\n      proxy_pass http://app;\n  }\n  ```\n\n  After:\n\n  ```nginx\n  location /api/ {\n      proxy_pass http://app;\n      add_header Cache-Control \"no-store\" always;\n  }\n  ```\n\n- **Node.js / Express**\n\n  Before:\n\n  ```js\n  app.use(\"/api\", apiRouter);\n  ```\n\n  After:\n\n  ```js\n  app.use(\"/api\", (req, res, next) =\u003e { res.set(\"Cache-Control\", \"no-store\"); next(); }, apiRouter);\n  ```\n\n- **ASP.NET Core**\n\n  Before:\n\n  ```csharp\n  [HttpGet(\"profile\")]\n  public IActionResult Profile() =\u003e Ok(_svc.Profile());\n  ```\n\n  After:\n\n  ```csharp\n  [HttpGet(\"profile\")]\n  [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]\n  public IActionResult Profile() =\u003e Ok(_svc.Profile());\n  ```\n\n- **Spring Boot / Spring Security**\n\n  Before:\n\n  ```java\n  http.headers(h -\u003e h.cacheControl(c -\u003e c.disable()));\n  ```\n\n  After:\n\n  ```java\n  http.headers(h -\u003e h.cacheControl(Customizer.withDefaults())); // no-cache, no-store\n  ```\n\n**How to recheck:**\n\n- DevTools \u003e Network: authenticated API responses show no-store\n- Log out, press Back: sensitive pages are not shown from cache\n- Run the same NavSentry scan again and compare it with this run.\n\n**Fixed when:**\n\n- Responses served to authenticated actors or setting session cookies send `Cache-Control: no-store` (or `private, no-cache` where justified)\n- Static public assets may stay cacheable\n\n**Must not break:** Do not apply no-store to static assets (performance regression). Scope the header by route. Verify with `navsentry compare` and page-load timing.\n\nReferences: OWASP A06:2025 Insecure Design; A02:2025 Security Misconfiguration; A04:2021 Insecure Design; A05:2021 Security Misconfiguration · CWE CWE-524, CWE-525 · WSTG WSTG-ATHN-06 · ASVS 5.0 V14 Data Protection\n\nFingerprints: `78cfb26ba86a9c964485e562` `973b78c7baf56069037bc3e8` `b2ae6e48d832d0fbdb60a801` `82c6f694fc9f9f46f387b272`\n\n#### 🔵 NSC-INFO-001 — Server / framework version disclosure\n\n| Action | Severity | Category | Affected targets |\n|---|---|---|---|\n| **OPTIONAL** | **low** | INFO | 10 |\n\n**Why it matters:** Headers (Server, X-Powered-By, X-AspNet-Version, X-AspNetMvc-Version) or error pages reveal product versions, helping attackers pick exploits.\n\n**Expected:** No response header or default error page exposes a product version number | X-Powered-By / X-AspNet-Version headers removed\n\n**Observed (redacted):**\n\n| Target | Confidence | Lifecycle | Observed |\n|---|---|---|---|\n| `GET http://127.0.0.1:4173/` | high | VALIDATED | Product version disclosed; server: Apache/2.4.29 (Ubuntu); x-powered-by: PHP/7.2.1 |\n| `GET http://127.0.0.1:4173/api/profile` | high | VALIDATED | Product version disclosed; server: Apache/2.4.29 (Ubuntu); x-powered-by: PHP/7.2.1 |\n| `GET http://127.0.0.1:4173/api/error` | high | VALIDATED | Product version disclosed; server: Apache/2.4.29 (Ubuntu); x-powered-by: PHP/7.2.1 |\n| `GET http://127.0.0.1:4173/api/token` | high | VALIDATED | Product version disclosed; server: Apache/2.4.29 (Ubuntu); x-powered-by: PHP/7.2.1 |\n| `GET http://127.0.0.1:4173/go-out` | high | VALIDATED | Product version disclosed; server: Apache/2.4.29 (Ubuntu); x-powered-by: PHP/7.2.1 |\n| `GET http://127.0.0.1:4173/api/orders` | high | VALIDATED | Product version disclosed; server: Apache/2.4.29 (Ubuntu); x-powered-by: PHP/7.2.1 |\n| `GET http://127.0.0.1:4173/api/orders/{{orderA}}` | high | VALIDATED | Product version disclosed; server: Apache/2.4.29 (Ubuntu); x-powered-by: PHP/7.2.1 |\n| `GET http://127.0.0.1:4173/api/me` | high | VALIDATED | Product version disclosed; server: Apache/2.4.29 (Ubuntu); x-powered-by: PHP/7.2.1 |\n| `GET http://127.0.0.1:4173/api/admin/stats` | high | VALIDATED | Product version disclosed; server: Apache/2.4.29 (Ubuntu); x-powered-by: PHP/7.2.1 |\n| `GET http://127.0.0.1:4173/app/profile` | high | VALIDATED | Product version disclosed; server: Apache/2.4.29 (Ubuntu); x-powered-by: PHP/7.2.1 |\n\n**How to reproduce:**\n\n- navsentry test --config \u003cmanifest\u003e  (rule NSC-INFO-001, transport direct-http)\n- DevTools \u003e Network \u003e Response Headers: no version numbers\n\n**How to fix:** Remove/blank version headers at the server/proxy (e.g. server_tokens off, removeServerHeader, enableVersionHeader=false) and use custom error pages.\n\n**Fix examples (reviewed examples; NavSentry does not execute them):**\n\n- **nginx**\n\n  Before:\n\n  ```nginx\n  http {\n  }\n  ```\n\n  After:\n\n  ```nginx\n  http {\n      server_tokens off;\n      proxy_hide_header X-Powered-By;\n  }\n  ```\n\n- **Node.js / Express**\n\n  Before:\n\n  ```js\n  const app = express();\n  ```\n\n  After:\n\n  ```js\n  const app = express();\n  app.disable(\"x-powered-by\");\n  ```\n\n- **ASP.NET Core**\n\n  Before:\n\n  ```csharp\n  var builder = WebApplication.CreateBuilder(args);\n  ```\n\n  After:\n\n  ```csharp\n  var builder = WebApplication.CreateBuilder(args);\n  builder.WebHost.ConfigureKestrel(o =\u003e o.AddServerHeader = false);\n  ```\n\n**How to recheck:**\n\n- DevTools \u003e Network \u003e Response Headers: no version numbers\n- Request a non-existent path: error page shows no version\n- Run the same NavSentry scan again and compare it with this run.\n\n**Fixed when:**\n\n- No response header or default error page exposes a product version number\n- X-Powered-By / X-AspNet-Version headers removed\n\n**Must not break:** Header removal does not change bodies; confirm with `navsentry compare` (Server/X-Powered-By are excluded from the contract).\n\n**Limitations:**\n\n- Version hiding is defence in depth, not a fix for an unpatched component (see NSC-SUPPLY-001).\n\nReferences: OWASP A02:2025 Security Misconfiguration; A05:2021 Security Misconfiguration · CWE CWE-200, CWE-497 · WSTG WSTG-INFO-02 · ASVS 5.0 V13 Configuration\n\nFingerprints: `65014b06eef67557fa1224fa` `96c85dadbfe772b1946bb878` `81615fe0efd01296eabb4b0e` `567f8480c5da9b5ed13762ea` `40d2944d5782beb316fdf3df` `b6438cdb4cfb8485c2c39cb4` `10818924dc8a1a6ca8a01ce1` `557b65c1e49e747d5e8b1ff7` `f3e727a639f1686ee83fcfde` `4bab2545a1262edeea8cda03`\n\n#### 🔵 NSC-INFO-003 — Internal IP address disclosure\n\n| Action | Severity | Category | Affected targets |\n|---|---|---|---|\n| **OPTIONAL** | **low** | INFO | 1 |\n\n**Why it matters:** Response headers or bodies contain RFC 1918 / loopback / link-local addresses, revealing internal topology.\n\n**Expected:** No in-scope response contains private IPv4/IPv6 literals in headers or bodies\n\n**Observed (redacted):**\n\n| Target | Confidence | Lifecycle | Observed |\n|---|---|---|---|\n| `GET http://127.0.0.1:4173/api/profile` | medium | SUSPECTED | Private IP address literals disclosed; headers: 0 match(es); body: 1 match(es); values masked |\n\n**How to reproduce:**\n\n- navsentry test --config \u003cmanifest\u003e  (rule NSC-INFO-003, transport direct-http)\n- Search the raw response (DevTools \u003e Network \u003e Response) for 10./172.16-31./192.168. patterns\n\n**How to fix:** Stop echoing upstream addresses (Via, X-Backend-Server, error messages, config endpoints); configure the proxy to strip them.\n\n**Fix examples (reviewed examples; NavSentry does not execute them):**\n\n- **nginx**\n\n  Before:\n\n  ```nginx\n  location / {\n      proxy_pass http://10.0.0.12:8080;\n  }\n  ```\n\n  After:\n\n  ```nginx\n  location / {\n      proxy_pass http://10.0.0.12:8080;\n      proxy_hide_header X-Backend-Server;\n      proxy_hide_header Via;\n  }\n  ```\n\n- **Node.js / Express**\n\n  Before:\n\n  ```js\n  res.json({ ok: true, node: os.hostname(), ip: req.socket.localAddress });\n  ```\n\n  After:\n\n  ```js\n  res.json({ ok: true });\n  ```\n\n**How to recheck:**\n\n- Search the raw response (DevTools \u003e Network \u003e Response) for 10./172.16-31./192.168. patterns\n- Re-run → NSC-INFO-003 PASS\n- Run the same NavSentry scan again and compare it with this run.\n\n**Fixed when:**\n\n- No in-scope response contains private IPv4/IPv6 literals in headers or bodies\n\n**Must not break:** If a client legitimately consumes an address field (e.g. a config endpoint), replace it with a public hostname rather than removing the field; verify JSON shape with `navsentry compare`.\n\n**Limitations:**\n\n- Dotted version/build strings that start with 10. or 192.168. can match; review context before VALIDATED.\n\nReferences: OWASP A02:2025 Security Misconfiguration; A05:2021 Security Misconfiguration · CWE CWE-200 · WSTG WSTG-INFO-05 · ASVS 5.0 V13 Configuration\n\nFingerprints: `3cb08c2e2fd70219f7d3f68a`\n\n### ⚪ INFO — Observation only: no action needed\n\n#### ⚪ NSC-INFO-004 — Email address disclosure\n\n| Action | Severity | Category | Affected targets |\n|---|---|---|---|\n| **INFO** | **info** | INFO | 1 |\n\n**Why it matters:** Responses expose email addresses (often staff/developer addresses in config or API payloads) that enable phishing and enumeration.\n\n**Expected:** Anonymous responses expose no personal/staff email except intentional public contact addresses listed by the owner\n\n**Observed (redacted):**\n\n| Target | Confidence | Lifecycle | Observed |\n|---|---|---|---|\n| `GET http://127.0.0.1:4173/api/profile` | medium | SUSPECTED | 1 email address(es) in response; count: 1; domain shapes: *.example; addresses masked |\n\n**How to reproduce:**\n\n- navsentry test --config \u003cmanifest\u003e  (rule NSC-INFO-004, transport direct-http)\n- Open the endpoint anonymously and search the response for '@'\n\n**How to fix:** Remove addresses from config/diagnostic endpoints; return them only to authorized users who need them.\n\n**Fix examples (reviewed examples; NavSentry does not execute them):**\n\n- **Any stack**\n\n  Before:\n\n  ```js\n  res.json({ app: \"shop\", support: \"\u003cstaff-email\u003e\" });\n  ```\n\n  After:\n\n  ```js\n  res.json({ app: \"shop\" }); // contact details only for authorized users\n  ```\n\n**How to recheck:**\n\n- Open the endpoint anonymously and search the response for '@'\n- Re-run → NSC-INFO-004 PASS or reviewed DISMISSED for intentional contacts\n- Run the same NavSentry scan again and compare it with this run.\n\n**Fixed when:**\n\n- Anonymous responses expose no personal/staff email except intentional public contact addresses listed by the owner\n\n**Must not break:** If a UI shows an email field to its owner, keep it for the authenticated owner; remove it only from anonymous/other-user responses.\n\n**Limitations:**\n\n- Public contact addresses are expected; record them as reviewed exceptions instead of failing forever.\n\nReferences: OWASP A01:2025 Broken Access Control; A01:2021 Broken Access Control · CWE CWE-200, CWE-359 · WSTG WSTG-INFO-05 · ASVS 5.0 V14 Data Protection\n\nFingerprints: `8d3f0ad3b969625397e56ce9`\n\n## Fix verification\n\nNo previous run compared. After a fix, run the same scan again and use `navsentry compare --before \u003cdir\u003e --after \u003cdir\u003e`.\n\n## Known vulnerabilities\n\n- Snapshot `2026-11-04.1` · sha256 `42e5d2a7d39cf6e2` · 3 record(s), 3 reviewed, 0 stale · oldest verification 2026-11-03\n- Offline snapshot: it cannot prove that no newer advisory exists. Zero matches never means no vulnerabilities.\n\n### Known vulnerability applicability\n\n| Product (evidence) | Record | Identifiers | Severity (source) | Applicability | Case | Caveats |\n|---|---|---|---|---|---|---|\n| server/apache-httpd 2.4.29 (http-banner) | — | — | — | **unknown** | NSC-SUPPLY-001 | no records in the snapshot |\n| runtime/php 7.2.1 (http-banner) | — | — | — | **unknown** | NSC-SUPPLY-001 | no records in the snapshot |\n\n## Coverage\n\n| Case | Title | Status | Targets | Reason |\n|---|---|---|---|---|\n| NSC-CONF-001 | HSTS missing or weak | NOT_TESTED | 0 | plain HTTP target |\n| NSC-CONF-002 | Content Security Policy missing or unsafe | FAIL | 6 |  |\n| NSC-CONF-003 | Clickjacking protection missing | FAIL | 6 |  |\n| NSC-CONF-004 | MIME sniffing not disabled / insecure Content-Type | FAIL | 25 |  |\n| NSC-CONF-009 | Configuration or VCS files publicly reachable | NOT_TESTED | 0 | not exercised by this run's targets |\n| NSC-CONF-005 | Debug mode / development features enabled | NOT_TESTED | 0 | evidence collection needs an operator/agent; see the case's agent prompt |\n| NSC-CONF-006 | Unnecessary HTTP methods or method override enabled | FAIL | 5 |  |\n| NSC-CONF-007 | Insecure cache policy for sensitive responses | FAIL | 20 |  |\n| NSC-CONF-008 | HTTP request smuggling / desync | NOT_TESTED | 0 | requires active payloads; never automated without active-approved authorization |\n| NSC-INFO-001 | Server / framework version disclosure | FAIL | 29 |  |\n| NSC-INFO-007 | Secrets embedded in client-side assets | NOT_TESTED | 0 | not exercised by this run's targets |\n| NSC-INFO-006 | Sensitive data written to the browser console | NOT_TESTED | 0 | no JS runtime (http engine) |\n| NSC-INFO-008 | Source maps with source content served publicly | NOT_TESTED | 0 | not exercised by this run's targets |\n| NSC-INFO-003 | Internal IP address disclosure | FAIL | 29 |  |\n| NSC-INFO-004 | Email address disclosure | FAIL | 29 |  |\n| NSC-ERR-001 | Verbose error, stack trace or unhandled exception exposed | FAIL | 29 |  |\n| NSC-ERR-002 | Denial of service via expensive input parsing | NOT_TESTED | 0 | requires active payloads; never automated without active-approved authorization |\n| NSC-PRIV-001 | National ID / personal identifier disclosure | FAIL | 29 |  |\n| NSC-PRIV-002 | Sensitive data in URL / GET query | PASS | 29 |  |\n| NSC-SESS-001 | Cookie without Secure flag | NOT_TESTED | 0 | plain HTTP target |\n| NSC-SESS-002 | Cookie without HttpOnly flag | FAIL | 4 |  |\n| NSC-SESS-003 | Cookie SameSite missing or contradictory | FAIL | 4 |  |\n| NSC-SESS-004 | JWT missing protection claims or weak algorithm | FAIL | 4 |  |\n| NSC-CRYPT-001 | Legacy TLS/SSL protocol versions enabled | NOT_TESTED | 0 | not exercised by this run's targets |\n| NSC-CRYPT-002 | Weak TLS cipher suites or key exchange | NOT_TESTED | 0 | evidence collection needs an operator/agent; see the case's agent prompt |\n| NSC-CRYPT-003 | Insufficient certificate key size or weak signature | NOT_TESTED | 0 | not exercised by this run's targets |\n| NSC-CRYPT-004 | Missing public key pinning (deprecated control) | NOT_TESTED | 0 | evidence collection needs an operator/agent; see the case's agent prompt |\n| NSC-CRYPT-005 | Hardcoded encryption key | NOT_TESTED | 0 | source-code finding; use a SAST tool / DevSift |\n| NSC-CRYPT-006 | Cleartext HTTP served without redirect to HTTPS | FAIL | 29 |  |\n| NSC-AC-001 | Authorization bypass through test/debug endpoint | NOT_TESTED | 0 | evidence collection needs an operator/agent; see the case's agent prompt |\n| NSC-AC-002 | Missing authentication on API endpoint | FAIL | 2 |  |\n| NSC-AC-003 | IDOR / BOLA (cross-user object access) | FAIL | 1 |  |\n| NSC-AC-007 | Missing function-level authorization (vertical privilege escalation) | FAIL | 1 |  |\n| NSC-AC-008 | Open redirect | NOT_TESTED | 0 | not exercised by this run's targets |\n| NSC-AC-004 | Permissive CORS policy | FAIL | 5 |  |\n| NSC-AC-005 | Server-side request forgery (SSRF) | NOT_TESTED | 0 | requires active payloads; never automated without active-approved authorization |\n| NSC-AC-006 | Missing CSRF protection on state-changing requests | NOT_TESTED | 0 | needs a flow with an access expectation (docs/FLOWS.md) |\n| NSC-AUTH-001 | Hardcoded API credentials | NOT_TESTED | 0 | source-code finding; use a SAST tool / DevSift |\n| NSC-AUTH-002 | Session not invalidated after logout / stale session | NOT_TESTED | 0 | needs a flow with an access expectation (docs/FLOWS.md) |\n| NSC-INJ-001 | SQL injection | NOT_TESTED | 0 | requires active payloads; never automated without active-approved authorization |\n| NSC-INJ-002 | Server-side script / template / code injection | NOT_TESTED | 0 | requires active payloads; never automated without active-approved authorization |\n| NSC-INJ-003 | LDAP injection | NOT_TESTED | 0 | requires active payloads; never automated without active-approved authorization |\n| NSC-INJ-004 | Reflected / DOM cross-site scripting | NOT_TESTED | 0 | deterministic check planned for active-approved (design) |\n| NSC-INJ-005 | HTTP header manipulation / CRLF injection / unvalidated header forwarding | NOT_TESTED | 0 | source-code finding; use a SAST tool / DevSift |\n| NSC-INJ-006 | Local file inclusion / path traversal | NOT_TESTED | 0 | requires active payloads; never automated without active-approved authorization |\n| NSC-SUPPLY-001 | Unpatched server component with known vulnerabilities | NOT_TESTED | 0 | applicability unknown: no records in the snapshot |\n| NSC-SUPPLY-002 | Client-side library with known vulnerabilities | NOT_TESTED | 0 | not exercised by this run's targets |\n| NSC-LOG-001 | Security logging and alerting gaps | NOT_TESTED | 0 | evidence collection needs an operator/agent; see the case's agent prompt |\n| NSC-BIZ-001 | Business logic flaw | NOT_TESTED | 0 | needs a flow with an access expectation (docs/FLOWS.md) |\n| NSC-INFRA-001 | ICMP timestamp response enabled | NOT_TESTED | 0 | network/host VA item outside web scope |\n| NSC-INFRA-002 | ICMP redirects accepted | NOT_TESTED | 0 | network/host VA item outside web scope |\n| NSC-INFRA-003 | Unsafe default umask / home directory permissions | NOT_TESTED | 0 | network/host VA item outside web scope |\n| NSC-INFRA-004 | Weak SSH MAC algorithms | NOT_TESTED | 0 | network/host VA item outside web scope |\n| NSC-INFRA-005 | FTP credentials transmitted in cleartext | NOT_TESTED | 0 | network/host VA item outside web scope |\n| NSC-INFRA-006 | Database ports reachable from untrusted networks | NOT_TESTED | 0 | network/host VA item outside web scope |\n| NSC-INFRA-007 | OS package vulnerabilities / untrusted package repository | NOT_TESTED | 0 | network/host VA item outside web scope |\n| NSC-INFO-005 | WAF / reverse proxy detected (informational) | NOT_TESTED | 0 | evidence collection needs an operator/agent; see the case's agent prompt |\n\n### Coverage by template\n\nNot a spider run: only the requested pages were scanned.\n\n## Not tested and limitations\n\nNone.\n\n- NOT_TESTED cases: 38 (Coverage)\n\n## Transports and engine\n\n| Transport | Available | Usable | Version | Reason |\n|---|---|---|---|---|\n| direct-http | true | true | 26.13.0 | built-in node:http/https |\n| playwright-browser | true | true | 1.64.1 | playwright-core with Chromium headless shell; every request is fulfilled through ScopeGate and Budget (S1) |\n| curl-cli | true | false | curl 8.22.0 (Windows) libcurl/8.22.0 Schannel zlib/1.3.2 WinIDN WinLDAP | detected; request execution is scheduled for milestone M3 (argv builder implemented and tested) |\n| powershell-http | true | false | 7.6.9 | detected; request execution is scheduled for milestone M3 (argv builder implemented and tested) |\n| visual-computer-use | true | true | 1.64.1 | visual driver over playwright-browser: `navsentry browse` (development; needs transports.visual_computer_use: true) |\n| zap-passive | false | false | — | phase-2 integration; not implemented |\n\n## Requests refused before sending\n\n- GET `http://evil.example/steal` — redirect not followed: origin http://evil.example is not in targets.origins\n- GET `http://evil.example/steal` — redirect not followed: origin http://evil.example is not in targets.origins\n- GET `http://evil.example/steal` — redirect not followed: origin http://evil.example is not in targets.origins\n- GET `http://evil.example/steal` — redirect not followed: origin http://evil.example is not in targets.origins\n\n## Redirect chains\n\nEvery hop was checked by ScopeGate before it was requested.\n\n- `http://127.0.0.1:4173/go-out` as anonymous\n  - 302 `http://127.0.0.1:4173/go-out` → `http://evil.example/steal` · not followed: origin http://evil.example is not in targets.origins\n- `http://127.0.0.1:4173/go-out` as reader_a\n  - 302 `http://127.0.0.1:4173/go-out` → `http://evil.example/steal` · not followed: origin http://evil.example is not in targets.origins\n- `http://127.0.0.1:4173/go-out` as reader_b\n  - 302 `http://127.0.0.1:4173/go-out` → `http://evil.example/steal` · not followed: origin http://evil.example is not in targets.origins\n- `http://127.0.0.1:4173/go-out` as admin\n  - 302 `http://127.0.0.1:4173/go-out` → `http://evil.example/steal` · not followed: origin http://evil.example is not in targets.origins\n\n## Client assets and browser\n\n### Client assets\n\nNot scanned in this mode.\n\n### Browser console\n\nNot captured (no browser engine in this run).\n\n### Analyzer\n\nNot run (add `--analyze`).\n\n## Knowledge gaps\n\n### Knowledge gaps / proposed updates\n\n| Gap | Product | Detail |\n|---|---|---|\n| unknown-product | server/apache-httpd 2.4.29 | no records for this product in the snapshot (not proof of absence) |\n| unknown-product | runtime/php 7.2.1 | no records for this product in the snapshot (not proof of absence) |\n\n## Run details\n\n- Budget: 39/100 requests · denied before execution 4\n\n### Fixtures and cleanup\n\nNot used (observe mode).\n\n### Capture\n\n| Wire bytes | Decoded bytes | Truncated | Aborted | Partially inspected bodies |\n|---|---|---|---|---|\n| 2067 | 2067 | 0 | 0 | 0 |\n\n### Workspace\n\nNone.\n\n## Flows\n\n- 2 flows / 11 steps · Functional result: **FAIL**\n- URLs covered beyond seed paths: 5\n- Findings raised by flow requests: 22\n- Details: [TEST-REPORT.md](TEST-REPORT.md)\n"</script>
+<script>(function(){var md=JSON.parse(document.getElementById("report-md").textContent);
+document.getElementById("export-md").addEventListener("click",function(){var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([md],{type:"text/markdown"}));a.download="REPORT.md";a.click();setTimeout(function(){URL.revokeObjectURL(a.href)},1000)});
+document.getElementById("print").addEventListener("click",function(){window.print()});
+window.addEventListener("beforeprint",function(){document.querySelectorAll("details").forEach(function(d){d.open=true})});
+document.querySelectorAll("button[data-level]").forEach(function(b){b.addEventListener("click",function(){var on=b.getAttribute("aria-pressed")!=="true";b.setAttribute("aria-pressed",on?"true":"false");
+document.querySelectorAll('.group[data-level="'+b.dataset.level+'"]').forEach(function(g){g.classList.toggle("hidden",!on)})})});})();</script>
+</body>
+</html>

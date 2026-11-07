@@ -13,6 +13,7 @@ import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import type { Exchange } from "./types.js";
 import type { UiTarget } from "../flow/parse.js";
+import { describeInPage, snapshotInPage } from "./page-scripts.js";
 
 /** Minimal structural types of the playwright-core API used here (it is an optional peer). */
 interface PwRequest { postDataBuffer(): Buffer | null; url(): string; method(): string; headers(): Record<string, string>; resourceType(): string; isNavigationRequest(): boolean; frame(): { parentFrame(): unknown } }
@@ -35,6 +36,9 @@ interface PwPage {
   mouse: PwMouse;
   screenshot(o: { path: string; type: "png"; fullPage: false }): Promise<unknown>;
   url(): string;
+  evaluate<T, A>(fn: (arg: A) => T, arg: A): Promise<T>;
+  locator(selector: string): PwLocator;
+  keyboard: { press(key: string): Promise<void> };
   waitForEvent(ev: "framenavigated", o: { timeout: number }): Promise<unknown>;
 }
 interface PwContext {
@@ -140,6 +144,18 @@ function locate(page: PwPage, t: UiTarget): PwLocator {
   if ("text" in t) return page.getByText(t.text, { exact: true }).first();
   return page.getByTestId(t.test_id).first();
 }
+
+/** One interactive element of a visual-driver snapshot. Values are never included. */
+export interface SnapshotElement { ref: string; role: string; name: string; tag: string; type?: string; href?: string; password: boolean; hasValue?: boolean; x: number; y: number; inViewport: boolean }
+export interface PageSnapshot { url: string; title: string; elements: SnapshotElement[]; truncated: boolean }
+export interface ElementInfo { role: string; name: string; tag: string; type?: string; password: boolean; editable: boolean }
+
+/** Keys the visual driver may press (SPEC-0.3.0 §5). */
+export const ALLOWED_KEYS: ReadonlySet<string> = new Set(["Enter", "Tab", "Escape", "Backspace", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End"]);
+export const REF = /^e[0-9]{1,5}$/;
+const MAX_SNAPSHOT = 200;
+/** Headed mode needs the full Chromium build, which governance has not approved (only the headless shell is). Flip only with a dated APPROVED governance entry. */
+export const HEADED_BROWSER_APPROVED = false;
 
 export class BrowserEngine {
   private contexts = new Map<string, { ctx: PwContext; page: PwPage }>();
@@ -297,6 +313,67 @@ export class BrowserEngine {
       return { url: s.page.url() };
     } catch (e) {
       return { error: `scroll failed: ${firstLine(e)}` };
+    }
+  }
+
+  /** Visual driver: interactive elements with refs (SPEC-0.3.0 §5). */
+  async snapshot(actor: string): Promise<PageSnapshot | { error: string }> {
+    const s = this.contexts.get(actor);
+    if (!s) return { error: "no page loaded for this actor" };
+    try {
+      return await s.page.evaluate(snapshotInPage, MAX_SNAPSHOT);
+    } catch (e) {
+      return { error: `snapshot failed: ${firstLine(e)}` };
+    }
+  }
+
+  async describe(actor: string, at: { ref: string } | { x: number; y: number }): Promise<ElementInfo | undefined> {
+    const s = this.contexts.get(actor);
+    if (!s) return undefined;
+    if ("ref" in at && !REF.test(at.ref)) return undefined;
+    try { return (await s.page.evaluate(describeInPage, at)) ?? undefined; } catch { return undefined; }
+  }
+
+  async clickRef(actor: string, ref: string): Promise<{ url: string } | { error: string }> {
+    const s = this.contexts.get(actor);
+    if (!s) return { error: "no page loaded for this actor" };
+    if (!REF.test(ref)) return { error: "ref must look like e12 (from the latest snapshot)" };
+    try {
+      const nav = s.page.waitForEvent("framenavigated", { timeout: 1_000 }).catch(() => undefined);
+      await s.page.locator(`[data-nsref="${ref}"]`).first().click({ timeout: ACTION_TIMEOUT_MS });
+      await nav;
+      await s.page.waitForLoadState("load", { timeout: ACTION_TIMEOUT_MS }).catch(() => undefined);
+      return { url: s.page.url() };
+    } catch (e) {
+      return { error: `click failed: ${firstLine(e)} (take a new snapshot if the page changed)` };
+    }
+  }
+
+  /** Fills one editable element. The value is never returned or logged; callers check the field first. */
+  async typeRef(actor: string, ref: string, value: string): Promise<{ url: string } | { error: string }> {
+    const s = this.contexts.get(actor);
+    if (!s) return { error: "no page loaded for this actor" };
+    if (!REF.test(ref)) return { error: "ref must look like e12 (from the latest snapshot)" };
+    try {
+      await s.page.locator(`[data-nsref="${ref}"]`).first().fill(value, { timeout: ACTION_TIMEOUT_MS });
+      return { url: s.page.url() };
+    } catch (e) {
+      return { error: `typing failed: ${firstLine(e).split(value).join("<value>")}` };
+    }
+  }
+
+  async press(actor: string, key: string): Promise<{ url: string } | { error: string }> {
+    const s = this.contexts.get(actor);
+    if (!s) return { error: "no page loaded for this actor" };
+    if (!ALLOWED_KEYS.has(key)) return { error: `key must be one of ${[...ALLOWED_KEYS].join(", ")}` };
+    try {
+      const nav = s.page.waitForEvent("framenavigated", { timeout: 1_000 }).catch(() => undefined);
+      await s.page.keyboard.press(key);
+      await nav;
+      await s.page.waitForLoadState("load", { timeout: ACTION_TIMEOUT_MS }).catch(() => undefined);
+      return { url: s.page.url() };
+    } catch (e) {
+      return { error: `key failed: ${firstLine(e)}` };
     }
   }
 

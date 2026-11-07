@@ -1,5 +1,6 @@
 /** Plan (zero network) and execute (observe mode) runs. */
 import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { join } from "node:path";
 import { FixtureLifecycle, RequestRefused, fillBody, markerContexts } from "./fixtures/lifecycle.js";
 import { Budget, BudgetExceeded, ByteBudget } from "./budget.js";
 import { CASES, getCase } from "./catalog.js";
@@ -31,6 +32,8 @@ import { TOOL_NAME, TOOL_VERSION, REPORT_SCHEMA_VERSION, FLOW_RESULT_SCHEMA_VERS
 /** Reserved, non-resolvable origin used to probe CORS reflection (RFC 2606 .invalid). */
 export const CORS_PROBE_ORIGIN = "https://navsentry-cors-probe.invalid";
 export const MAX_REDIRECTS = 5;
+/** Replay timeline: at most this many step screenshots per run (a viewport PNG is roughly 50–200 KB). */
+export const MAX_STEP_SHOTS = 60;
 
 /** Rules whose evidence is pattern-based: FAIL becomes SUSPECTED until a human confirms semantics. */
 /** Rules evaluated only from flow access expectations. */
@@ -205,7 +208,7 @@ export interface ExecuteOptions {
   workDir?: string;
   cacheDir?: string;
   /** `--engine playwright` (M1b): UI steps run in the browser engine; never a silent fallback (S6). */
-  browser?: { probe?: () => PlaywrightProbe };
+  browser?: { probe?: () => PlaywrightProbe; shotsDir?: string };
   /** safe-validate: directory for `fixtures.pending.json` (the run work dir); creates are refused without it. */
   fixtureWorkDir?: string;
   /** Called once the fixture lifecycle exists, so the CLI's signal coordinator can stop it. */
@@ -469,6 +472,18 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
             const c = finish();
             return { ok: r.ok, observed: r.observed, requestIds: c.ids, ...(r.error ? { error: r.error } : {}) };
           },
+          ...(opts.browser.shotsDir ? { snapshot: (() => {
+            const dir = opts.browser.shotsDir;
+            let taken = 0;
+            return async (actor: string, flow: { id: string; step: string }) => {
+              if (taken >= MAX_STEP_SHOTS) return undefined;
+              const name = `${flow.id}-${flow.step}.png`.replace(/[^A-Za-z0-9._-]/g, "_");
+              const r = await eng.screenshot(actor, join(dir, name));
+              if ("error" in r) return undefined;
+              taken++;
+              return name;
+            };
+          })() } : {}),
         };
       } catch (e) {
         incomplete.push(`playwright engine failed to start: ${firstLine(e)}; UI steps NOT_TESTED`);

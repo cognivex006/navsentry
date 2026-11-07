@@ -151,6 +151,14 @@ test("CLI: scan --mode flow --engine playwright runs the UI flow end to end", { 
     const fr = JSON.parse(readFileSync(join(out, "flows.json"), "utf8")) as { flows: { id: string; status: string; steps: { status: string }[] }[] };
     assert.deepEqual(fr.flows[0]!.steps.map((x) => x.status), ["PASS", "PASS", "PASS", "PASS"]);
     assert.equal(fx.canaryHits(), 0);
+    // Replay timeline: one viewport PNG per browser step, beside the report, git-ignored.
+    const shots = (fr.flows[0]!.steps as { screenshot?: string }[]).map((x) => x.screenshot);
+    assert.deepEqual(shots, ["shop-S1.png", "shop-S2.png", "shop-S3.png", "shop-S4.png"]);
+    for (const s of shots) assert.deepEqual([...readFileSync(join(out, "shots", s!)).subarray(0, 4)], [0x89, 0x50, 0x4e, 0x47], `${s} is a PNG`);
+    assert.equal(readFileSync(join(out, "shots", ".gitignore"), "utf8"), "*\n");
+    const tr = readFileSync(join(out, "TEST-REPORT.md"), "utf8");
+    assert.match(tr, /## Replay timeline/);
+    assert.match(tr, /!\[shop S3 PASS\]\(shots\/shop-S3\.png\)/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
     await fx.close();

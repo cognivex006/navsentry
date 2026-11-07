@@ -29,7 +29,10 @@ function b64url(o: object): string {
   return Buffer.from(JSON.stringify(o)).toString("base64url");
 }
 
-export function startDemo(mode: DemoMode, port = 0): Promise<{ origin: string; hits: () => number; close: () => Promise<void> }> {
+/** Extra HTML pages (demo v2, SPEC-0.3.0 §8). Returns undefined for paths the demo app handles itself. */
+export type DemoPages = (url: URL, vulnerable: boolean) => string | undefined;
+
+export function startDemo(mode: DemoMode, port = 0, pages?: DemoPages): Promise<{ origin: string; hits: () => number; close: () => Promise<void> }> {
   let count = 0;
   const vuln = mode === "vulnerable";
   const server = http.createServer((req, res) => {
@@ -52,7 +55,7 @@ export function startDemo(mode: DemoMode, port = 0): Promise<{ origin: string; h
         res.setHeader("set-cookie", vuln ? "SESSIONID=abc123def456; Path=/" : "SESSIONID=abc123def456; Path=/; HttpOnly; SameSite=Lax");
         if (!vuln) res.setHeader("cache-control", "no-store");
         res.writeHead(200, { "content-type": vuln ? "text/html" : "text/html; charset=utf-8" });
-        res.end("<!doctype html><title>Demo</title><h1>Demo app</h1>");
+        res.end(pages?.(url, vuln) ?? "<!doctype html><title>Demo</title><h1>Demo app</h1>");
         return;
       case "/api/profile": {
         res.setHeader("cache-control", vuln ? "public, max-age=600" : "no-store");
@@ -107,9 +110,15 @@ export function startDemo(mode: DemoMode, port = 0): Promise<{ origin: string; h
         return;
       }
       case "/login":
-        res.writeHead(200, { "content-type": "text/html; charset=utf-8" }).end("<!doctype html><title>Login</title><h1>Sign in</h1>");
+        res.writeHead(200, { "content-type": "text/html; charset=utf-8" }).end(pages?.(url, vuln) ?? "<!doctype html><title>Login</title><h1>Sign in</h1>");
         return;
       default: {
+        const page = pages?.(url, vuln);
+        if (page !== undefined) {
+          if (!vuln) res.setHeader("cache-control", "no-store");
+          res.writeHead(200, { "content-type": vuln ? "text/html" : "text/html; charset=utf-8" }).end(page);
+          return;
+        }
         const m = url.pathname.match(/^\/api\/orders\/([a-z0-9-]+)$/);
         if (m) {
           // IDOR / BOLA (NSC-AC-003) in the vulnerable variant: no ownership check.

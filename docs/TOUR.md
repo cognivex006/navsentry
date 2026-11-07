@@ -1,0 +1,171 @@
+# NavSentry in 10 minutes (demo shop)
+
+This tour runs every mode against the bundled demo shop: a synthetic website on 127.0.0.1 with linked pages, a search form, a sign-in form, orders and an admin API. Nothing leaves your machine.
+
+You need a NavSentry checkout with Node.js 22.12 or newer. For the browser steps you also need the Chromium headless shell; `navsentry doctor` shows `playwright-browser USABLE` when it is installed.
+
+```bash
+npm install
+```
+
+```bash
+npm run build
+```
+
+```bash
+npx playwright-core install --only-shell chromium
+```
+
+The commands below use `navsentry`. From a checkout without a global install, use `node ../../dist/src/cli.js` instead, run from `examples/demo`.
+
+## 1. Start the demo shop
+
+In its own terminal:
+
+```bash
+node dist/scripts/demo.js serve
+```
+
+Open http://127.0.0.1:4173/ in your browser to see what you are testing. This is the **vulnerable** variant.
+
+## 2. Go to the demo folder
+
+```bash
+cd examples/demo
+```
+
+It holds `navsentry.json` (the manifest) and `flows/` (two approved story flows). Every command finds `navsentry.json` automatically, so no `--config` is needed.
+
+For your own application, create the manifest with `navsentry init <url>` instead. It asks you to confirm that you are authorized to test the target, then writes `navsentry.json`. Run it from your own project folder: init refuses to write inside a NavSentry checkout, because the repository is public. On the development profile (`local`, `dev`) the manifest already lists `playwright-browser`, so `--engine playwright` works without editing it. If you pick `local` or `dev` for a host that is not loopback or private, init warns and asks again.
+
+## 3. One page
+
+```bash
+navsentry scan --out runs/page
+```
+
+Scans the seed page `/`. Open `runs/page/REPORT.md`.
+
+## 4. The whole site (spider)
+
+```bash
+navsentry scan --deep --out runs/deep
+```
+
+Follows the links (`/products`, `/products/1`, `/search`, `/login`, …), samples a few pages per template, scans client assets, and writes redacted page models in `runs/deep/page-models/`.
+
+## 5. Story flows
+
+The orders flow uses three demo actors. Their tokens are synthetic demo values; set them in the terminal (PowerShell: `$env:NAME = "value"`):
+
+```bash
+export NAVSENTRY_DEMO_READER_A_AUTH="Bearer fixture-reader-a-token" NAVSENTRY_DEMO_READER_B_AUTH="Bearer fixture-reader-b-token" NAVSENTRY_DEMO_ADMIN_AUTH="Bearer fixture-admin-token"
+```
+
+Run both flows. The shop flow clicks through the site in NavSentry's own browser:
+
+```bash
+navsentry scan --mode flow --flows flows --engine playwright --out runs/before
+```
+
+Open `runs/before/TEST-REPORT.md`. `shop-browse` passes. `orders-access` fails, because the vulnerable shop lets reader B open reader A's order, lets anonymous visitors read a profile, and lets readers see admin stats.
+
+To write your own flow, start from a template and edit the steps:
+
+```bash
+navsentry flow init --id my-journey --title "My journey" --out flows
+```
+
+Check it, then approve it as the owner:
+
+```bash
+navsentry flow lint --flows flows
+```
+
+```bash
+navsentry flow approve --flows flows/my-journey.flow.md --by "<your name>"
+```
+
+You can also draft flows from a run with `navsentry flow analyze --from-run runs/deep/run.json --out flows/drafts`.
+
+Or record the journey yourself in Chrome or Edge:
+
+1. Open the shop, then DevTools (F12) → **Recorder** → *Create a new recording*.
+2. Click through the site and stop the recording.
+3. Export it as JSON.
+
+A sample export is in `recordings/`:
+
+```bash
+navsentry flow from-recording --input recordings/shop-search.recording.json --out flows/drafts
+```
+
+For a screenshot of every step, use the NavSentry Recorder extension instead. Load `extension/` unpacked in Chrome or Edge, import `navsentry.json` as its scope, record, and save. The same command imports the `.navrec.zip`; see [extension/README.md](../extension/README.md).
+
+The DevTools import writes a draft flow and `rec-shop-search.IMPORT.md`. The IMPORT file lists the steps it could not encode (an Enter key, a CSS-only click, a scroll, an out-of-scope page) and the environment variable that replaces the typed search term.
+
+## 6. Fix and compare
+
+Stop the demo shop (Ctrl+C) and start the fixed variant on the same address:
+
+```bash
+node dist/scripts/demo.js serve --variant secure
+```
+
+Run the same flows again:
+
+```bash
+navsentry scan --mode flow --flows flows --engine playwright --out runs/after
+```
+
+Compare the two runs:
+
+```bash
+navsentry compare --before runs/before --after runs/after
+```
+
+The verdict is `IMPROVED_NO_DRIFT`: the access-control findings are fixed, nothing a legitimate user sees has changed, and no story step regressed.
+
+## 7. Computer Use (visual driver)
+
+The AI agent looks at screenshots and clicks, while NavSentry owns the browser and checks every request. Start a session in its own terminal:
+
+```bash
+navsentry browse start --url http://127.0.0.1:4173/ --out runs/visual
+```
+
+It prints `SESSION: <id>`. In another terminal, or from your agent, list what can be clicked or typed into:
+
+```bash
+navsentry browse snapshot --session <id>
+```
+
+Each element has a ref such as `e3`. Click the Search link by its ref (check the snapshot for the right number):
+
+```bash
+navsentry browse click --ref e3 --session <id>
+```
+
+Take a new snapshot (refs change after each page load). Then type a search term into the search box, using the box's ref from that snapshot:
+
+```bash
+navsentry browse type --ref e7 --text lamp --session <id>
+```
+
+Press Enter to run the search:
+
+```bash
+navsentry browse key --key Enter --session <id>
+```
+
+`browse screenshot --session <id>` shows the page as an image. End the session and save what you did as a draft flow:
+
+```bash
+navsentry browse end --session <id> --save-flow flows/drafts
+```
+
+Read `runs/visual/VISUAL-SESSION.md` and the draft in `flows/drafts/`. Typed values are never recorded: in the draft, each input becomes a variable read from an environment variable at replay time. Secrets are typed with `--env <VAR>` instead of `--text`, and a sign-in form cannot be submitted here, because the visual driver refuses POST requests. To let an agent do it, ask in Claude Code or Codex: *"Use the navsentry skill to explore http://127.0.0.1:4173/ with the visual driver from examples/demo and summarize what it finds."*
+
+## 8. Clean up
+
+Stop the demo shop, then delete `examples/demo/runs/` (it is ignored by git, but it holds reports of the demo).

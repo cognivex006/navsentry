@@ -1,5 +1,7 @@
 # NavSentry compare — verdict: **IMPROVED_NO_DRIFT**
 
+> Origin changed: http://127.0.0.1:4173 → http://127.0.0.1:4174. Requests are matched by method, path and actor.
+
 ## Fixed (FAIL → PASS)
 - NSC-CONF-002
 - NSC-CONF-003

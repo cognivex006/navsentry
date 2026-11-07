@@ -1,0 +1,16 @@
+{
+  "title": "shop search",
+  "steps": [
+    { "type": "setViewport", "width": 1280, "height": 800, "deviceScaleFactor": 1, "isMobile": false, "hasTouch": false, "isLandscape": false },
+    { "type": "navigate", "url": "http://127.0.0.1:4173/", "assertedEvents": [{ "type": "navigation", "url": "http://127.0.0.1:4173/", "title": "Demo shop · NavSentry demo shop" }] },
+    { "type": "click", "target": "main", "selectors": [["aria/Search[role=\"link\"]"], ["header a:nth-of-type(3)"], ["xpath///html/body/header/nav/a[3]"], ["text/Search"]], "offsetY": 10, "offsetX": 20, "assertedEvents": [{ "type": "navigation", "url": "http://127.0.0.1:4173/search", "title": "Search · NavSentry demo shop" }] },
+    { "type": "click", "target": "main", "selectors": [["aria/Product name"], ["input[name=q]"]], "offsetY": 8, "offsetX": 40 },
+    { "type": "change", "value": "rice", "selectors": [["aria/Product name"], ["input[name=q]"]], "target": "main" },
+    { "type": "keyDown", "target": "main", "key": "Enter" },
+    { "type": "keyUp", "target": "main", "key": "Enter" },
+    { "type": "waitForElement", "target": "main", "selectors": [["aria/Rice cooker[role=\"link\"]"]] },
+    { "type": "click", "target": "main", "selectors": [["main > a.card"]], "offsetY": 10, "offsetX": 10 },
+    { "type": "scroll", "target": "main", "x": 0, "y": 400 },
+    { "type": "navigate", "url": "https://elsewhere.example.test/" }
+  ]
+}

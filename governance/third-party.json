@@ -144,6 +144,19 @@
       "decision": "APPROVED_WITH_CONDITIONS"
     },
     {
+      "name": "Playwright Chromium full build (headed visual driver)",
+      "usage": "SPEC-0.3.0 §5 / owner decision D6: `navsentry browse start --headed` would show NavSentry's own browser in a visible window. The user would install it explicitly with `npx playwright-core install chromium`; NavSentry would never download it. The network path is the same as the headless shell (every request fulfilled through direct-http, ScopeGate and the Budget).",
+      "terms": [
+        "https://playwright.dev/docs/browsers",
+        "https://chromium.googlesource.com/chromium/src/+/main/LICENSE",
+        "https://github.com/microsoft/playwright/blob/main/NOTICE"
+      ],
+      "findings": "Not yet reviewed. Same open-source Chromium source and download host as the approved headless shell, but a different, larger binary with a GUI. Until an owner review records APPROVED, the code refuses --headed (HEADED_BROWSER_APPROVED = false in src/transports/playwright.ts). Branded chrome/msedge channels stay NOT approved.",
+      "reviewed": "2026-11-06",
+      "review_due": "2026-12-06",
+      "decision": "PENDING_REVIEW"
+    },
+    {
       "name": "curl / PowerShell (optional OS executables)",
       "usage": "Detected from fixed system paths only; execution adapters scheduled for M3.",
       "terms": [
@@ -203,6 +216,18 @@
       "reviewed": "2026-11-04",
       "review_due": "2027-05-04",
       "decision": "APPROVED_WITH_CONDITIONS"
+    },
+    {
+      "name": "Chrome Web Store and Microsoft Edge Add-ons (distribution of the NavSentry Recorder extension)",
+      "usage": "Not used. SPEC-0.3.0 owner decision D7: the recorder is distributed unpacked from the repository and releases only.",
+      "terms": [
+        "https://developer.chrome.com/docs/webstore/program-policies",
+        "https://learn.microsoft.com/en-us/microsoft-edge/extensions-chromium/store-policies/developer-policies"
+      ],
+      "findings": "Publishing would bind the project to each store's developer agreement and program policies and needs a developer account. Not reviewed; review before any store listing.",
+      "reviewed": "2026-11-06",
+      "review_due": "2027-05-06",
+      "decision": "NOT_ADOPTED"
     }
   ]
 }

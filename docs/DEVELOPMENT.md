@@ -17,7 +17,7 @@ npm ci --ignore-scripts
 | `npm run docs:catalog` | Regenerate `docs/cases/CASE-CATALOG.md` and `docs/ISSUE-CVE-MATRIX.md` from `src/catalog.ts` |
 | `npm run gate` | Local release/PR gate (replaces hosted CI) → `.navsentry/gate/GATE-REPORT.md` |
 | `node dist/scripts/demo.js run` | Regenerate `docs/samples/` from the local fixture app |
-| `node dist/scripts/demo.js serve` | Serve vulnerable (:4173) and secure (:4174) fixtures for browser rechecks |
+| `node dist/scripts/demo.js serve [--variant vulnerable\|secure]` | Serve the demo shop on :4173 (see [TOUR.md](TOUR.md)) |
 
 ## Layout
 
@@ -52,7 +52,7 @@ governance/         third-party decisions
 - Releases need owner authorization. No npm publication is configured; the CLI ships as a GitHub Release tarball.
 
 ## Releasing
-1. Set the same version in `package.json`, `src/types.ts` (`TOOL_VERSION`), `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.codex-plugin/plugin.json`, `.antigravity-plugin/plugin.json`, `gemini-extension.json`, the `ref` in `.agents/plugins/marketplace.json` (`vX.Y.Z`) and `metadata.version` in each `SKILL.md`. `node dist/src/cli.js doctor` must show every package file `CURRENT`; `test/doctor.test.ts` enforces it.
+1. Set the same version in `package.json`, `src/types.ts` (`TOOL_VERSION`), `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.codex-plugin/plugin.json`, `.antigravity-plugin/plugin.json`, `gemini-extension.json`, `extension/manifest.json` (NavSentry Recorder), the `ref` in `.agents/plugins/marketplace.json` (`vX.Y.Z`) and `metadata.version` in each `SKILL.md`. `node dist/src/cli.js doctor` must show every package file `CURRENT`; `test/doctor.test.ts` enforces it.
 2. Date the `CHANGELOG.md` section. Run `claude plugin validate --strict .` and `npm run gate`.
 3. Merge to `main` after review, then tag the merge commit `vX.Y.Z` and push the tag.
 4. `npm run release:pack` writes `.navsentry/release/navsentry-X.Y.Z.tgz`. Create the GitHub Release from the tag with that file attached and the CHANGELOG section as notes.

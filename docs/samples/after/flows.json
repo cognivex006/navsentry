@@ -1,15 +1,15 @@
 {
   "kind": "navsentry-flow-result",
   "schemaVersion": "1",
-  "runId": "841daba1-525d-487c-9413-a747e421e45b",
+  "runId": "3ad99116-480e-4a60-b9ad-4bbbe8889489",
   "tool": {
     "name": "navsentry",
-    "version": "0.1.2",
+    "version": "0.2.0",
     "node": "26.13.0",
     "platform": "win32-x64"
   },
-  "startedAt": "2026-11-01T15:00:02.728Z",
-  "finishedAt": "2026-11-01T15:00:05.158Z",
+  "startedAt": "2026-11-07T15:14:18.571Z",
+  "finishedAt": "2026-11-07T15:14:21.014Z",
   "project": "demo-after",
   "environment": "local",
   "mode": "observe",
@@ -84,7 +84,7 @@
             }
           ],
           "requestIds": [
-            "37a37b3b-32de-437a-b554-63e29cb575a9"
+            "f66daebb-8d70-4264-a29f-444d0cbb8d23"
           ],
           "request": "GET /api/orders"
         },
@@ -123,7 +123,7 @@
             }
           ],
           "requestIds": [
-            "4a495517-5cfc-497d-96c3-b5465d11103a"
+            "bc94536a-9b75-4f51-808f-96faf9aa81cd"
           ],
           "request": "GET /api/orders/{{orderA}}"
         },
@@ -144,7 +144,7 @@
             }
           ],
           "requestIds": [
-            "4f49309c-69d0-4033-9154-2290bc264712"
+            "ec0be639-7d18-47a8-accd-9fce1d4e0012"
           ],
           "request": "GET /api/orders/{{orderA}}",
           "securityCase": "NSC-AC-003"
@@ -172,7 +172,7 @@
             }
           ],
           "requestIds": [
-            "f317b828-9178-4e0e-9828-bbf28c9f336e"
+            "e5fda4c4-584a-46aa-a366-794b815509d3"
           ],
           "request": "GET /api/me"
         },
@@ -193,7 +193,7 @@
             }
           ],
           "requestIds": [
-            "0c1be9f5-8d76-41eb-8da2-e9e6bbd8a267"
+            "49901057-d9f3-4746-b23d-9588b434ee65"
           ],
           "request": "GET /api/me",
           "securityCase": "NSC-AC-002"
@@ -221,7 +221,7 @@
             }
           ],
           "requestIds": [
-            "ffc6bd3b-2f70-4c47-851a-322e40554cab"
+            "8cf47542-19fc-46c9-9684-f0245f138b46"
           ],
           "request": "GET /api/admin/stats"
         },
@@ -242,7 +242,7 @@
             }
           ],
           "requestIds": [
-            "4e328e8e-0e6c-4a3b-97ca-8fe2df274877"
+            "fea33c08-1f54-4d7e-9eb6-a48da2ffab44"
           ],
           "request": "GET /api/admin/stats",
           "securityCase": "NSC-AC-007"
@@ -314,7 +314,7 @@
             }
           ],
           "requestIds": [
-            "1bc817b1-2d48-459b-974c-2a1e6627b3b6"
+            "4e7bf7d5-cfdc-46c5-817d-50bf618d74a8"
           ],
           "request": "GET /app/profile"
         },
@@ -359,7 +359,7 @@
             }
           ],
           "requestIds": [
-            "29e4b681-9c6e-4ff3-b62d-6cfa67568cb2"
+            "807771c8-24b3-4bcb-bfa2-c9b5f13786fb"
           ],
           "request": "GET /app/profile",
           "securityCase": "NSC-AC-002"

@@ -5,11 +5,90 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Added
-- `examples/manifest.local-demo.json` and `manifest.local-demo-secure.json` for the bundled demo app (`node dist/scripts/demo.js serve`), so every scan mode, `compare` and the visual driver can be tried without a real target. README gains *Scan modes at a glance*, *Computer Use (visual driver)* and *Try it locally*.
+- [SPEC-0.3.0](docs/specs/SPEC-0.3.0-AGENT-FIRST-AND-RECORDER.md): agent-first use, self-contained reports, a Computer Use middle path and a flow recorder. Accepted 2026-11-06 with owner decisions D1–D10 (recommended options).
+- Replay timeline: `scan --mode flow --engine playwright` takes a viewport screenshot of the headless browser right after every browser step (navigate, click, see, fill, select, submit).
+  - The PNGs go to `<run>/shots/`, which has its own `.gitignore`. At most 60 per run.
+  - TEST-REPORT.md gets a "Replay timeline" section with each step's status and screenshot. A FAIL step shows what was expected, what was observed and the page at that moment.
+  - `flows.json` steps carry `screenshot`.
+  - A failed screenshot never changes a step's result. The screenshots add no requests.
+- `navsentry doctor` has an "Agent launch (MCP)" section: it says whether `navsentry` is on PATH and prints a `claude mcp add` command. Without PATH, the command uses absolute paths. A missing PATH entry was why MCP hosts reported `CONNECTION_CLOSED`. `doctor --json` includes it as `launch`. README documents `npm link` for source checkouts.
+- Report verdict: the Summary of every REPORT.md and REPORT.html starts with a one-line answer to "Do I need to fix something now?".
+  - 🔴 fix now: an IMMEDIATE or CAUTION finding, or test objects left behind.
+  - 🟡 schedule it: PLANNED findings only.
+  - 🟢 no fix needed in the tested scope, which is not proof of security.
+  - ⚪ can't tell: an incomplete run, or flows that failed or did not run, when nothing needs a fix now. Never shown as no-fix.
+  - `scan` prints the verdict and `Open in a browser: …/REPORT.html`. `scan --json` adds `verdict`.
+- `navsentry report --out <file>` writes the rendered report and never overwrites one. `--format html` on a terminal without `--out` is refused with a pointer to the REPORT.html that scan already wrote, instead of filling the screen with HTML.
+- 0.3.0-f NavSentry Recorder (SPEC-0.3.0 §7, owner decisions D7 and D10). A Chrome/Edge MV3 extension in `extension/`, loaded unpacked and shipped in the package. It records clicks, field changes and submits with a screenshot per step.
+  - **What it never records:** typed values, and screenshots of password fields.
+  - **Scope:** taken from an imported `navsentry.json` (`targets.origins`). Host access is asked one origin at a time.
+  - **No network:** no network APIs, and CSP `connect-src 'none'`.
+  - **Review before saving:** delete steps, mark where the flow ends, and add reviewer notes. Save writes a `.navrec.zip`.
+  - **Import:** `flow from-recording` also accepts `.navrec.zip` and writes the draft flow, `<id>.RECORDING.md` with screenshots and notes, and a git-ignored `<id>.shots/`. The archive goes through a strict reader: name allowlist, no traversal, duplicates, symlinks or encryption, size limits, CRC, and a sha256 per screenshot. Password fills use a `*_PASSWORD` env variable.
+  - **Governance:** store distribution is recorded as NOT_ADOPTED. `doctor` checks the extension manifest version. Threat model TM-40.
+  - **Not yet verified in a browser:** the extension needs a headed browser, which is pending governance. Its static safety properties and the whole import path are tested.
+- 0.3.0-e recorder import (SPEC-0.3.0 §6): `navsentry flow from-recording --input <recording.json> --out <dir>` turns a Chrome/Edge DevTools Recorder JSON export into one draft E2E flow plus `<id>.IMPORT.md`. Zero network; the file is read as data.
+  - `navigate`, `click`, `change` and `waitForElement` become navigate, click, fill and see steps, located by accessible-name selectors.
+  - Recorded values are dropped: each input becomes an env-backed variable.
+  - Out-of-scope URLs, a second origin, CSS/XPath-only selectors, keys, scrolls and hovers are listed, never guessed.
+  - At most 200 steps (owner decision D10). An existing flow is never overwritten.
+  - MCP tool `navsentry_flow_from_recording`. A sample recording ships in `examples/demo/recordings/`, documented in FLOWS.md and the tour.
+- 0.3.0-d visual driver middle path (SPEC-0.3.0 §5, owner decisions D5 and D6). Every request still goes through ScopeGate and the Budget.
+  - **`browse snapshot`:** lists the page's interactive elements with refs (e1, e2…), roles, accessible names and an in-scope flag for links. It never includes field values, and names are redacted.
+  - **`browse click --ref <ref>`:** clicks by ref; coordinates still work. The role and name of the clicked element are logged.
+  - **`browse type --ref <ref>`:** fills a text field, with `--env <VAR>` (the value is read in the session and treated as a known secret) or with `--text` (short, non-secret).
+    - Literal text is refused in password fields and when it looks like a secret or personal data.
+    - Values are never logged; the log keeps the env name, the length, and a sha256 prefix for literal text.
+    - A POST submit is still refused.
+  - **`browse key --key`:** presses one key from an allowlist (Enter, Tab, Escape, Backspace, arrows, PageUp, PageDown, Home, End).
+  - **`browse end --save-flow <dir>`:** writes a draft E2E flow from the action log. Typed inputs become env variables. The draft is parsed before writing and never overwrites a file.
+  - **MCP tools:** `navsentry_browse_snapshot`, `navsentry_browse_type` and `navsentry_browse_key` are new; `navsentry_browse_click` accepts `ref`; `navsentry_browse_end` accepts `save_flow`.
+  - **`--headed` is refused for now.** It needs the full Chromium build, which is recorded as PENDING_REVIEW in `governance/third-party.json`; only the headless shell is approved (hard rule 2). Human-action logging for headed sessions comes with that approval.
+  - Threat model TM-39.
+- 0.3.0-b agent-first use (SPEC-0.3.0 §3.2, owner decision D1):
+  - **`--json`:** `test`, `scan` and `compare` accept `--json` and print a machine-readable summary: report paths, counts by action level, gaps and next commands.
+  - **`navsentry next --run <dir>`:** lists actions by level, gaps (NOT_TESTED, sampled-out pages, incomplete flows) and the next commands, with zero network. Each command is marked as sending traffic or not, and owner decisions are marked as such.
+  - **`navsentry mcp`:** a local MCP server over stdio, with no dependency and no listener. Its tools cover doctor, plan, scan, next, compare, flow analyze/lint, knowledge lookup and the visual driver; screenshots come back as images.
+    - Every tool runs the CLI as a child process, so all refusals and safety gates apply.
+    - There is no tool for init, flow approval, workspace cleanup, installation updates or manifest edits.
+    - Threat model TM-38.
+  - **Agent loop in the consumer skill:** after one go-ahead, the agent runs plan → scan → next → explore → draft flows → report.
+- 0.3.0-a (SPEC-0.3.0 §3.1, §8): `navsentry init <url>` writes `navsentry.json` after you confirm authorization and name an owner on an interactive terminal (refused without a TTY, so an agent cannot answer for you). Staging and production also ask for the reference and expiry, loopback and private hosts need a separate approval, and cloud metadata addresses are refused. An existing manifest is never overwritten.
+- Commands use `./navsentry.json` when `--config` is omitted, and say so on stderr.
+- `navsentry scan` without `--mode` scans the seed page; `scan --deep` is spider with `--analyze`.
+- Demo v2: `node dist/scripts/demo.js serve [--variant vulnerable|secure]` serves a linked demo shop (products, search, sign-in form) on one origin, so before/after compare shows only real changes. `examples/demo/` has a manifest and two approved flows, and [docs/TOUR.md](docs/TOUR.md) walks through every mode.
+- 0.3.0-c readable reports (SPEC-0.3.0 §4).
+  - **Fixed sections:** every REPORT.md has the same twelve sections in the same order: Summary, Findings, Fix verification, Known vulnerabilities, Coverage, Not tested and limitations, Transports and engine, Requests refused before sending, Redirect chains, Client assets and browser, Knowledge gaps, Run details. A section without data says why.
+  - **Finding cards:** one card per case lists every affected target. Each card says why the problem matters, how to fix it, how to recheck it, when it counts as fixed and what must not break.
+  - **Before/after examples:** every automated case has fix examples for nginx, Express, ASP.NET Core, Spring or front-end builds (`src/fixes.ts`). Reports label them as not executed by NavSentry.
+  - **Self-contained reports:** reports no longer link into NavSentry's catalog docs.
+  - **Action levels:** IMMEDIATE / CAUTION / PLANNED / OPTIONAL / INFO, with colour markers, derived from severity and priority. run.json is unchanged. The summary lists what to do first.
+  - **CVSS:** known vulnerabilities show the advisory's CVSS score, vector and source.
+  - **HTML report:** `REPORT.html` is written beside REPORT.md, as one offline file built from the same Markdown.
+    - Colours by status and level, a level filter, Export Markdown and Print / PDF.
+    - All run text is escaped, and a CSP allows only the file's own hashed style and script.
+    - `navsentry report --format html` renders it from a saved run.
+  - **Terminal colour:** run summaries and `compare` output are coloured, only on a TTY. `NO_COLOR` or `--no-color` turns it off.
 
 ### Fixed
-- Docs out of step with 0.2.0: case counts (57 cases, 26 automated), coverage classes, the transport table and Computer Use boundary (the visual driver is usable in development), M2 status, exit code 4 in the flow exit table, test-suite list, GATE-09/10 and report artifacts.
-- The consumer skill now says the visual driver also needs `visual-computer-use` and `playwright-browser` in `transports.order`, that `browse start` stays running in the background, and that loopback targets need an owner-confirmed `network.allow_private` entry. Exit codes are a readable list, and the stale "mutations wait for M2" note is replaced by safe-validate guidance.
+- Docs out of step with 0.2.0: case counts (57 cases, 26 automated), coverage classes, the transport table and Computer Use boundary, M2 status, exit code 4 in the flow exit table, the test-suite list, GATE-09/10 and report artifacts.
+- The consumer skill says that loopback targets need an owner-confirmed `network.allow_private` entry, and exit codes are a readable list.
+- README gains *Scan modes at a glance*, *Computer Use (visual driver)* and *Try it locally*, written for the demo shop v2 in `examples/demo/`.
+
+### Changed
+- `navsentry init` safety and defaults:
+  - It refuses to write inside a NavSentry source checkout, which is a public repository.
+  - It warns and asks again when `local` or `dev` is chosen for a host that is not loopback or private.
+  - On the development profile it lists `playwright-browser` in `transports.order`, so `--engine playwright` works without editing the manifest.
+  - `.gitignore` now ignores a root `navsentry.json` and `navsentry/`.
+- `flow from-recording` usability:
+  - Without a manifest, the error explains that the recording carries none and that every recorded URL is checked against the owner's scope. It names `navsentry init <origin>` with the origin from the recording.
+  - Control and invisible formatting characters (C1, zero-width, bidi marks, BOM, soft hyphen) are removed from targets.
+  - Targets that look cut (an ellipsis, or a short file-name end such as `TS.md`) are listed under "Targets to check".
+- `serve` now starts one demo shop on port 4173 instead of two fixtures on 4173 and 4174.
+- The lint warning for E2E flows with UI steps points to `--engine playwright` instead of saying the browser transport does not exist.
+- `compare` matches requests by method, path and actor. A changed origin is reported once, instead of listing every request as missing.
+- The sample reports in `docs/samples/` are regenerated in the new format, with HTML versions.
 
 ## [0.2.0] - 2026-11-05
 

@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>NavSentry Recorder</title>
+<link rel="stylesheet" href="ui.css">
+</head>
+<body class="popup">
+<header><strong>NavSentry Recorder</strong> <span id="status" class="pill">idle</span></header>
+<p class="hint">Records steps and screenshots on in-scope pages only. Typed values are never recorded; password fields are never photographed.</p>
+<div class="row">
+  <button id="record" type="button">● Record</button>
+  <button id="stop" type="button">■ Stop</button>
+  <button id="save" type="button">⬇ Save</button>
+  <button id="clear" type="button">Clear</button>
+</div>
+<p id="msg" class="msg" role="status"></p>
+<ol id="steps"></ol>
+<footer><a href="options.html" target="_blank">Scope (import manifest)</a></footer>
+<script type="module" src="popup.js"></script>
+</body>
+</html>

@@ -129,7 +129,7 @@ test("scan rejects invalid or unavailable combinations before any request (exit 
   try {
     const m = writeManifest(dir, demo.origin);
     const cases: string[][] = [
-      ["scan", "--config", m],
+      ["scan", "--config", m, "--deep", "--mode", "flow"], // no --mode is a page scan since 0.3.0-a; --deep only pairs with spider
       ["scan", "--config", m, "--mode", "nope"],
       ["scan", "--config", m, "--mode", "page", "--engine", "computer-use"],
       ["scan", "--config", m, "--mode", "page", "--engine", "playwright"],
