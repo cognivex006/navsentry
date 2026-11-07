@@ -7,6 +7,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { compareRuns, renderCompareMarkdown } from "../src/compare.js";
 import { renderJson, renderMarkdown, renderSarif } from "../src/report/render.js";
+import { renderHtml } from "../src/report/html.js";
 import { loadFlowFiles } from "../src/flow/parse.js";
 import { renderFlowSection, renderJunit, renderTestMarkdown } from "../src/report/flow-render.js";
 import { executeTest } from "../src/runner.js";
@@ -44,7 +45,9 @@ if (mode === "serve") {
     const dir = join(root, name);
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "run.json"), renderJson(r));
-    writeFileSync(join(dir, "REPORT.md"), renderMarkdown(r, "en") + "\n" + renderFlowSection(fr, r, "en"));
+    const md = renderMarkdown(r, "en") + "\n" + renderFlowSection(fr, r, "en");
+    writeFileSync(join(dir, "REPORT.md"), md);
+    writeFileSync(join(dir, "REPORT.html"), renderHtml(md, `NavSentry report — ${r.project}`, "en"));
     writeFileSync(join(dir, "REPORT.th.md"), renderMarkdown(r, "th") + "\n" + renderFlowSection(fr, r, "th"));
     writeFileSync(join(dir, "flows.json"), JSON.stringify(fr, null, 2) + "\n");
     writeFileSync(join(dir, "TEST-REPORT.md"), renderTestMarkdown(fr, r, "en"));

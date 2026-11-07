@@ -48,6 +48,44 @@ Every case in [cases/CASE-CATALOG.md](cases/CASE-CATALOG.md) has copy-ready **VE
 
 ## Not provided
 
-No MCP server, no hosted service, no GitHub App, no telemetry. `navsentry doctor` makes no network requests.
+No hosted service, no GitHub App, no telemetry. `navsentry doctor` makes no network requests. The MCP server below is local and stdio only.
+
+## MCP server (Claude Code, Codex and other MCP hosts)
+
+`navsentry mcp` is a local MCP server over stdio. It has no dependencies and no network listener. It lets the agent call NavSentry as tools instead of composing command lines, and it returns visual-driver screenshots as images.
+
+| Tool | Sends traffic | What it does |
+|---|---|---|
+| `navsentry_doctor` | no | Versions and usable transports |
+| `navsentry_plan` | no | The plan for a run |
+| `navsentry_scan` | **yes** | page (default), `deep` spider, or `mode: flow`; returns a JSON summary |
+| `navsentry_next` | no | Actions by level, gaps, next commands |
+| `navsentry_compare` | no | Before/after verdict |
+| `navsentry_flow_analyze`, `navsentry_flow_lint` | no | Draft and check flows |
+| `navsentry_knowledge_lookup` | no | Offline advisory lookup |
+| `navsentry_browse_start`, `_click`, `_scroll` | **yes** | Visual driver on NavSentry's own browser |
+| `navsentry_browse_screenshot`, `_end` | no | Screenshot as an image; end the session |
+
+There is no tool to create or edit a manifest, approve a flow, clean a workspace or update an installation; those stay with the person. Each tool runs the CLI, so every refusal and safety gate applies.
+
+Register it once, from the project folder that holds `navsentry.json`.
+
+Claude Code:
+
+```bash
+claude mcp add navsentry -- navsentry mcp
+```
+
+Codex (`~/.codex/config.toml`):
+
+```toml
+[mcp_servers.navsentry]
+command = "navsentry"
+args = ["mcp"]
+```
+
+Codex starts the server in the folder where you start Codex. To scan another project, pass `cwd` in the tool call.
+
+Without MCP, agents use the same loop through the CLI: `navsentry scan --json` and `navsentry next --run <dir> --json` print machine-readable summaries.
 
 Sources (checked 2026-10-31): [Claude Code plugin marketplaces](https://code.claude.com/docs/en/plugin-marketplaces), [Gemini CLI extension reference](https://geminicli.com/docs/extensions/reference), [Antigravity plugins](https://antigravity.google/docs/build-plugins), [Antigravity skills](https://antigravity.google/docs/skills). The Codex format follows Codex CLI 0.166.0 (`codex plugin --help`). Host versions differ; the explicit file path remains the fallback.

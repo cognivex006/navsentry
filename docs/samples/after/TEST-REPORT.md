@@ -1,6 +1,6 @@
 # NavSentry Test Report — demo-after (local)
 
-- Run ID: `841daba1-525d-487c-9413-a747e421e45b` · Tool: navsentry 0.1.2 · Node 26.13.0 · Mode: `observe`
+- Run ID: `39a332c1-39f9-418b-9528-cd6ed6a05543` · Tool: navsentry 0.2.0 · Node 26.13.0 · Mode: `observe`
 - Flow set: 2 flows, 11 steps · `6f94a62dbe77497f`
 - **Security result: FINDINGS** (11 findings) — Read the security report first: [REPORT.md](REPORT.md)
 - **Functional result: INCOMPLETE**

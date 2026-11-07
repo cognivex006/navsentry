@@ -36,12 +36,21 @@ You are helping a user test **their own or explicitly authorized** web applicati
 ## Resume after interruption
 Retain the manifest path, approved scope, CLI location, completed commands and exit codes, report paths, pending case IDs, flows directory and flow set hash, approvals pending and blockers in a local untracked work note without credentials or response bodies. On resume, inspect these artifacts and current authorization before continuing. Reuse an existing run directory only for reading; write new runs to a fresh label. Missing artifacts mean unverified, not completed.
 
+## Agent loop (default)
+Run this end to end after one go-ahead from the user. Prefer the `navsentry_*` MCP tools when they are available; otherwise use the CLI with `--json`.
+1. `navsentry doctor`, then `navsentry plan`. If there is no `navsentry.json` or `--config`, ask the user to run `navsentry init <url>` themselves. Show the plan and ask once: "May I scan these origins?"
+2. `navsentry scan --deep --out runs/<label> --json`. Read the JSON summary, not the terminal text.
+3. `navsentry next --run runs/<label> --json`. Follow suggestions with `network: false` freely. Follow suggestions with `network: true` within the approval you already have, for the same origins. Present `ownerOnly` suggestions to the user as decisions.
+4. If the visual driver is enabled, explore pages and forms the crawl did not reach (see *Computer Use and browser evidence*).
+5. Draft flows with `flow analyze`, lint them, and list the owner questions from ANALYSIS.md.
+6. Report as in step 5 of *Workflow* below. Lead with what to fix first, and give the REPORT.html path.
+
 ## Workflow
 1. `navsentry doctor` — show what is usable and whether installed skills/plugins match the CLI version. UNAVAILABLE is not a failure; do not install or update anything without the user's approval.
 2. Write/inspect the JSON manifest (see `examples/manifest.example.json`); credentials only as `*_env` names.
 3. `navsentry validate --config <m>` then `navsentry plan --config <m>` (zero network). Show the user the steps and skipped cases.
 4. With the user's go-ahead: `navsentry test --config <m> --out runs/<label>`.
-5. Give the user the **direct link to `REPORT.md`**, then summarize: execution status, security result, findings by priority (IMMEDIATE / CAUTION / PLANNED), and the NOT_TESTED gaps. Zero findings is never "secure".
+5. Give the user the **direct links to `REPORT.html` and `REPORT.md`**, then summarize: execution status, security result, findings by action level (IMMEDIATE / CAUTION / PLANNED / OPTIONAL / INFO), and the NOT_TESTED gaps. Zero findings is never "secure". Each finding card already holds the fix, before/after examples, recheck and acceptance criteria: quote them instead of inventing a fix, and say that NavSentry does not execute the examples.
 6. For a finding, open its section in `docs/cases/CASE-CATALOG.md` (anchor = lower-case case ID) and use the VERIFY → FIX → RECHECK prompts.
 7. After a fix: run again and `navsentry compare --before … --after …`. Report `Fixed`, `Still failing`, and any **contract drift** (changes legitimate users would notice). Drift needs the owner's approval.
 

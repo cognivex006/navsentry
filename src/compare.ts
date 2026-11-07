@@ -20,6 +20,8 @@ export interface CompareResult {
   stillFailing: string[];
   contractDrift: ContractDrift[];
   missingInAfter: string[];
+  /** Origins differ between the runs; requests are still matched by method, path and actor. */
+  originChange?: { before: string[]; after: string[] };
   /** Present when both runs carry flows.json. */
   flows?: FunctionalCompare;
   verdict: "IMPROVED_NO_DRIFT" | "IMPROVED_WITH_DRIFT" | "NO_CHANGE" | "REGRESSED" | "DRIFT_ONLY" | "FUNCTIONAL_REGRESSION";
@@ -48,7 +50,12 @@ export function compareFlows(before: FlowRunResult, after: FlowRunResult): Funct
   return { regressions, fixed, notComparable, flowSetChanged: before.flowSet.sha256 !== after.flowSet.sha256 };
 }
 
-const reqKey = (method: string, url: string, actor: string, transport: string) => `${method} ${url} [${actor}/${transport}]`;
+/** Requests are matched by method, path + query and actor, so a changed origin (another port or host) is reported once instead of making every request "missing". */
+const reqKey = (method: string, url: string, actor: string, transport: string) => {
+  let path = url;
+  try { const u = new URL(url); path = u.pathname + u.search; } catch { /* keep as is */ }
+  return `${method} ${path} [${actor}/${transport}]`;
+};
 
 function contracts(r: RunResult): Map<string, ResponseContract> {
   const m = new Map<string, ResponseContract>();
@@ -88,13 +95,16 @@ export function compareRuns(before: RunResult, after: RunResult, flows?: { befor
   }
   const fc = flows ? compareFlows(flows.before, flows.after) : undefined;
   const verdict: CompareResult["verdict"] = regressed.length ? "REGRESSED" : fc?.regressions.length ? "FUNCTIONAL_REGRESSION" : fixed.length ? (drift.length ? "IMPROVED_WITH_DRIFT" : "IMPROVED_NO_DRIFT") : drift.length ? "DRIFT_ONLY" : "NO_CHANGE";
-  return { fixed, regressed, unchanged, stillFailing, contractDrift: drift, missingInAfter: missing, ...(fc ? { flows: fc } : {}), verdict };
+  const ob = [...before.scope.origins].sort(), oa = [...after.scope.origins].sort();
+  const originChange = ob.join(" ") !== oa.join(" ") ? { before: ob, after: oa } : undefined;
+  return { fixed, regressed, unchanged, stillFailing, contractDrift: drift, missingInAfter: missing, ...(originChange ? { originChange } : {}), ...(fc ? { flows: fc } : {}), verdict };
 }
 
 export function renderCompareMarkdown(c: CompareResult): string {
   const list = (xs: string[]) => (xs.length ? xs.map((x) => `- ${x}`).join("\n") : "- none");
   return [
     `# NavSentry compare — verdict: **${c.verdict}**`, "",
+    ...(c.originChange ? [`> Origin changed: ${c.originChange.before.join(", ")} → ${c.originChange.after.join(", ")}. Requests are matched by method, path and actor.`, ""] : []),
     "## Fixed (FAIL → PASS)", list(c.fixed), "",
     "## Regressed (PASS → FAIL)", list(c.regressed), "",
     "## Still failing / not proven fixed", list(c.stillFailing), "",

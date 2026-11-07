@@ -5,14 +5,36 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Added
+- 0.3.0-b agent-first use (SPEC-0.3.0 §3.2, owner decision D1):
+  - **`--json`:** `test`, `scan` and `compare` accept `--json` and print a machine-readable summary: report paths, counts by action level, gaps and next commands.
+  - **`navsentry next --run <dir>`:** lists actions by level, gaps (NOT_TESTED, sampled-out pages, incomplete flows) and the next commands, with zero network. Each command is marked as sending traffic or not, and owner decisions are marked as such.
+  - **`navsentry mcp`:** a local MCP server over stdio, with no dependency and no listener. Its tools cover doctor, plan, scan, next, compare, flow analyze/lint, knowledge lookup and the visual driver; screenshots come back as images.
+    - Every tool runs the CLI as a child process, so all refusals and safety gates apply.
+    - There is no tool for init, flow approval, workspace cleanup, installation updates or manifest edits.
+    - Threat model TM-38.
+  - **Agent loop in the consumer skill:** after one go-ahead, the agent runs plan → scan → next → explore → draft flows → report.
 - 0.3.0-a (SPEC-0.3.0 §3.1, §8): `navsentry init <url>` writes `navsentry.json` after you confirm authorization and name an owner on an interactive terminal (refused without a TTY, so an agent cannot answer for you). Staging and production also ask for the reference and expiry, loopback and private hosts need a separate approval, and cloud metadata addresses are refused. An existing manifest is never overwritten.
 - Commands use `./navsentry.json` when `--config` is omitted, and say so on stderr.
 - `navsentry scan` without `--mode` scans the seed page; `scan --deep` is spider with `--analyze`.
 - Demo v2: `node dist/scripts/demo.js serve [--variant vulnerable|secure]` serves a linked demo shop (products, search, sign-in form) on one origin, so before/after compare shows only real changes. `examples/demo/` has a manifest and two approved flows, and [docs/TOUR.md](docs/TOUR.md) walks through every mode.
+- 0.3.0-c readable reports (SPEC-0.3.0 §4).
+  - **Fixed sections:** every REPORT.md has the same twelve sections in the same order: Summary, Findings, Fix verification, Known vulnerabilities, Coverage, Not tested and limitations, Transports and engine, Requests refused before sending, Redirect chains, Client assets and browser, Knowledge gaps, Run details. A section without data says why.
+  - **Finding cards:** one card per case lists every affected target. Each card says why the problem matters, how to fix it, how to recheck it, when it counts as fixed and what must not break.
+  - **Before/after examples:** every automated case has fix examples for nginx, Express, ASP.NET Core, Spring or front-end builds (`src/fixes.ts`). Reports label them as not executed by NavSentry.
+  - **Self-contained reports:** reports no longer link into NavSentry's catalog docs.
+  - **Action levels:** IMMEDIATE / CAUTION / PLANNED / OPTIONAL / INFO, with colour markers, derived from severity and priority. run.json is unchanged. The summary lists what to do first.
+  - **CVSS:** known vulnerabilities show the advisory's CVSS score, vector and source.
+  - **HTML report:** `REPORT.html` is written beside REPORT.md, as one offline file built from the same Markdown.
+    - Colours by status and level, a level filter, Export Markdown and Print / PDF.
+    - All run text is escaped, and a CSP allows only the file's own hashed style and script.
+    - `navsentry report --format html` renders it from a saved run.
+  - **Terminal colour:** run summaries and `compare` output are coloured, only on a TTY. `NO_COLOR` or `--no-color` turns it off.
 
 ### Changed
 - `serve` now starts one demo shop on port 4173 instead of two fixtures on 4173 and 4174.
 - The lint warning for E2E flows with UI steps points to `--engine playwright` instead of saying the browser transport does not exist.
+- `compare` matches requests by method, path and actor. A changed origin is reported once, instead of listing every request as missing.
+- The sample reports in `docs/samples/` are regenerated in the new format, with HTML versions.
 
 ## [0.2.0] - 2026-11-05
 
