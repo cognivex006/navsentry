@@ -100,7 +100,9 @@ A sample export is in `recordings/`:
 navsentry flow from-recording --input recordings/shop-search.recording.json --out flows/drafts
 ```
 
-It writes a draft flow and `rec-shop-search.IMPORT.md`. The IMPORT file lists the steps it could not encode (an Enter key, a CSS-only click, a scroll, an out-of-scope page) and the environment variable that replaces the typed search term.
+For a screenshot of every step, use the NavSentry Recorder extension instead. Load `extension/` unpacked in Chrome or Edge, import `navsentry.json` as its scope, record, and save. The same command imports the `.navrec.zip`; see [extension/README.md](../extension/README.md).
+
+The DevTools import writes a draft flow and `rec-shop-search.IMPORT.md`. The IMPORT file lists the steps it could not encode (an Enter key, a CSS-only click, a scroll, an out-of-scope page) and the environment variable that replaces the typed search term.
 
 ## 6. Fix and compare
 

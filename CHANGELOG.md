@@ -5,6 +5,14 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Added
+- 0.3.0-f NavSentry Recorder (SPEC-0.3.0 §7, owner decisions D7 and D10). A Chrome/Edge MV3 extension in `extension/`, loaded unpacked and shipped in the package. It records clicks, field changes and submits with a screenshot per step.
+  - **What it never records:** typed values, and screenshots of password fields.
+  - **Scope:** taken from an imported `navsentry.json` (`targets.origins`). Host access is asked one origin at a time.
+  - **No network:** no network APIs, and CSP `connect-src 'none'`.
+  - **Review before saving:** delete steps, mark where the flow ends, and add reviewer notes. Save writes a `.navrec.zip`.
+  - **Import:** `flow from-recording` also accepts `.navrec.zip` and writes the draft flow, `<id>.RECORDING.md` with screenshots and notes, and a git-ignored `<id>.shots/`. The archive goes through a strict reader: name allowlist, no traversal, duplicates, symlinks or encryption, size limits, CRC, and a sha256 per screenshot. Password fills use a `*_PASSWORD` env variable.
+  - **Governance:** store distribution is recorded as NOT_ADOPTED. `doctor` checks the extension manifest version. Threat model TM-40.
+  - **Not yet verified in a browser:** the extension needs a headed browser, which is pending governance. Its static safety properties and the whole import path are tested.
 - 0.3.0-e recorder import (SPEC-0.3.0 §6): `navsentry flow from-recording --input <recording.json> --out <dir>` turns a Chrome/Edge DevTools Recorder JSON export into one draft E2E flow plus `<id>.IMPORT.md`. Zero network; the file is read as data.
   - `navigate`, `click`, `change` and `waitForElement` become navigate, click, fill and see steps, located by accessible-name selectors.
   - Recorded values are dropped: each input becomes an env-backed variable.
