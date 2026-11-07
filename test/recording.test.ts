@@ -3,10 +3,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
+import { spawnSync } from "node:child_process";
 import { main } from "../src/cli.js";
 import { parseFlowText } from "../src/flow/parse.js";
-import { MAX_RECORDING_STEPS, RecordingError, importRecording, targetFrom } from "../src/flow/recording.js";
+import { MAX_RECORDING_STEPS, RecordingError, cleanText, importRecording, recordingOrigin, targetFrom, truncationHint } from "../src/flow/recording.js";
 import { localManifest } from "./helpers.js";
 
 const ORIGIN = "http://127.0.0.1:4173";
@@ -73,4 +74,31 @@ test("CLI: writes the draft and IMPORT.md, never overwrites, refuses non-JSON", 
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test("import strips invisible characters, lists cut-looking targets, and explains a missing manifest", () => {
+  assert.equal(cleanText("‎TS.md‬"), "TS.md");
+  assert.equal(cleanText("Save ​changes\u0085"), "Save changes");
+  assert.equal(truncationHint("TS.md"), "looks like the end of a longer file name");
+  assert.ok(truncationHint("Download the quarterly…"));
+  assert.equal(truncationHint("README.md"), undefined);
+  assert.equal(truncationHint("Sign in"), undefined);
+  const rec = { title: "cut", steps: [{ type: "navigate", url: `${ORIGIN}/` }, { type: "click", selectors: [["aria/‎TS.md"]] }, { type: "click", selectors: [["aria/Search[role=\"button\"]"]] }] };
+  const imp = importRecording(rec, m, "cut.json");
+  assert.match(imp.flow, /"text":"TS\.md"/, "the LRM is gone from the encoded target");
+  assert.equal(imp.warnings.length, 1);
+  assert.match(imp.warnings[0]!, /^S2: target text "TS\.md" looks like the end/);
+  assert.match(imp.report, /## Targets to check\n\n- S2:/);
+  assert.equal(recordingOrigin(rec), ORIGIN);
+  assert.equal(recordingOrigin({ steps: [{ type: "navigate", url: "file:///x" }] }), undefined);
+  const dir = mkdtempSync(join(tmpdir(), "navsentry-rec-nocfg-"));
+  try {
+    const f = join(dir, "r.json");
+    writeFileSync(f, JSON.stringify(rec));
+    const r = spawnSync(process.execPath, [resolve("dist/src/cli.js"), "flow", "from-recording", "--input", f, "--out", join(dir, "o")], { cwd: dir, encoding: "utf8" });
+    assert.equal(r.status, 3);
+    assert.match(r.stderr, /does not carry a manifest/);
+    assert.ok(r.stderr.includes(`navsentry init ${ORIGIN}`), r.stderr);
+    assert.ok(!existsSync(join(dir, "o")), "nothing written");
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });

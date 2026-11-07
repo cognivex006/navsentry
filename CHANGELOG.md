@@ -64,6 +64,10 @@ All notable changes to this project are documented here. Format: [Keep a Changel
   - **Terminal colour:** run summaries and `compare` output are coloured, only on a TTY. `NO_COLOR` or `--no-color` turns it off.
 
 ### Changed
+- `flow from-recording` usability:
+  - Without a manifest, the error explains that the recording carries none and that every recorded URL is checked against the owner's scope. It names `navsentry init <origin>` with the origin from the recording.
+  - Control and invisible formatting characters (C1, zero-width, bidi marks, BOM, soft hyphen) are removed from targets.
+  - Targets that look cut (an ellipsis, or a short file-name end such as `TS.md`) are listed under "Targets to check".
 - `serve` now starts one demo shop on port 4173 instead of two fixtures on 4173 and 4174.
 - The lint warning for E2E flows with UI steps points to `--engine playwright` instead of saying the browser transport does not exist.
 - `compare` matches requests by method, path and actor. A changed origin is reported once, instead of listing every request as missing.

@@ -42,7 +42,7 @@ import { TOOL_VERSION } from "./types.js";
 import { SessionRefused, sendCommand, startSession } from "./visual/session.js";
 import { renderVisualSession } from "./visual/report.js";
 import { draftFlowFromSession } from "./visual/flow-draft.js";
-import { MAX_RECORDING_BYTES, RecordingError, importRecording } from "./flow/recording.js";
+import { MAX_RECORDING_BYTES, RecordingError, importRecording, recordingOrigin } from "./flow/recording.js";
 import { MAX_NAVREC_BYTES, importNavrec, isZip } from "./flow/navrec.js";
 import { renderHtml } from "./report/html.js";
 import { paint } from "./report/color.js";
@@ -801,8 +801,14 @@ async function flowCommand(argv: string[]): Promise<number> {
     }
     case "from-recording": {
       // DevTools Recorder JSON → one draft flow (SPEC-0.3.0 §6). Zero network; never overwrites.
-      const m = loadManifest(configPath(rest));
       const input = resolve(need(rest, "--input"));
+      if (!rest.includes("--config") && !existsSync(resolve(DEFAULT_MANIFEST))) {
+        // The manifest is the owner's scope, not part of the recording: every recorded URL is checked against it.
+        let origin: string | undefined;
+        try { if (statSync(input).size <= MAX_RECORDING_BYTES && !isZip(readFileSync(input).subarray(0, 4))) origin = recordingOrigin(JSON.parse(readFileSync(input, "utf8"))); } catch { /* the import reports bad input */ }
+        throw new UsageError(`missing --config. The recording does not carry a manifest: NavSentry needs your navsentry.json to check every recorded URL against the scope you authorized. Create one in your project folder with \`navsentry init ${origin ?? "<origin of the recorded site>"}\`, or pass --config <manifest.json>`);
+      }
+      const m = loadManifest(configPath(rest));
       const name = input.split(/[\\/]/).pop() ?? "recording";
       const head = readFileSync(input).subarray(0, 4);
       if (isZip(head)) {
@@ -822,7 +828,7 @@ async function flowCommand(argv: string[]): Promise<number> {
           writeFileSync(join(sd, ".gitignore"), "*\n");
           for (const [n, b] of imp.shots) writeFileSync(join(sd, n), b, { flag: "wx" });
         }
-        print(`encoded=${imp.encoded} not encoded=${imp.skipped.length} screenshots=${imp.shots.size}`);
+        print(`encoded=${imp.encoded} not encoded=${imp.skipped.length} targets to check=${imp.warnings.length} screenshots=${imp.shots.size}`);
         print(`FLOW: ${f}`);
         print(`RECORDING: ${join(dir, `${imp.id}.RECORDING.md`)}`);
         return 0;
@@ -837,7 +843,7 @@ async function flowCommand(argv: string[]): Promise<number> {
       if (existsSync(f)) throw new UsageError(`${f} already exists; NavSentry never overwrites a flow`);
       writeFileSync(f, imp.flow, { flag: "wx" });
       writeFileSync(join(dir, `${imp.id}.IMPORT.md`), imp.report);
-      print(`encoded=${imp.encoded} listed for review=${imp.skipped.length}`);
+      print(`encoded=${imp.encoded} listed for review=${imp.skipped.length} targets to check=${imp.warnings.length}`);
       print(`FLOW: ${f}`);
       print(`IMPORT: ${join(dir, `${imp.id}.IMPORT.md`)}`);
       return 0;
