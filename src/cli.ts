@@ -74,7 +74,7 @@ Usage:
   navsentry browse start [--config <manifest.json>] --url <in-scope URL> [--actor <name>] [--idle-seconds <n>] [--out <dir>] [--project <dir>] [--headed]
   navsentry browse screenshot|snapshot|status --session <id> [--project <dir>]
   navsentry browse click --ref <e12> | --x <px> --y <px> --session <id>      (refs come from snapshot)
-  navsentry browse type --ref <e12> --env <VAR> | --text <text> --session <id>   (no values in logs; no literal text in password fields)
+  navsentry browse type --ref <e12> --env NAVSENTRY_<NAME> | --text <text> --session <id>   (no values in logs; no literal text in password fields)
   navsentry browse key --key Enter|Tab|Escape|Backspace|Arrow*|PageUp|PageDown|Home|End --session <id>
   navsentry browse scroll --dx <px> --dy <px> --session <id>
   navsentry browse end --session <id> [--save-flow <dir>]   (writes a draft flow from the action log)

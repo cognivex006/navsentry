@@ -76,6 +76,7 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 - README gains *Scan modes at a glance*, *Computer Use (visual driver)* and *Try it locally*, written for the demo shop v2 in `examples/demo/`.
 
 ### Changed
+- **Breaking (development only):** `browse type --env` accepts only `NAVSENTRY_*` variable names. Before, any name was accepted, so a page that told an agent to type, for example, `AWS_SECRET_ACCESS_KEY` could send that host secret to the target (hard rule 7, independent review). Rename the variable, for example `NAVSENTRY_LOGIN_PASSWORD`.
 - `navsentry init` safety and defaults:
   - It refuses to write inside a NavSentry source checkout, which is a public repository.
   - It warns and asks again when `local` or `dev` is chosen for a host that is not loopback or private.

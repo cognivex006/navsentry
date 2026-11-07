@@ -164,7 +164,7 @@ navsentry browse key --key Enter --session <id>
 navsentry browse end --session <id> --save-flow flows/drafts
 ```
 
-Read `runs/visual/VISUAL-SESSION.md` and the draft in `flows/drafts/`. Typed values are never recorded: in the draft, each input becomes a variable read from an environment variable at replay time. Secrets are typed with `--env <VAR>` instead of `--text`, and a sign-in form cannot be submitted here, because the visual driver refuses POST requests. To let an agent do it, ask in Claude Code or Codex: *"Use the navsentry skill to explore http://127.0.0.1:4173/ with the visual driver from examples/demo and summarize what it finds."*
+Read `runs/visual/VISUAL-SESSION.md` and the draft in `flows/drafts/`. Typed values are never recorded: in the draft, each input becomes a variable read from an environment variable at replay time. Secrets are typed with `--env NAVSENTRY_<NAME>` instead of `--text`, and a sign-in form cannot be submitted here, because the visual driver refuses POST requests. To let an agent do it, ask in Claude Code or Codex: *"Use the navsentry skill to explore http://127.0.0.1:4173/ with the visual driver from examples/demo and summarize what it finds."*
 
 ## 8. Clean up
 

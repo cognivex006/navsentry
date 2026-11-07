@@ -171,7 +171,7 @@ export const TOOLS: ToolDef[] = [
   {
     name: "navsentry_browse_type", title: "Type into a field",
     description: "Fills a text field by ref. Use env for anything secret (the value is read from that environment variable of the browse session, and never logged). text is for short non-secret input such as a search term; it is refused in password fields and when it looks like a secret or personal data. Never ask the user to paste a password into chat. Typing never submits: a POST form is refused in the visual driver.",
-    inputSchema: { type: "object", properties: { session: str("Session id."), ref: str("Element ref of a text field."), env: str("Environment variable name holding the value."), text: str("Non-secret literal text, at most 200 characters."), cwd: COMMON.cwd }, required: ["session", "ref"], additionalProperties: false },
+    inputSchema: { type: "object", properties: { session: str("Session id."), ref: str("Element ref of a text field."), env: str("NAVSENTRY_* environment variable name holding the value; other names are refused."), text: str("Non-secret literal text, at most 200 characters."), cwd: COMMON.cwd }, required: ["session", "ref"], additionalProperties: false },
     annotations: { readOnlyHint: false, openWorldHint: false, destructiveHint: false },
     argv: (a) => {
       const env = val(a, "env");

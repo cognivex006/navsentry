@@ -38,7 +38,7 @@ test("snapshot, click by ref, typing rules, keys and a draft flow from the sessi
   const site = await startDemoSite("vulnerable");
   const dir = mkdtempSync(join(tmpdir(), "navsentry-vd-"));
   try {
-    const h = await startSession({ manifest: localManifest(site.origin, { transports: VISUAL }), projectDir: dir, url: `${site.origin}/login`, env: { ...process.env, VD_PASSWORD: PW } });
+    const h = await startSession({ manifest: localManifest(site.origin, { transports: VISUAL }), projectDir: dir, url: `${site.origin}/login`, env: { ...process.env, NAVSENTRY_VD_PASSWORD: PW } });
     const work = join(dir, ".navsentry", "work", h.id);
     const cmd = (c: Parameters<typeof sendCommand>[1]) => sendCommand(work, c);
 
@@ -67,11 +67,13 @@ test("snapshot, click by ref, typing rules, keys and a draft flow from the sessi
     assert.match(String((await cmd({ cmd: "type", ref: pass.ref, text: "hunter2pass" })).error), /password fields/);
     assert.match(String((await cmd({ cmd: "type", ref: user.ref, text: "4111 1111 1111 1111" })).error), /secret or personal data/);
     assert.match(String((await cmd({ cmd: "type", ref: submit.ref, text: "x" })).error), /not an editable/);
-    assert.match(String((await cmd({ cmd: "type", ref: user.ref, env: "VD_NOT_SET" })).error), /not set/);
+    assert.match(String((await cmd({ cmd: "type", ref: user.ref, env: "NAVSENTRY_VD_NOT_SET" })).error), /not set/);
+    // Rule 7: a page cannot steer the agent into typing an unrelated host secret.
+    for (const env of ["AWS_SECRET_ACCESS_KEY", "PATH", "NAVSENTRY_", "navsentry_x"]) assert.match(String((await cmd({ cmd: "type", ref: user.ref, env })).error), /NAVSENTRY_\* environment variable/, env);
     assert.match(String((await cmd({ cmd: "type", ref: user.ref })).error), /exactly one/);
     assert.match(String((await cmd({ cmd: "type", ref: "x1", text: "a" })).error), /ref must look like/);
     assert.equal((await cmd({ cmd: "type", ref: user.ref, text: "demo-user" })).ok, true);
-    assert.equal((await cmd({ cmd: "type", ref: pass.ref, env: "VD_PASSWORD" })).ok, true);
+    assert.equal((await cmd({ cmd: "type", ref: pass.ref, env: "NAVSENTRY_VD_PASSWORD" })).ok, true);
     assert.match(String((await cmd({ cmd: "key", key: "F12" })).error), /key must be one of/);
     await cmd({ cmd: "click", ref: submit.ref });
 
@@ -83,7 +85,7 @@ test("snapshot, click by ref, typing rules, keys and a draft flow from the sessi
     for (const v of [PW, "hunter2pass", "4111 1111", "demo-user"]) assert.ok(!all.includes(v), `no typed value in the session log: ${v}`);
     assert.ok(result.denials.some((d) => d.method === "POST" && /state-changing/.test(d.reason)), "the sign-in POST was refused (observe)");
     const typed = result.actions.filter((a) => a.action === "type" && a.result === "ok");
-    assert.deepEqual(typed.map((a) => a.env ?? "text"), ["text", "text", "VD_PASSWORD"]);
+    assert.deepEqual(typed.map((a) => a.env ?? "text"), ["text", "text", "NAVSENTRY_VD_PASSWORD"]);
     assert.ok(typed.every((a) => typeof a.length === "number"));
 
     const draft = draftFlowFromSession(result);
@@ -91,7 +93,7 @@ test("snapshot, click by ref, typing rules, keys and a draft flow from the sessi
     assert.ok(parsed.doc, parsed.problems.join("; "));
     assert.equal(parsed.doc!.header.review.status, "draft");
     assert.ok(!draft.text.includes(PW) && !draft.text.includes("\"lamp\"") && !draft.text.includes("demo-user"), "typed values never reach the flow");
-    assert.match(draft.text, /"env": "VD_PASSWORD"/);
+    assert.match(draft.text, /"env": "NAVSENTRY_VD_PASSWORD"/);
     assert.match(draft.text, /"action":"click","target":\{"role":"link","name":"Search"\}/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
