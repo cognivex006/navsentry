@@ -65,6 +65,11 @@ All notable changes to this project are documented here. Format: [Keep a Changel
   - **Terminal colour:** run summaries and `compare` output are coloured, only on a TTY. `NO_COLOR` or `--no-color` turns it off.
 
 ### Changed
+- `navsentry init` safety and defaults:
+  - It refuses to write inside a NavSentry source checkout, which is a public repository.
+  - It warns and asks again when `local` or `dev` is chosen for a host that is not loopback or private.
+  - On the development profile it lists `playwright-browser` in `transports.order`, so `--engine playwright` works without editing the manifest.
+  - `.gitignore` now ignores a root `navsentry.json` and `navsentry/`.
 - `flow from-recording` usability:
   - Without a manifest, the error explains that the recording carries none and that every recorded URL is checked against the owner's scope. It names `navsentry init <origin>` with the origin from the recording.
   - Control and invisible formatting characters (C1, zero-width, bidi marks, BOM, soft hyphen) are removed from targets.

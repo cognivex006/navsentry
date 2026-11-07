@@ -7,3 +7,7 @@ runs/
 .env.*
 !.env.example
 .claude/launch.json
+
+# Consumer files that must never be committed from a NavSentry checkout
+/navsentry.json
+/navsentry/
