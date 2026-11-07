@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { applySkillUpdate, compareVersions, findInstallations, manifestVersions, normalizeHost, planSkillUpdate, SKILLS, skillVersion, statusOf, DoctorError } from "../src/doctor.js";
+import { applySkillUpdate, compareVersions, launchCheck, findInstallations, manifestVersions, normalizeHost, planSkillUpdate, SKILLS, skillVersion, statusOf, DoctorError } from "../src/doctor.js";
 import { TOOL_VERSION } from "../src/types.js";
 
 const skill = (name: string, version?: string) => `---\nname: ${name}\ndescription: test\n${version ? `metadata:\n  version: "${version}"\n` : ""}---\n\nbody\n`;
@@ -83,4 +83,18 @@ test("skill update refuses foreign skills and the package itself", () => {
     assert.throws(() => planSkillUpdate("claude", "user", s.home, s.project), DoctorError);
     assert.throws(() => planSkillUpdate("codex", "project", s.home, process.cwd()), DoctorError);
   } finally { s.done(); }
+});
+
+test("launch check finds navsentry on PATH or gives an absolute MCP command", () => {
+  const dir = mkdtempSync(join(tmpdir(), "navsentry-launch-"));
+  try {
+    const none = launchCheck(dir, "win32", "/pkg", "/node");
+    assert.equal(none.onPath, null);
+    assert.deepEqual(none.mcpCommand, { command: "/node", args: [join("/pkg", "dist", "src", "cli.js"), "mcp"] });
+    writeFileSync(join(dir, "navsentry.cmd"), "");
+    const win = launchCheck(`C:\nothing;${dir}`, "win32", "/pkg", "/node");
+    assert.equal(win.onPath, join(dir, "navsentry.cmd"));
+    assert.deepEqual(win.mcpCommand, { command: "navsentry", args: ["mcp"] });
+    assert.equal(launchCheck(dir, "linux", "/pkg", "/node").onPath, null, "linux needs a file named navsentry");
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });

@@ -5,6 +5,7 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Added
+- `navsentry doctor` has an "Agent launch (MCP)" section: it says whether `navsentry` is on PATH and prints a `claude mcp add` command. Without PATH, the command uses absolute paths. A missing PATH entry was why MCP hosts reported `CONNECTION_CLOSED`. `doctor --json` includes it as `launch`. README documents `npm link` for source checkouts.
 - Report verdict: the Summary of every REPORT.md and REPORT.html starts with a one-line answer to "Do I need to fix something now?".
   - 🔴 fix now: an IMMEDIATE or CAUTION finding, or test objects left behind.
   - 🟡 schedule it: PLANNED findings only.

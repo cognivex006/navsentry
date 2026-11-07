@@ -87,6 +87,8 @@ command = "navsentry"
 args = ["mcp"]
 ```
 
+If the host reports `CONNECTION_CLOSED`, `navsentry` is usually not on PATH (the CLI was never installed with `npm install -g` or `npm link`). Run `navsentry doctor` (or `node <checkout>/dist/src/cli.js doctor`): its "Agent launch (MCP)" section says whether `navsentry` was found and prints a register command with the absolute path of Node and of `dist/src/cli.js`, which works without PATH.
+
 Codex starts the server in the folder where you start Codex. To scan another project, pass `cwd` in the tool call.
 
 Without MCP, agents use the same loop through the CLI: `navsentry scan --json` and `navsentry next --run <dir> --json` print machine-readable summaries.
