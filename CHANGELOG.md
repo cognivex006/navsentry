@@ -76,6 +76,10 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 - README gains *Scan modes at a glance*, *Computer Use (visual driver)* and *Try it locally*, written for the demo shop v2 in `examples/demo/`.
 
 ### Changed
+- **Approve once (breaking):** `flow approve` needs an interactive terminal, like `init`. Without one it is refused, so an agent can no longer approve flows for the owner, even with `--by`.
+  - `--flows` takes a folder. Every draft or stale approval in it is listed with its steps, requests and state-changing steps, and approved with one name and one yes. Valid approvals are left alone.
+  - `--by` is optional: the approver is asked for, with the manifest owner as the default.
+  - `navsentry next` suggests the single folder command, and the consumer skill asks the user to run it.
 - **Breaking (development only):** `browse type --env` accepts only `NAVSENTRY_*` variable names. Before, any name was accepted, so a page that told an agent to type, for example, `AWS_SECRET_ACCESS_KEY` could send that host secret to the target (hard rule 7, independent review). Rename the variable, for example `NAVSENTRY_LOGIN_PASSWORD`.
 - `navsentry init` safety and defaults:
   - It refuses to write inside a NavSentry source checkout, which is a public repository.

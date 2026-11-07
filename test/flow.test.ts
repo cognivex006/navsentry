@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { main } from "../src/cli.js";
+import { approveCommand, main } from "../src/cli.js";
 import { loadManifest } from "../src/config.js";
 import { compareRuns } from "../src/compare.js";
 import { analyzeRun } from "../src/flow/analyze.js";
@@ -17,6 +17,12 @@ import { executeRun, executeTest, planRun } from "../src/runner.js";
 import type { FlowRunResult } from "../src/types.js";
 import { FIXTURE_TOKENS, startDemo } from "./fixtures/demo-server.js";
 import { localManifest } from "./helpers.js";
+
+/** Stands in for the owner at an interactive terminal. */
+const owner = (answers: string[]) => {
+  const said: string[] = [];
+  return { said, ask: async () => answers.shift() ?? "", say: (l: string) => { said.push(l); } };
+};
 
 const FIX = join(process.cwd(), "test", "fixtures");
 const ENV = { NAVSENTRY_TEST_READER_A_AUTH: FIXTURE_TOKENS.reader_a, NAVSENTRY_TEST_READER_B_AUTH: FIXTURE_TOKENS.reader_b, NAVSENTRY_TEST_ADMIN_AUTH: FIXTURE_TOKENS.admin };
@@ -279,7 +285,8 @@ test("CLI: test --flows writes flows.json, TEST-REPORT.md and junit; exit codes 
     const init = join(dir, "flows");
     assert.equal(await main(["flow", "init", "--id", "my-story", "--title", "My story", "--out", init]), 0);
     assert.equal(await main(["flow", "init", "--id", "my-story", "--title", "My story", "--out", init]), 3, "never overwrites");
-    assert.equal(await main(["flow", "approve", "--flows", join(init, "my-story.flow.md"), "--by", "owner"]), 0);
+    assert.equal(await main(["flow", "approve", "--flows", join(init, "my-story.flow.md"), "--by", "owner"]), 3, "no terminal: an agent cannot approve");
+    assert.equal(await approveCommand(["--flows", join(init, "my-story.flow.md"), "--by", "owner"], owner(["yes"])), 0);
     assert.equal(await main(["flow", "lint", "--config", mpath, "--flows", init]), 0);
     const prod = join(dir, "prod.json");
     writeFileSync(prod, readFileSync(mpath, "utf8").replace('"environment":"local"', '"environment":"production"').replace('"owner":"navsentry-tests"}', '"owner":"navsentry-tests","reference":"CHG-1","expires_at":"2099-01-01"}'));
@@ -303,4 +310,27 @@ test("shipped example flows lint against the example manifest", () => {
   const r = loadFlowFiles(join(process.cwd(), "examples", "flows"));
   assert.deepEqual(r.problems, []);
   assert.deepEqual(lintFlows(r.docs, m).errors, []);
+});
+
+
+test("approve once: one summary and one yes approve every draft in a folder; no terminal, no approval", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "navsentry-approve-"));
+  const flows = join(dir, "flows");
+  assert.equal(await main(["flow", "init", "--id", "story-a", "--title", "Story A", "--out", flows]), 0);
+  assert.equal(await main(["flow", "init", "--id", "story-b", "--title", "Story B", "--out", flows]), 0);
+  assert.equal(await main(["flow", "approve", "--flows", flows]), 3, "refused without an interactive terminal");
+  const no = owner(["Team A", "no"]);
+  await assert.rejects(approveCommand(["--flows", flows], no), /not approved; nothing was changed/);
+  assert.ok(no.said.some((l) => l.startsWith("- story-a")) && no.said.some((l) => l.startsWith("- story-b")), "both drafts are summarised");
+  assert.ok(no.said.some((l) => /state-changing steps:/.test(l)));
+  assert.equal(loadFlowFiles(flows).docs.filter((d) => d.header.review.status === "approved").length, 0);
+  const ok = owner(["Team A", "yes"]);
+  assert.equal(await approveCommand(["--flows", flows], ok), 0);
+  const docs = loadFlowFiles(flows).docs;
+  assert.deepEqual(docs.map((d) => `${d.header.id}:${d.header.review.status}:${d.header.review.approved_by}:${d.header.review.content_sha256 === flowHash(d)}`).sort(), ["story-a:approved:Team A:true", "story-b:approved:Team A:true"]);
+  await assert.rejects(approveCommand(["--flows", flows], owner(["Team A", "yes"])), /nothing to approve/);
+  await assert.rejects(approveCommand(["--flows", join(flows, "story-a.flow.md")], owner(["", "yes"])), /nothing to approve/, "a valid approval is never rewritten");
+  const c = join(dir, "flows", "story-c.flow.md");
+  assert.equal(await main(["flow", "init", "--id", "story-c", "--title", "Story C", "--out", flows]), 0);
+  await assert.rejects(approveCommand(["--flows", c], owner(["", "yes"])), /approver name/, "no name and no manifest owner");
 });

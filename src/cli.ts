@@ -26,6 +26,7 @@ import { renderJson, renderMarkdown, renderSarif, securityResult, validateRunRes
 import { executeTest, planRun } from "./runner.js";
 import { analyzeRun } from "./flow/analyze.js";
 import { approveText, initTemplate } from "./flow/author.js";
+import { ApproveError, confirmApproval, selectForApproval, type ApprovePrompter } from "./flow/approve.js";
 import { bindManifest, classify } from "./flow/classify.js";
 import { manualLine } from "./flow/execute.js";
 import { lintFlows } from "./flow/lint.js";
@@ -100,7 +101,7 @@ Story flows (Markdown test cases; zero network):
   navsentry flow from-recording --input <recording.json> [--config <manifest.json>] --out <dir>   (DevTools Recorder JSON or NavSentry Recorder .navrec.zip → draft)
   navsentry inventory --config <manifest.json> [--project <dir>] [--out <dir>]   (development: read-only code inventory)
   navsentry flow lint --config <manifest.json> --flows <path>
-  navsentry flow approve --flows <file> --by <name> [--config <manifest>] [--reference <ref>] [--root <flows-dir>]   (owner action; --config is required for flows that use fixtures)
+  navsentry flow approve --flows <file|dir> [--by <name>] [--config <manifest>] [--reference <ref>] [--root <flows-dir>]   (owner only, interactive terminal: one summary and one yes for every draft)
   navsentry flow show --flows <file>
 
 Exit: 0 no findings · 1 findings · 2 incomplete · 3 usage/config error · 4 workspace dirty
@@ -714,6 +715,57 @@ function selectFlows(m: Manifest, argv: string[]): { docs: FlowDoc[]; warnings: 
   return { docs: picked, warnings };
 }
 
+/**
+ * `flow approve --flows <file|dir>` (authorize once): one summary and one yes for every draft in
+ * the selection. Interactive terminal only, like init: an agent cannot approve for the owner.
+ * `prompter` is a test seam; the CLI passes none and builds one only on a TTY.
+ */
+export async function approveCommand(rest: string[], prompter?: ApprovePrompter): Promise<number> {
+  const target = resolve(need(rest, "--flows"));
+  const isDir = statSync(target).isDirectory();
+  // Load the whole flow root so the approval hash covers the dependency closure.
+  const root = resolve(arg(rest, "--root") ?? (isDir ? target : dirname(target)));
+  const { docs, problems } = loadFlowFiles(root);
+  if (problems.length) throw new FlowError(problems);
+  const inSel = (d: FlowDoc) => (isDir ? resolve(root, d.file).startsWith(target) : resolve(root, d.file) === target);
+  if (!docs.some(inSel)) throw new UsageError(isDir ? `no .flow.md files in ${target}` : "--flows must be inside --root (default: its own directory)");
+  const { todo, current } = selectForApproval(docs, inSel);
+  for (const d of todo) {
+    const missing = d.header.requires.filter((id) => !d.deps?.some((x) => x.header.id === id));
+    if (missing.length) throw new UsageError(`cannot approve ${d.header.id}: required flow(s) ${missing.join(", ")} not found in ${root}`);
+  }
+  // SPEC-0.2.0 §4.5: fixture and login entries are part of the approved content.
+  const cfg = arg(rest, "--config") ?? (existsSync(resolve(DEFAULT_MANIFEST)) ? resolve(DEFAULT_MANIFEST) : undefined);
+  const manifest = cfg ? loadManifest(cfg) : undefined;
+  if (manifest) bindManifest(docs, manifest);
+  else if (todo.some((d) => d.steps.some((s) => s.fixture))) throw new UsageError("this flow set uses fixtures: pass --config <manifest> so the approval covers the fixture entries");
+  let p = prompter;
+  let rl: ReturnType<typeof createInterface> | undefined;
+  if (!p) {
+    if (!process.stdin.isTTY || !process.stdout.isTTY) throw new UsageError(`flow approve is the owner's decision, so it runs only in an interactive terminal. Run it yourself: navsentry flow approve --flows ${rest[rest.indexOf("--flows") + 1]}`);
+    rl = createInterface({ input: process.stdin, output: process.stdout });
+    const r = rl;
+    p = { ask: (q) => r.question(q), say: (l) => print(l) };
+  }
+  try {
+    if (current.length) p.say(`already approved (unchanged): ${current.map((d) => d.header.id).join(", ")}`);
+    const by = await confirmApproval(p, todo, { ...(arg(rest, "--by") ? { by: arg(rest, "--by")! } : {}), ...(manifest ? { owner: manifest.authorization.owner } : {}) });
+    const ref = arg(rest, "--reference");
+    const today = new Date().toISOString().slice(0, 10);
+    for (const d of todo) {
+      if (d.bindings) p.say(`approving ${d.header.id} with manifest entries: ${Object.keys(JSON.parse(d.bindings)).join(", ")}`);
+      writeFileSync(resolve(root, d.file), approveText(d, by, today, ref));
+    }
+    p.say(`approved ${todo.map((d) => d.header.id).join(", ")} by ${by}; editing a flow invalidates its approval`);
+    return 0;
+  } catch (e) {
+    if (e instanceof ApproveError) throw new UsageError(e.message);
+    throw e;
+  } finally {
+    rl?.close();
+  }
+}
+
 async function flowCommand(argv: string[]): Promise<number> {
   const [sub, ...rest] = argv;
   switch (sub) {
@@ -771,29 +823,8 @@ async function flowCommand(argv: string[]): Promise<number> {
       print(`ANALYSIS: ${join(dir, "ANALYSIS.md")}`);
       return 0;
     }
-    case "approve": {
-      const path = resolve(need(rest, "--flows"));
-      const by = need(rest, "--by").trim();
-      if (!by || by.length > 100) throw new UsageError("--by needs the approver's name (1-100 characters)");
-      if (statSync(path).isDirectory()) throw new UsageError("--flows must name exactly one .flow.md file");
-      // Load the whole flow root so the approval hash covers the dependency closure.
-      const root = resolve(arg(rest, "--root") ?? dirname(path));
-      const { docs, problems } = loadFlowFiles(root);
-      if (problems.length) throw new FlowError(problems);
-      const doc = docs.find((d) => resolve(root, d.file) === path);
-      if (!doc) throw new UsageError("--flows must be inside --root (default: its own directory)");
-      const missing = doc.header.requires.filter((id) => !doc.deps?.some((x) => x.header.id === id));
-      if (missing.length) throw new UsageError(`cannot approve: required flow(s) ${missing.join(", ")} not found in ${root}`);
-      // SPEC-0.2.0 §4.5: fixture and login entries are part of the approved content.
-      const cfg = arg(rest, "--config");
-      if (cfg) bindManifest(docs, loadManifest(cfg));
-      else if (docs.some((d) => d.steps.some((s) => s.fixture))) throw new UsageError("this flow set uses fixtures: pass --config <manifest> so the approval covers the fixture entries");
-      if (cfg) print(`approving with manifest entries: ${doc.bindings ? Object.keys(JSON.parse(doc.bindings)).join(", ") : "none"}`);
-      const ref = arg(rest, "--reference");
-      writeFileSync(path, approveText(doc, by, new Date().toISOString().slice(0, 10), ref));
-      print(`approved ${doc.header.id} by ${by}; editing the flow invalidates this approval`);
-      return 0;
-    }
+    case "approve":
+      return approveCommand(rest);
     case "import": {
       const m = loadManifest(configPath(rest));
       const spec = resolve(need(rest, "--openapi"));

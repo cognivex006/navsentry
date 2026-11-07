@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { main } from "../src/cli.js";
+import { approveCommand, main } from "../src/cli.js";
 import { flowHash } from "../src/flow/classify.js";
 import { lintFlows, topoOrder } from "../src/flow/lint.js";
 import { parseFlowText, resolveDeps, type FlowDoc } from "../src/flow/parse.js";
@@ -131,7 +131,7 @@ test("CLI: approve covers the closure; selection pulls in eligible dependencies;
     const fr = JSON.parse(readFileSync(join(out, "flows.json"), "utf8")) as { flows: { id: string; status: string }[] };
     assert.deepEqual(fr.flows.map((f) => `${f.id}:${f.status}`).sort(), ["list-orders:PASS", "order-detail:PASS"]);
     // Approve only the dependent; in production the draft dependency is not selected.
-    assert.equal(await main(["flow", "approve", "--flows", join(flows, "detail.flow.md"), "--by", "owner"]), 0);
+    assert.equal(await approveCommand(["--flows", join(flows, "detail.flow.md"), "--by", "owner"], { ask: async () => "yes", say: () => {} }), 0);
     const prod = join(dir, "prod.json");
     writeFileSync(prod, JSON.stringify({ ...base, environment: "production", authorization: { ...base.authorization, reference: "CHG-9", expires_at: "2099-01-01" } }));
     const pout = join(dir, "prod-run");
