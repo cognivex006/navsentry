@@ -22,7 +22,7 @@ import { CASES, CATEGORIES } from "./catalog.js";
 import { compareRuns, renderCompareMarkdown } from "./compare.js";
 import { ConfigError, loadManifest } from "./config.js";
 import { DoctorError, HOSTS, applySkillUpdate, doctorReport, launchCheck, normalizeHost, planSkillUpdate, pluginCommands, type Host } from "./doctor.js";
-import { renderJson, renderMarkdown, renderSarif, securityResult, validateRunResult } from "./report/render.js";
+import { renderJson, renderMarkdown, renderSarif, securityResult, validateRunResult, verdict, VERDICT_MARK } from "./report/render.js";
 import { executeTest, planRun } from "./runner.js";
 import { analyzeRun } from "./flow/analyze.js";
 import { approveText, initTemplate } from "./flow/author.js";
@@ -42,7 +42,7 @@ import { TOOL_VERSION } from "./types.js";
 import { SessionRefused, sendCommand, startSession } from "./visual/session.js";
 import { renderVisualSession } from "./visual/report.js";
 import { draftFlowFromSession } from "./visual/flow-draft.js";
-import { MAX_RECORDING_BYTES, RecordingError, importRecording } from "./flow/recording.js";
+import { MAX_RECORDING_BYTES, RecordingError, importRecording, recordingOrigin } from "./flow/recording.js";
 import { MAX_NAVREC_BYTES, importNavrec, isZip } from "./flow/navrec.js";
 import { renderHtml } from "./report/html.js";
 import { paint } from "./report/color.js";
@@ -84,7 +84,7 @@ Usage:
   navsentry knowledge status [--json]
   navsentry knowledge lookup --product <name> [--version <v>] | --id <CVE|advisory|alias> [--json]
   navsentry knowledge propose --input <file.json> [--config <manifest.json>] [--project <dir>]   (offline)
-  navsentry report --input <run.json|flows.json> --format markdown|html|json|sarif|junit [--lang en|th]   (--no-color on any command)
+  navsentry report --input <run.json|flows.json> --format markdown|html|json|sarif|junit [--lang en|th] [--out <file>]   (--no-color on any command)
   navsentry compare --before <dir|run.json> --after <dir|run.json>   (reads flows.json beside run.json)
   navsentry catalog [--category <CODE>]
 
@@ -217,11 +217,21 @@ export async function main(argv: string[]): Promise<number> {
           return 0;
         }
         const r = validateRunResult(input);
-        if (fmt === "markdown") print(renderMarkdown(r, lang));
-        else if (fmt === "html") print(renderHtml(renderMarkdown(r, lang), `NavSentry report — ${r.project}`, lang));
-        else if (fmt === "json") print(renderJson(r));
-        else if (fmt === "sarif") print(JSON.stringify(renderSarif(r), null, 2));
+        let body: string;
+        if (fmt === "markdown") body = renderMarkdown(r, lang);
+        else if (fmt === "html") body = renderHtml(renderMarkdown(r, lang), `NavSentry report — ${r.project}`, lang);
+        else if (fmt === "json") body = renderJson(r);
+        else if (fmt === "sarif") body = JSON.stringify(renderSarif(r), null, 2);
         else throw new UsageError("format must be markdown|html|json|sarif");
+        const outFile = arg(rest, "--out");
+        if (outFile) {
+          // Never overwrite: the run directory already holds reports written by scan.
+          if (existsSync(resolve(outFile))) throw new UsageError(`${resolve(outFile)} already exists; NavSentry never overwrites a report (choose another --out path)`);
+          writeFileSync(resolve(outFile), body.endsWith("\n") ? body : body + "\n", { flag: "wx" });
+          print(`Wrote ${resolve(outFile)}`);
+        } else if (fmt === "html" && process.stdout.isTTY) {
+          throw new UsageError("HTML is a file to open in a browser, not terminal output. Add --out <file>.html (scan already wrote REPORT.html in the run folder)");
+        } else print(body);
         return 0;
       }
       case "compare": {
@@ -340,7 +350,7 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
     if (cf) files.push(["client-findings.json", cf]);
     files.push(...models);
     if (m.report.formats.includes("markdown")) {
-      const md = renderMarkdown(r, lang) + (flowRun ? "\n" + renderFlowSection(flowRun, r, lang) : "");
+      const md = renderMarkdown(r, lang, flowRun?.functionalResult) + (flowRun ? "\n" + renderFlowSection(flowRun, r, lang) : "");
       files.push(["REPORT.md", md], ["REPORT.html", renderHtml(md, `NavSentry report — ${r.project}`, lang)]);
     }
     if (m.report.formats.includes("sarif")) files.push(["report.sarif", JSON.stringify(renderSarif(r), null, 2)]);
@@ -367,11 +377,14 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
   if (argv.includes("--json")) {
     // Machine-readable summary for agents (SPEC-0.3.0 §3.2): paths, counts by level, gaps and next commands.
     const n = nextSteps(r, flowRun, out, sec);
-    print(JSON.stringify({ ...n, kind: "navsentry-run-summary", exitCode: exitCode(r, flowRun), findings: r.findings.length, requests: r.budget.requestsUsed, workspace: r.workspace.status, ...(flowRun ? { functionalResult: flowRun.functionalResult, flows: flowRun.flows.length, testReport: join(out, "TEST-REPORT.md") } : {}), runJson: join(out, "run.json") }, null, 2));
+    const vd = verdict(r, lang, flowRun?.functionalResult);
+    print(JSON.stringify({ ...n, kind: "navsentry-run-summary", verdict: { kind: vd.kind, count: vd.count, text: vd.text }, exitCode: exitCode(r, flowRun), findings: r.findings.length, requests: r.budget.requestsUsed, workspace: r.workspace.status, ...(flowRun ? { functionalResult: flowRun.functionalResult, flows: flowRun.flows.length, testReport: join(out, "TEST-REPORT.md") } : {}), runJson: join(out, "run.json") }, null, 2));
   } else {
     print(paint(`execution=${r.executionStatus} security=${sec} findings=${r.findings.length} requests=${r.budget.requestsUsed}${flowRun ? ` functional=${flowRun.functionalResult} flows=${flowRun.flows.length}` : ""} workspace=${r.workspace.status}`));
+    const vd = verdict(r, lang, flowRun?.functionalResult);
+    print(paint(`${VERDICT_MARK[vd.kind]} ${vd.text}`));
     print(paint(`REPORT: ${join(out, "REPORT.md")}`));
-    if (m.report.formats.includes("markdown")) print(paint(`HTML: ${join(out, "REPORT.html")}`));
+    if (m.report.formats.includes("markdown")) print(paint(`Open in a browser: ${join(out, "REPORT.html")}`));
     if (flowRun) print(`TEST-REPORT: ${join(out, "TEST-REPORT.md")}`);
   }
   for (const x of r.fixtures?.leftovers ?? []) process.stderr.write(`LEFTOVER ${x.fixture} ${x.displayId}: ${x.manualAction}\n`);
@@ -788,8 +801,14 @@ async function flowCommand(argv: string[]): Promise<number> {
     }
     case "from-recording": {
       // DevTools Recorder JSON → one draft flow (SPEC-0.3.0 §6). Zero network; never overwrites.
-      const m = loadManifest(configPath(rest));
       const input = resolve(need(rest, "--input"));
+      if (!rest.includes("--config") && !existsSync(resolve(DEFAULT_MANIFEST))) {
+        // The manifest is the owner's scope, not part of the recording: every recorded URL is checked against it.
+        let origin: string | undefined;
+        try { if (statSync(input).size <= MAX_RECORDING_BYTES && !isZip(readFileSync(input).subarray(0, 4))) origin = recordingOrigin(JSON.parse(readFileSync(input, "utf8"))); } catch { /* the import reports bad input */ }
+        throw new UsageError(`missing --config. The recording does not carry a manifest: NavSentry needs your navsentry.json to check every recorded URL against the scope you authorized. Create one in your project folder with \`navsentry init ${origin ?? "<origin of the recorded site>"}\`, or pass --config <manifest.json>`);
+      }
+      const m = loadManifest(configPath(rest));
       const name = input.split(/[\\/]/).pop() ?? "recording";
       const head = readFileSync(input).subarray(0, 4);
       if (isZip(head)) {
@@ -809,7 +828,7 @@ async function flowCommand(argv: string[]): Promise<number> {
           writeFileSync(join(sd, ".gitignore"), "*\n");
           for (const [n, b] of imp.shots) writeFileSync(join(sd, n), b, { flag: "wx" });
         }
-        print(`encoded=${imp.encoded} not encoded=${imp.skipped.length} screenshots=${imp.shots.size}`);
+        print(`encoded=${imp.encoded} not encoded=${imp.skipped.length} targets to check=${imp.warnings.length} screenshots=${imp.shots.size}`);
         print(`FLOW: ${f}`);
         print(`RECORDING: ${join(dir, `${imp.id}.RECORDING.md`)}`);
         return 0;
@@ -824,7 +843,7 @@ async function flowCommand(argv: string[]): Promise<number> {
       if (existsSync(f)) throw new UsageError(`${f} already exists; NavSentry never overwrites a flow`);
       writeFileSync(f, imp.flow, { flag: "wx" });
       writeFileSync(join(dir, `${imp.id}.IMPORT.md`), imp.report);
-      print(`encoded=${imp.encoded} listed for review=${imp.skipped.length}`);
+      print(`encoded=${imp.encoded} listed for review=${imp.skipped.length} targets to check=${imp.warnings.length}`);
       print(`FLOW: ${f}`);
       print(`IMPORT: ${join(dir, `${imp.id}.IMPORT.md`)}`);
       return 0;

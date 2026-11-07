@@ -6,6 +6,13 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 
 ### Added
 - `navsentry doctor` has an "Agent launch (MCP)" section: it says whether `navsentry` is on PATH and prints a `claude mcp add` command. Without PATH, the command uses absolute paths. A missing PATH entry was why MCP hosts reported `CONNECTION_CLOSED`. `doctor --json` includes it as `launch`. README documents `npm link` for source checkouts.
+- Report verdict: the Summary of every REPORT.md and REPORT.html starts with a one-line answer to "Do I need to fix something now?".
+  - 🔴 fix now: an IMMEDIATE or CAUTION finding, or test objects left behind.
+  - 🟡 schedule it: PLANNED findings only.
+  - 🟢 no fix needed in the tested scope, which is not proof of security.
+  - ⚪ can't tell: an incomplete run, or flows that failed or did not run, when nothing needs a fix now. Never shown as no-fix.
+  - `scan` prints the verdict and `Open in a browser: …/REPORT.html`. `scan --json` adds `verdict`.
+- `navsentry report --out <file>` writes the rendered report and never overwrites one. `--format html` on a terminal without `--out` is refused with a pointer to the REPORT.html that scan already wrote, instead of filling the screen with HTML.
 - 0.3.0-f NavSentry Recorder (SPEC-0.3.0 §7, owner decisions D7 and D10). A Chrome/Edge MV3 extension in `extension/`, loaded unpacked and shipped in the package. It records clicks, field changes and submits with a screenshot per step.
   - **What it never records:** typed values, and screenshots of password fields.
   - **Scope:** taken from an imported `navsentry.json` (`targets.origins`). Host access is asked one origin at a time.
@@ -58,6 +65,10 @@ All notable changes to this project are documented here. Format: [Keep a Changel
   - **Terminal colour:** run summaries and `compare` output are coloured, only on a TTY. `NO_COLOR` or `--no-color` turns it off.
 
 ### Changed
+- `flow from-recording` usability:
+  - Without a manifest, the error explains that the recording carries none and that every recorded URL is checked against the owner's scope. It names `navsentry init <origin>` with the origin from the recording.
+  - Control and invisible formatting characters (C1, zero-width, bidi marks, BOM, soft hyphen) are removed from targets.
+  - Targets that look cut (an ellipsis, or a short file-name end such as `TS.md`) are listed under "Targets to check".
 - `serve` now starts one demo shop on port 4173 instead of two fixtures on 4173 and 4174.
 - The lint warning for E2E flows with UI steps points to `--engine playwright` instead of saying the browser transport does not exist.
 - `compare` matches requests by method, path and actor. A changed origin is reported once, instead of listing every request as missing.

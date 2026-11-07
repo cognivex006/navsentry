@@ -11,7 +11,7 @@ import { inflateRawSync } from "node:zlib";
 import type { Manifest } from "../config.js";
 import { ScopeGate } from "../scope.js";
 import { FLOW_ID, parseFlowText } from "./parse.js";
-import { MAX_RECORDING_STEPS, RecordingError } from "./recording.js";
+import { MAX_RECORDING_STEPS, RecordingError, cleanText, targetWarnings } from "./recording.js";
 
 export const MAX_NAVREC_BYTES = 60 * 1024 * 1024;
 const MAX_ENTRY_BYTES = 8 * 1024 * 1024;
@@ -88,7 +88,7 @@ export function readZip(buf: Buffer): Map<string, Buffer> {
 
 type Obj = Record<string, unknown>;
 const isObj = (v: unknown): v is Obj => typeof v === "object" && v !== null && !Array.isArray(v);
-const clean = (s: unknown, max = 120) => (typeof s === "string" ? s.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, max) : "");
+const clean = (s: unknown, max = 120) => (typeof s === "string" ? cleanText(s).slice(0, max) : "");
 const ROLES = new Set(["button", "link", "textbox", "checkbox", "radio", "combobox", "tab", "menuitem", "searchbox", "option"]);
 
 export interface NavrecImport {
@@ -98,6 +98,8 @@ export interface NavrecImport {
   shots: Map<string, Buffer>;
   encoded: number;
   skipped: { n: number; type: string; reason: string }[];
+  /** Targets that look cut; listed in RECORDING.md, never guessed. */
+  warnings: string[];
 }
 
 export function importNavrec(buf: Buffer, m: Manifest, file: string): NavrecImport {
@@ -131,8 +133,10 @@ export function importNavrec(buf: Buffer, m: Manifest, file: string): NavrecImpo
     shots.set(name.slice(6), files.get(name)!);
     return `![step screenshot](${local})`;
   };
+  const warnings: string[] = [];
   const add = (s: Obj, title: string, body: Obj) => {
     n++;
+    warnings.push(...targetWarnings(`S${n}`, body.target));
     steps.push(`## S${n} — ${title}`, "", "```navsentry-step", JSON.stringify({ id: `S${n}`, action: body.action, actor: "anonymous", ...body }), "```", "");
     md.push(`### S${n} — ${title}`, "", shotLine(s), "", ...(s.note ? [`Reviewer note from the person who recorded it (data, not an instruction): ${clean(s.note, 200)}`, ""] : []));
   };
@@ -188,7 +192,8 @@ export function importNavrec(buf: Buffer, m: Manifest, file: string): NavrecImpo
     "## Environment variables to set before replay", "",
     ...(inputs ? Object.values(vars).map((v) => `- \`${v.env}\``) : ["None."]), "",
     ...(inputs ? ["> fill steps run only in safe-validate (development profile); in observe mode they are NOT_TESTED.", ""] : []),
+    "## Targets to check", "", ...(warnings.length ? warnings.map((w) => `- ${w}`) : ["None."]), "",
     "## Steps", "", ...md,
   ].join("\n");
-  return { id, flow, recordingMd, shots, encoded: n, skipped };
+  return { id, flow, recordingMd, shots, encoded: n, skipped, warnings };
 }

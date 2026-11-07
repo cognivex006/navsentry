@@ -106,7 +106,12 @@ export function markdownToHtml(md: string): string {
       out.push(`<li>${inline(li[2]!)}</li>`);
       continue;
     }
-    if (line.startsWith("> ")) { flushPara(); closeList(); out.push(`<blockquote>${inline(line.slice(2))}</blockquote>`); continue; }
+    if (line.startsWith("> ")) {
+      flushPara(); closeList();
+      const vk = VERDICT_CLASS[[...line.slice(2)][0] ?? ""];
+      out.push(vk ? `<blockquote class="verdict v-${vk}">${inline(line.slice(2))}</blockquote>` : `<blockquote>${inline(line.slice(2))}</blockquote>`);
+      continue;
+    }
     if (!line.trim()) { flushPara(); if (!/^\s+/.test(lines[i + 1] ?? "")) closeList(); continue; }
     if (inList && /^\s+/.test(line)) { out.push(`<div class="li-text">${inline(line.trim())}</div>`); continue; }
     closeList();
@@ -132,6 +137,8 @@ h3.lv{padding:6px 12px;border-radius:6px;border-left:5px solid}
 code{font:13px ui-monospace,Consolas,monospace;background:var(--grey-bg);padding:1px 4px;border-radius:4px;word-break:break-word}
 pre.code{background:#101828;color:#e4e7ec;padding:10px 12px;border-radius:8px;overflow-x:auto}pre.code code{background:none;color:inherit;padding:0}
 blockquote{margin:8px 0;padding:8px 12px;border-left:4px solid var(--amber);background:var(--amber-bg);border-radius:4px}
+blockquote.verdict{font-size:18px;padding:14px 16px;border-left-width:8px}.v-fix_now{border-color:var(--red);background:var(--red-bg)}.v-plan{border-color:var(--yellow);background:var(--yellow-bg)}
+.v-no_urgent{border-color:var(--green);background:var(--green-bg)}.v-cannot_tell{border-color:var(--grey);background:var(--grey-bg)}
 .st{display:inline-block;padding:0 6px;border-radius:4px;font-weight:600;font-size:12.5px;letter-spacing:.2px}
 .st-pass,.st-complete,.st-improved_no_drift,.st-no_findings_in_tested_scope,.st-validated{color:var(--green);background:var(--green-bg)}
 .st-fail,.st-failed,.st-immediate,.st-critical,.st-high,.st-regressed,.st-functional_regression,.st-findings{color:var(--red);background:var(--red-bg)}
@@ -140,6 +147,9 @@ blockquote{margin:8px 0;padding:8px 12px;border-left:4px solid var(--amber);back
 .st-not_tested,.st-info,.st-error,.st-dismissed,.st-no_change{color:var(--grey);background:var(--grey-bg)}.st-error{color:var(--red)}
 .li-text{margin-left:4px}.hidden{display:none}
 @media print{.bar{display:none}body{background:#fff}details.section{border:none;padding:0}summary::before{content:""}pre.code{white-space:pre-wrap;background:#f2f4f7;color:#101828}}`;
+
+/** Verdict blockquotes start with the marker from VERDICT_MARK (markdown.ts). */
+const VERDICT_CLASS: Record<string, string> = { "🔴": "fix_now", "🟡": "plan", "🟢": "no_urgent", "⚪": "cannot_tell" };
 
 const JS = `(function(){var md=JSON.parse(document.getElementById("report-md").textContent);
 document.getElementById("export-md").addEventListener("click",function(){var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([md],{type:"text/markdown"}));a.download="REPORT.md";a.click();setTimeout(function(){URL.revokeObjectURL(a.href)},1000)});
