@@ -11,9 +11,10 @@
 | `TEST-REPORT.md` | With `--flows`: functional report (en/th). Security result first, then functional results by level. See [FLOWS.md](FLOWS.md). |
 | `junit.xml` | With `--flows --junit`: one testsuite per flow, one testcase per step (NOT_TESTED/INCONCLUSIVE → skipped) |
 
-`navsentry report --input run.json --format markdown|html|json|sarif [--lang th]` re-renders from a validated run file. `--input flows.json --format markdown|json|junit` re-renders a flow result.
+`navsentry report --input run.json --format markdown|html|json|sarif [--lang th] [--out <file>]` re-renders from a validated run file. `--out` writes the file and never overwrites one; without it, HTML is refused on a terminal (scan already wrote `REPORT.html`) and every format still goes to stdout when piped. `--input flows.json --format markdown|json|junit` re-renders a flow result.
 
 ## Reading a report
+- **Verdict:** the first line of the Summary answers "Do I need to fix something now?": 🔴 yes (an IMMEDIATE or CAUTION finding, or test objects left behind), 🟡 schedule it (PLANNED findings only), 🟢 no fix needed in the tested scope (not proof of security), ⚪ can't tell (an incomplete run, or flows that failed or did not run, when nothing needs a fix now). `scan` prints the same line, and `scan --json` has it as `verdict`.
 - **Execution status** (COMPLETE/PARTIAL/FAILED) is about the tool; **security result** (FINDINGS / NO_FINDINGS_IN_TESTED_SCOPE / INCOMPLETE) is about the target.
 - Coverage lists every catalog case; NOT_TESTED rows carry a reason (manual-active, sast-only, planned, disabled…).
 - Every report has the same twelve sections, in this order. A section without data says so.
