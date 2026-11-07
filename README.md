@@ -32,6 +32,14 @@ npm install -g https://github.com/cognivex006/navsentry/releases/download/v0.2.0
 navsentry doctor
 ```
 
+From a source checkout, build and link it instead, so `navsentry` works in every folder without `npx --prefix`:
+
+```bash
+npm install && npm run build && npm link
+```
+
+`navsentry doctor` shows whether `navsentry` is on PATH (section "Agent launch (MCP)"). If it is not, an MCP host fails with `CONNECTION_CLOSED`; doctor prints a `claude mcp add` line with absolute paths that works without PATH.
+
 ### Agent plugins
 
 Each plugin adds the `navsentry` skill and the `navsentry-doctor` skill. The plugins call the CLI, so install the CLI first.

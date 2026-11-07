@@ -21,7 +21,7 @@ import { dirname, join, resolve } from "node:path";
 import { CASES, CATEGORIES } from "./catalog.js";
 import { compareRuns, renderCompareMarkdown } from "./compare.js";
 import { ConfigError, loadManifest } from "./config.js";
-import { DoctorError, HOSTS, applySkillUpdate, doctorReport, normalizeHost, planSkillUpdate, pluginCommands, type Host } from "./doctor.js";
+import { DoctorError, HOSTS, applySkillUpdate, doctorReport, launchCheck, normalizeHost, planSkillUpdate, pluginCommands, type Host } from "./doctor.js";
 import { renderJson, renderMarkdown, renderSarif, securityResult, validateRunResult } from "./report/render.js";
 import { executeTest, planRun } from "./runner.js";
 import { analyzeRun } from "./flow/analyze.js";
@@ -872,7 +872,8 @@ async function doctor(argv: string[]): Promise<number> {
   const hosts: readonly Host[] = host ? [host] : HOSTS;
   const r = doctorReport(hosts, undefined, project);
   const transports = await Promise.all(allAdapters().map((a) => a.probe()));
-  if (argv.includes("--json")) { print(JSON.stringify({ ...r, node: process.versions.node, platform: `${process.platform}-${process.arch}`, transports }, null, 2)); return 0; }
+  const launch = launchCheck();
+  if (argv.includes("--json")) { print(JSON.stringify({ ...r, node: process.versions.node, platform: `${process.platform}-${process.arch}`, transports, launch }, null, 2)); return 0; }
   print(`navsentry ${TOOL_VERSION} · node ${process.versions.node} · ${process.platform}-${process.arch}`);
   print(`package: ${r.packageRoot}`);
   print("\nTransports");
@@ -889,6 +890,13 @@ async function doctor(argv: string[]): Promise<number> {
     else if (mine.some((i) => i.kind === "plugin" && i.status !== "CURRENT")) print(`\n${h}: plugin not current. Update: ${cmds.update.join(" && ")}`);
     if (mine.some((i) => i.kind === "skill" && i.status !== "CURRENT")) print(`\n${h}: skill copy not current. Update: navsentry doctor update --host ${h} --scope <user|project>`);
   }
+  print("\nAgent launch (MCP)");
+  if (launch.onPath) print(`  OK        navsentry on PATH: ${launch.onPath}`);
+  else {
+    print("  NOT_FOUND navsentry is not on PATH. An MCP host that runs `navsentry mcp` then fails with CONNECTION_CLOSED.");
+    print("            Fix: npm install -g <release tarball>, or `npm link` in a NavSentry checkout, or register the server by absolute path:");
+  }
+  print(`  register: claude mcp add navsentry -- ${[launch.mcpCommand.command, ...launch.mcpCommand.args].map((a) => (/\s/.test(a) ? `"${a}"` : a)).join(" ")}`);
   print("\nNothing was installed or changed. Doctor makes no network requests.");
   return r.manifests.some((m) => m.status !== "CURRENT") ? 2 : 0;
 }

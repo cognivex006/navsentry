@@ -5,6 +5,7 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Added
+- `navsentry doctor` has an "Agent launch (MCP)" section: it says whether `navsentry` is on PATH and prints a `claude mcp add` command. Without PATH, the command uses absolute paths. A missing PATH entry was why MCP hosts reported `CONNECTION_CLOSED`. `doctor --json` includes it as `launch`. README documents `npm link` for source checkouts.
 - 0.3.0-f NavSentry Recorder (SPEC-0.3.0 §7, owner decisions D7 and D10). A Chrome/Edge MV3 extension in `extension/`, loaded unpacked and shipped in the package. It records clicks, field changes and submits with a screenshot per step.
   - **What it never records:** typed values, and screenshots of password fields.
   - **Scope:** taken from an imported `navsentry.json` (`targets.origins`). Host access is asked one origin at a time.
