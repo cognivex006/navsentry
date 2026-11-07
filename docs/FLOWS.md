@@ -222,6 +222,8 @@ Chrome and Edge have a built-in **Recorder** panel in DevTools.
 navsentry flow from-recording --input journey.json --out navsentry/flows/drafts
 ```
 
+The recording never carries a manifest. NavSentry checks every recorded URL against your `navsentry.json`, so run the import in your project folder or pass `--config`. Without one, the error names the `navsentry init <origin>` command for the recorded origin. Invisible characters in page text (for example a left-to-right mark before a file name) are removed. Targets that look cut, such as an ellipsis or a short file-name end like `TS.md`, are listed under "Targets to check" in IMPORT.md or RECORDING.md.
+
 The import works like this:
 
 - It reads the file as data and sends nothing.
