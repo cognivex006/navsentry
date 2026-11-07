@@ -45,7 +45,7 @@ export function selectForApproval(docs: FlowDoc[], pick: (d: FlowDoc) => boolean
 
 /** Asks once for the whole set. Returns the approver's name; throws ApproveError on any refusal. */
 export async function confirmApproval(p: ApprovePrompter, todo: FlowDoc[], opts: { by?: string; owner?: string } = {}): Promise<string> {
-  if (!todo.length) throw new ApproveError("nothing to approve: every selected flow already has a valid approval");
+  if (!todo.length) throw new ApproveError("nothing to approve"); // the CLI reports an empty selection itself (exit 0)
   p.say(`Flows to approve (${todo.length}):`);
   for (const d of todo) for (const l of approvalSummary(d)) p.say(l);
   p.say("Approving lets NavSentry replay these steps and treat their findings as VALIDATED. Editing a flow later invalidates its approval.");

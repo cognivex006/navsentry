@@ -734,21 +734,23 @@ export async function approveCommand(rest: string[], prompter?: ApprovePrompter)
     return isDir ? rel !== "" && rel !== ".." && !rel.startsWith(".." + sep) && !isAbsolute(rel) : rel === "";
   };
   if (!docs.some(inSel)) throw new UsageError(isDir ? `no .flow.md files in ${target}` : "--flows must be inside --root (default: its own directory)");
-  for (const d of docs.filter(inSel)) {
-    const missing = d.header.requires.filter((id) => !d.deps?.some((x) => x.header.id === id));
-    if (missing.length) throw new UsageError(`cannot approve ${d.header.id}: required flow(s) ${missing.join(", ")} not found in ${root}`);
-  }
   // SPEC-0.2.0 §4.5: fixture and login entries are part of the approved content, so the manifest is
   // bound before anything is judged approved or stale.
-  const cfg = arg(rest, "--config") ?? (existsSync(resolve(DEFAULT_MANIFEST)) ? resolve(DEFAULT_MANIFEST) : undefined);
+  const cfgArg = arg(rest, "--config");
+  const cfg = cfgArg ? resolve(cfgArg) : existsSync(resolve(DEFAULT_MANIFEST)) ? resolve(DEFAULT_MANIFEST) : undefined;
   const manifest = cfg ? loadManifest(cfg) : undefined;
   if (manifest) bindManifest(docs, manifest);
-  else if (docs.filter(inSel).some((d) => d.steps.some((s) => s.fixture))) throw new UsageError("this flow set uses fixtures: pass --config <manifest> so the approval covers the fixture entries");
   const { todo, current } = selectForApproval(docs, inSel);
   // A dependent is never approved on top of a draft: unapproved dependencies join the same decision.
   const seen = new Set(todo.map((d) => d.header.id));
   const addDeps = (d: FlowDoc) => { for (const x of d.deps ?? []) if (!isApproved(x) && !seen.has(x.header.id)) { seen.add(x.header.id); todo.push(x); addDeps(x); } };
   for (const d of [...todo]) addDeps(d);
+  // Checked over everything that will be approved, pulled-in dependencies included.
+  for (const d of [...docs.filter(inSel), ...todo]) {
+    const missing = d.header.requires.filter((id) => !d.deps?.some((x) => x.header.id === id));
+    if (missing.length) throw new UsageError(`cannot approve ${d.header.id}: required flow(s) ${missing.join(", ")} not found in ${root}`);
+  }
+  if (!manifest && todo.some((d) => d.steps.some((s) => s.fixture))) throw new UsageError("this flow set uses fixtures: pass --config <manifest> so the approval covers the fixture entries");
   let p = prompter;
   let rl: ReturnType<typeof createInterface> | undefined;
   if (!p) {

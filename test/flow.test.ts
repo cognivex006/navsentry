@@ -357,4 +357,10 @@ test("approve once: an unapproved dependency joins the decision, never left as a
   assert.equal(await approveCommand(["--flows", join(dir, "dependent.flow.md")], p), 0);
   assert.ok(p.said.some((l) => /base is included because a selected flow requires it/.test(l)));
   assert.deepEqual(loadFlowFiles(dir).docs.map((d) => `${d.header.id}:${d.header.review.status}`).sort(), ["base:approved", "dependent:approved"]);
+  // A pulled-in dependency is checked like a selected flow: one with a missing requirement stops the whole decision.
+  const d2 = mkdtempSync(join(tmpdir(), "navsentry-approve-deps2-"));
+  writeFileSync(join(d2, "mid.flow.md"), mk("mid", ["ghost"]));
+  writeFileSync(join(d2, "top.flow.md"), mk("top", ["mid"]));
+  await assert.rejects(approveCommand(["--flows", join(d2, "top.flow.md")], owner(["Team A", "yes"])), /cannot approve mid: required flow\(s\) ghost not found/);
+  assert.deepEqual(loadFlowFiles(d2).docs.map((d) => d.header.review.status), ["draft", "draft"]);
 });

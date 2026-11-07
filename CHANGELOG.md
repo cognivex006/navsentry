@@ -77,7 +77,7 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 
 ### Changed
 - **Approve once (breaking):** `flow approve` needs an interactive terminal, like `init`. Without one it is refused, even with `--by`. That stops pipes and agent shell tools; the consumer skill also forbids agents from running it, because a pseudo-terminal could still type. Unapproved flows that a selected flow requires join the same decision.
-  - `--flows` takes a folder. Every draft or stale approval in it is listed with its steps, requests and state-changing steps, and approved with one name and one yes. Valid approvals are left alone.
+  - `--flows` takes a folder. Every draft or stale approval in it is listed with its steps, requests and state-changing steps, and approved with one name and one yes. Valid approvals are left alone; when nothing needs approval it says so and exits 0.
   - `--by` is optional: the approver is asked for, with the manifest owner as the default.
   - `navsentry next` suggests the single folder command, and the consumer skill asks the user to run it.
 - **Breaking (development only):** `browse type --env` accepts only `NAVSENTRY_*` variable names. Before, any name was accepted, so a page that told an agent to type, for example, `AWS_SECRET_ACCESS_KEY` could send that host secret to the target (hard rule 7, independent review). Rename the variable, for example `NAVSENTRY_LOGIN_PASSWORD`.
