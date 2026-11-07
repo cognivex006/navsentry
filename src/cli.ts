@@ -41,6 +41,7 @@ import { ScopeGate } from "./scope.js";
 import { TOOL_VERSION } from "./types.js";
 import { SessionRefused, sendCommand, startSession } from "./visual/session.js";
 import { renderVisualSession } from "./visual/report.js";
+import { draftFlowFromSession } from "./visual/flow-draft.js";
 import { renderHtml } from "./report/html.js";
 import { paint } from "./report/color.js";
 import { nextSteps, renderNext } from "./next.js";
@@ -68,9 +69,13 @@ Usage:
                  [--env development|production] [--url <in-scope URL>] [--flows <path>] [--out <dir>] [--project <dir>]
                  no --mode means page; --deep means spider with --analyze. page without --url scans the seed paths, like test; flow equals test --flows <path> --flows-only.
                  spider crawls from the seed paths, grouping pages by template; scan --engine computer-use exits 3: use browse.
-  navsentry browse start --config <manifest.json> --url <in-scope URL> [--actor <name>] [--idle-seconds <n>] [--out <dir>] [--project <dir>]
-  navsentry browse screenshot|status|end --session <id> [--project <dir>]
-  navsentry browse click --x <px> --y <px> | scroll --dx <px> --dy <px> --session <id> [--project <dir>]
+  navsentry browse start [--config <manifest.json>] --url <in-scope URL> [--actor <name>] [--idle-seconds <n>] [--out <dir>] [--project <dir>] [--headed]
+  navsentry browse screenshot|snapshot|status --session <id> [--project <dir>]
+  navsentry browse click --ref <e12> | --x <px> --y <px> --session <id>      (refs come from snapshot)
+  navsentry browse type --ref <e12> --env <VAR> | --text <text> --session <id>   (no values in logs; no literal text in password fields)
+  navsentry browse key --key Enter|Tab|Escape|Backspace|Arrow*|PageUp|PageDown|Home|End --session <id>
+  navsentry browse scroll --dx <px> --dy <px> --session <id>
+  navsentry browse end --session <id> [--save-flow <dir>]   (writes a draft flow from the action log)
                  visual driver (development only, transports.visual_computer_use: true): NavSentry owns the browser,
                  every request goes through ScopeGate and the Budget; start runs until end, idle timeout or deadline.
   navsentry workspace status|clean [--project <dir>] [--dry-run] [--cache-max-age-days <n>]
@@ -434,36 +439,64 @@ async function browseCommand(argv: string[]): Promise<number> {
     if (!Number.isInteger(idleSeconds) || idleSeconds < 10 || idleSeconds > 3600) throw new UsageError("--idle-seconds must be an integer between 10 and 3600");
     let h: Awaited<ReturnType<typeof startSession>>;
     try {
-      h = await startSession({ manifest: m, projectDir: project, url, idleSeconds, ...(arg(rest, "--actor") ? { actor: need(rest, "--actor") } : {}) });
+      h = await startSession({ manifest: m, projectDir: project, url, idleSeconds, headed: rest.includes("--headed"), ...(arg(rest, "--actor") ? { actor: need(rest, "--actor") } : {}) });
     } catch (e) {
       if (e instanceof SessionRefused) throw new UsageError(e.message);
       throw e;
     }
     print(`SESSION: ${h.id}`);
-    const { result, workspace } = await h.done;
+    const { result, workspace, saveFlow } = await h.done;
     const outArg = arg(rest, "--out");
     const out = outArg ? resolve(outArg) : join(workspace.root, ".navsentry", "runs", `browse-${h.id}`);
+    let flowFile: string | undefined;
+    if (saveFlow) {
+      // A draft flow from the action log; never overwrites, and it is an authorized write in the project.
+      try {
+        const d = draftFlowFromSession(result);
+        mkdirSync(saveFlow, { recursive: true });
+        flowFile = join(saveFlow, `${d.id}.flow.md`);
+        if (existsSync(flowFile)) throw new Error(`${flowFile} already exists`);
+        authorize(workspace, flowFile);
+        writeFileSync(flowFile, d.text, { flag: "wx" });
+        result.flowDraft = flowFile;
+      } catch (e) {
+        result.incompleteReasons.push(`--save-flow: ${(e as Error).message}`);
+        flowFile = undefined;
+      }
+    }
     const write = () => {
       mkdirSync(out, { recursive: true });
       for (const [n, c] of [["session.json", JSON.stringify(result, null, 2)], ["VISUAL-SESSION.md", renderVisualSession(result)]] as const) { authorize(workspace, join(out, n)); writeFileSync(join(out, n), c); }
-      return 2;
+      return 2 + (flowFile ? 1 : 0);
     };
-    write();
-    result.workspace = endRun(workspace, 2);
+    const promoted = write();
+    result.workspace = endRun(workspace, promoted);
     if (result.workspace.status !== "PASS") result.incompleteReasons.push(`workspace check ${result.workspace.status}`);
     write();
     print(`ended=${result.endReason} actions=${result.actions.length} requests=${result.requests.length} findings=${result.findings.length} workspace=${result.workspace.status}`);
     print(`REPORT: ${join(out, "VISUAL-SESSION.md")}`);
+    if (flowFile) print(`FLOW: ${flowFile}`);
     if (result.workspace.status === "FAIL") return 4;
     if (result.findings.length) return 1;
     return result.executionStatus === "COMPLETE" ? 0 : 2;
   }
-  const cmds = ["screenshot", "click", "scroll", "status", "end"] as const;
-  if (!cmds.includes(sub as (typeof cmds)[number])) throw new UsageError("browse start|screenshot|click|scroll|status|end");
+  const cmds = ["screenshot", "snapshot", "click", "type", "key", "scroll", "status", "end"] as const;
+  if (!cmds.includes(sub as (typeof cmds)[number])) throw new UsageError("browse start|screenshot|snapshot|click|type|key|scroll|status|end");
   const id = need(rest, "--session");
   if (!/^[A-Za-z0-9-]{8,64}$/.test(id)) throw new UsageError("--session must be a session id printed by browse start");
   const num = (k: string) => { const v = Number(need(rest, k)); if (!Number.isInteger(v)) throw new UsageError(`${k} must be an integer`); return v; };
-  const cmd = sub === "click" ? { cmd: "click" as const, x: num("--x"), y: num("--y") } : sub === "scroll" ? { cmd: "scroll" as const, dx: num("--dx"), dy: num("--dy") } : { cmd: sub as "screenshot" | "status" | "end" };
+  let cmd: Parameters<typeof sendCommand>[1];
+  if (sub === "click") cmd = rest.includes("--ref") ? { cmd: "click", ref: need(rest, "--ref") } : { cmd: "click", x: num("--x"), y: num("--y") };
+  else if (sub === "scroll") cmd = { cmd: "scroll", dx: num("--dx"), dy: num("--dy") };
+  else if (sub === "type") {
+    // The value never travels on the command line for --env: only the variable name does.
+    if (rest.includes("--env") === rest.includes("--text")) throw new UsageError("browse type needs --ref and exactly one of --env <VAR> or --text <text>");
+    const i = rest.indexOf("--text");
+    if (i >= 0 && (rest[i + 1] === undefined || rest[i + 1]!.startsWith("--"))) throw new UsageError("--text needs a value that does not start with --");
+    cmd ={ cmd: "type", ref: need(rest, "--ref"), ...(i >= 0 ? { text: rest[i + 1] ?? "" } : { env: need(rest, "--env") }) };
+  } else if (sub === "key") cmd = { cmd: "key", key: need(rest, "--key") };
+  else if (sub === "end") cmd = { cmd: "end", ...(rest.includes("--save-flow") ? { saveFlow: resolve(need(rest, "--save-flow")) } : {}) };
+  else cmd = { cmd: sub as "screenshot" | "snapshot" | "status" };
   let res: Record<string, unknown>;
   try {
     res = await sendCommand(join(projectRoot(project), ".navsentry", "work", id), cmd);

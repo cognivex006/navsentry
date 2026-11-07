@@ -5,6 +5,18 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Added
+- 0.3.0-d visual driver middle path (SPEC-0.3.0 §5, owner decisions D5 and D6). Every request still goes through ScopeGate and the Budget.
+  - **`browse snapshot`:** lists the page's interactive elements with refs (e1, e2…), roles, accessible names and an in-scope flag for links. It never includes field values, and names are redacted.
+  - **`browse click --ref <ref>`:** clicks by ref; coordinates still work. The role and name of the clicked element are logged.
+  - **`browse type --ref <ref>`:** fills a text field, with `--env <VAR>` (the value is read in the session and treated as a known secret) or with `--text` (short, non-secret).
+    - Literal text is refused in password fields and when it looks like a secret or personal data.
+    - Values are never logged; the log keeps the env name, the length, and a sha256 prefix for literal text.
+    - A POST submit is still refused.
+  - **`browse key --key`:** presses one key from an allowlist (Enter, Tab, Escape, Backspace, arrows, PageUp, PageDown, Home, End).
+  - **`browse end --save-flow <dir>`:** writes a draft E2E flow from the action log. Typed inputs become env variables. The draft is parsed before writing and never overwrites a file.
+  - **MCP tools:** `navsentry_browse_snapshot`, `navsentry_browse_type` and `navsentry_browse_key` are new; `navsentry_browse_click` accepts `ref`; `navsentry_browse_end` accepts `save_flow`.
+  - **`--headed` is refused for now.** It needs the full Chromium build, which is recorded as PENDING_REVIEW in `governance/third-party.json`; only the headless shell is approved (hard rule 2). Human-action logging for headed sessions comes with that approval.
+  - Threat model TM-39.
 - 0.3.0-b agent-first use (SPEC-0.3.0 §3.2, owner decision D1):
   - **`--json`:** `test`, `scan` and `compare` accept `--json` and print a machine-readable summary: report paths, counts by action level, gaps and next commands.
   - **`navsentry next --run <dir>`:** lists actions by level, gaps (NOT_TESTED, sampled-out pages, incomplete flows) and the next commands, with zero network. Each command is marked as sending traffic or not, and owner decisions are marked as such.
