@@ -18,6 +18,22 @@ function result(ruleId: string, ex: Exchange, status: CheckStatus, summary: stri
   return { ruleId, status, target: `${ex.record.method} ${ex.record.url}`, transport: ex.record.transport, summary, observations, requestIds: [ex.record.id], ...(reason ? { reason } : {}) };
 }
 
+
+/**
+ * A body scan that saw only part of the body (capture truncated or aborted, or a body longer than the
+ * scanned window) keeps a FAIL (the match is evidence) but never turns "nothing found" into PASS.
+ */
+export function bodyBound(ex: Exchange, r: CheckResult, scanned: number): CheckResult {
+  if (r.status !== "PASS") return r;
+  const c = ex.raw?.capture;
+  const len = ex.raw?.body.length ?? 0;
+  const why = c && c.status !== "complete" ? `response body ${c.status} (${c.reason ?? "capture stopped"})`
+    : c && c.retainedBytes < c.decodedBytes ? `only ${c.retainedBytes} of ${c.decodedBytes} body bytes retained`
+    : len > scanned ? `only the first ${scanned} of ${len} body bytes were scanned` : undefined;
+  if (!why) return r;
+  return { ...r, status: "INCONCLUSIVE", summary: `${r.summary} in the inspected part; the rest was not inspected`, reason: why };
+}
+
 const isHtml = (ex: Exchange) => /text\/html|application\/xhtml/i.test(h1(ex, "content-type") ?? "");
 const isHttps = (ex: Exchange) => ex.record.url.startsWith("https:");
 const hasBody = (ex: Exchange) => (ex.raw?.body.length ?? 0) > 0;
@@ -115,7 +131,7 @@ export function checkVersionDisclosure(ex: Exchange): CheckResult {
     const m = body.match(/(Apache|nginx|Microsoft-IIS|Apache Tomcat|Jetty|Kestrel|Express)[/ ]v?\d+(\.\d+)+/i);
     if (m) hits.push(`error page: ${m[0].slice(0, 60)}`);
   }
-  return hits.length ? result(id, ex, "FAIL", "Product version disclosed", hits) : result(id, ex, "PASS", "No version numbers in headers or error page");
+  return hits.length ? result(id, ex, "FAIL", "Product version disclosed", hits) : isHtml(ex) && ex.raw.status >= 400 ? bodyBound(ex, result(id, ex, "PASS", "No version numbers in headers or error page"), 65536) : result(id, ex, "PASS", "No version numbers in headers or error page");
 }
 
 const ERROR_SIGNATURES: [string, RegExp][] = [
@@ -133,10 +149,10 @@ const ERROR_SIGNATURES: [string, RegExp][] = [
 export function checkErrorDisclosure(ex: Exchange): CheckResult {
   const id = "NSC-ERR-001";
   if (!ex.raw) return result(id, ex, "ERROR", "No response", [], ex.record.error);
-  if (!hasBody(ex)) return result(id, ex, "PASS", "No body");
+  if (!hasBody(ex)) return bodyBound(ex, result(id, ex, "PASS", "No body"), 262144);
   const body = ex.raw.body.toString("utf8", 0, 262144);
   const hits = ERROR_SIGNATURES.filter(([, re]) => re.test(body)).map(([n]) => n);
-  return hits.length ? result(id, ex, "FAIL", `Internal error details exposed (HTTP ${ex.raw.status})`, hits) : result(id, ex, "PASS", "No stack trace or internal error signature");
+  return hits.length ? result(id, ex, "FAIL", `Internal error details exposed (HTTP ${ex.raw.status})`, hits) : bodyBound(ex, result(id, ex, "PASS", "No stack trace or internal error signature"), 262144);
 }
 
 const PRIVATE_IP = /\b(10\.(?:\d{1,3}\.){2}\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|127\.\d{1,3}\.\d{1,3}\.\d{1,3}|169\.254\.\d{1,3}\.\d{1,3})\b/g;
@@ -150,7 +166,7 @@ export function checkInternalIp(ex: Exchange): CheckResult {
   if (!ex.raw) return result(id, ex, "ERROR", "No response", [], ex.record.error);
   const inHeaders = (headerText(ex).match(PRIVATE_IP) ?? []).length;
   const inBody = (ex.raw.body.toString("utf8", 0, 262144).match(PRIVATE_IP) ?? []).length;
-  if (inHeaders + inBody === 0) return result(id, ex, "PASS", "No private IP literals");
+  if (inHeaders + inBody === 0) return bodyBound(ex, result(id, ex, "PASS", "No private IP literals"), 262144);
   return result(id, ex, "FAIL", "Private IP address literals disclosed", [`headers: ${inHeaders} match(es)`, `body: ${inBody} match(es)`, "values masked"]);
 }
 
@@ -160,7 +176,7 @@ export function checkEmail(ex: Exchange): CheckResult {
   const id = "NSC-INFO-004";
   if (!ex.raw) return result(id, ex, "ERROR", "No response", [], ex.record.error);
   const hits = (ex.raw.body.toString("utf8", 0, 262144).match(EMAIL) ?? []).filter((e) => !/\.(png|jpe?g|gif|svg|webp|css|js)$/i.test(e));
-  if (!hits.length) return result(id, ex, "PASS", "No email addresses");
+  if (!hits.length) return bodyBound(ex, result(id, ex, "PASS", "No email addresses"), 262144);
   const domains = [...new Set(hits.map((e) => e.split("@")[1]?.toLowerCase().replace(/^[^.]+\./, "*.")))].slice(0, 5);
   return result(id, ex, "FAIL", `${hits.length} email address(es) in response`, [`count: ${hits.length}`, `domain shapes: ${domains.join(", ")}`, "addresses masked"]);
 }
@@ -171,7 +187,7 @@ export function checkPii(ex: Exchange): CheckResult {
   const body = ex.raw.body.toString("utf8", 0, 1048576);
   const ids = (body.match(/(?<![\d.])\d[- ]?\d{4}[- ]?\d{5}[- ]?\d{2}[- ]?\d(?![\d.])/g) ?? []).filter(isThaiNationalId).length;
   const cards = (body.match(/(?<![\d.])(?:\d[ -]?){13,19}(?![\d.])/g) ?? []).filter((m) => /^[3-6]/.test(m) && luhn(m)).length;
-  if (ids + cards === 0) return result(id, ex, "PASS", "No checksum-valid national ID or card numbers");
+  if (ids + cards === 0) return bodyBound(ex, result(id, ex, "PASS", "No checksum-valid national ID or card numbers"), 1048576);
   return result(id, ex, "FAIL", "Checksum-valid personal identifiers in response", [`thai-national-id (mod-11 valid): ${ids}`, `card-number (Luhn valid): ${cards}`, "values never stored"]);
 }
 
