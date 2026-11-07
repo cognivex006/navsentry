@@ -1,7 +1,7 @@
 /**
  * Local demo against the disposable fixture app (127.0.0.1 only, synthetic data).
  *   node dist/scripts/demo.js run    -> writes docs/samples/{before,after}/ + compare.md
- *   node dist/scripts/demo.js serve  -> serves vulnerable on :4173 and secure on :4174 for browser rechecks
+ *   node dist/scripts/demo.js serve [--variant vulnerable|secure] [--port 4173]  -> demo shop v2 on one origin
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -11,14 +11,21 @@ import { loadFlowFiles } from "../src/flow/parse.js";
 import { renderFlowSection, renderJunit, renderTestMarkdown } from "../src/report/flow-render.js";
 import { executeTest } from "../src/runner.js";
 import { FIXTURE_TOKENS, startDemo } from "../test/fixtures/demo-server.js";
+import { startDemoSite } from "../test/fixtures/demo-site.js";
 import { localManifest } from "../test/helpers.js";
 
 const mode = process.argv[2] ?? "run";
 
 if (mode === "serve") {
-  const v = await startDemo("vulnerable", 4173);
-  const s = await startDemo("secure", 4174);
-  console.log(`vulnerable: ${v.origin}\nsecure:     ${s.origin}\n(Ctrl+C to stop)`);
+  // Demo v2 (SPEC-0.3.0 §8): one origin; restart with --variant secure for the after-run.
+  const i = process.argv.indexOf("--variant");
+  const variant = i > 0 ? process.argv[i + 1] : "vulnerable";
+  if (variant !== "vulnerable" && variant !== "secure") throw new Error("--variant must be vulnerable or secure");
+  const p = process.argv.indexOf("--port");
+  const port = p > 0 ? Number(process.argv[p + 1]) : 4173;
+  if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error("--port must be 1024-65535");
+  const site = await startDemoSite(variant, port);
+  console.log(`demo shop (${variant}): ${site.origin}/\n(Ctrl+C to stop; restart with --variant ${variant === "vulnerable" ? "secure" : "vulnerable"} to compare)`);
 } else {
   const v = await startDemo("vulnerable", 4173);
   const s = await startDemo("secure", 4174);

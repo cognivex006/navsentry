@@ -4,6 +4,16 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 
 ## [Unreleased]
 
+### Added
+- 0.3.0-a (SPEC-0.3.0 §3.1, §8): `navsentry init <url>` writes `navsentry.json` after you confirm authorization and name an owner on an interactive terminal (refused without a TTY, so an agent cannot answer for you). Staging and production also ask for the reference and expiry, loopback and private hosts need a separate approval, and cloud metadata addresses are refused. An existing manifest is never overwritten.
+- Commands use `./navsentry.json` when `--config` is omitted, and say so on stderr.
+- `navsentry scan` without `--mode` scans the seed page; `scan --deep` is spider with `--analyze`.
+- Demo v2: `node dist/scripts/demo.js serve [--variant vulnerable|secure]` serves a linked demo shop (products, search, sign-in form) on one origin, so before/after compare shows only real changes. `examples/demo/` has a manifest and two approved flows, and [docs/TOUR.md](docs/TOUR.md) walks through every mode.
+
+### Changed
+- `serve` now starts one demo shop on port 4173 instead of two fixtures on 4173 and 4174.
+- The lint warning for E2E flows with UI steps points to `--engine playwright` instead of saying the browser transport does not exist.
+
 ## [0.2.0] - 2026-11-05
 
 ### Fixed

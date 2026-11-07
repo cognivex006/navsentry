@@ -1,0 +1,39 @@
+{
+  "version": "1",
+  "project": "navsentry-demo-shop",
+  "environment": "local",
+  "authorization": {
+    "acknowledged": true,
+    "owner": "demo-owner"
+  },
+  "targets": {
+    "origins": ["http://127.0.0.1:4173"],
+    "allowed_paths": ["/**"],
+    "denied_paths": ["/admin/**"],
+    "seed_paths": ["/"]
+  },
+  "network": {
+    "allow_private": [
+      { "host": "127.0.0.1", "approved_by": "demo-owner", "reason": "local disposable NavSentry demo shop (demo.js serve)" }
+    ]
+  },
+  "safety": {
+    "mode": "observe",
+    "max_pages": 60,
+    "max_requests": 300,
+    "max_requests_per_second": 10,
+    "max_duration_seconds": 300,
+    "concurrency": 1
+  },
+  "transports": {
+    "order": ["direct-http", "playwright-browser", "visual-computer-use"],
+    "visual_computer_use": true
+  },
+  "actors": {
+    "reader_a": { "authorization_header_env": "NAVSENTRY_DEMO_READER_A_AUTH" },
+    "reader_b": { "authorization_header_env": "NAVSENTRY_DEMO_READER_B_AUTH" },
+    "admin": { "authorization_header_env": "NAVSENTRY_DEMO_ADMIN_AUTH" }
+  },
+  "checks": { "disabled": [] },
+  "report": { "language": "en", "formats": ["json", "markdown", "sarif"], "evidence": "redacted-only" }
+}
