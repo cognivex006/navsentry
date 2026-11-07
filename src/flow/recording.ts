@@ -31,9 +31,47 @@ export interface RecordingImport {
   report: string;
   encoded: number;
   skipped: { index: number; type: string; reason: string }[];
+  /** Targets that look cut; listed in the report, never guessed. */
+  warnings: string[];
 }
 
-const clean = (s: string) => s.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim();
+/** First navigate origin in a DevTools Recorder export, for the missing-manifest hint. Never throws. */
+export function recordingOrigin(raw: unknown): string | undefined {
+  if (!isObj(raw) || !Array.isArray(raw.steps)) return undefined;
+  for (const st of raw.steps) {
+    if (isObj(st) && st.type === "navigate" && typeof st.url === "string") {
+      try { const u = new URL(st.url); if (u.protocol === "http:" || u.protocol === "https:") return u.origin; } catch { /* next */ }
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Control and invisible formatting characters (C0, DEL, C1, zero-width, bidi marks and isolates,
+ * BOM, soft hyphen) are removed: they come from page text such as an LRM before a file name, and
+ * would make a target that never matches on replay.
+ */
+export const cleanText = (s: string) => s.replace(/[\u0000-\u001f\u007f-\u009f]/g, " ").replace(/[\u00ad\u200b-\u200f\u202a-\u202e\u2060-\u2069\ufeff]/g, "").replace(/\s+/g, " ").trim();
+const clean = cleanText;
+
+/** A target text that looks cut by the recorder or the page: an ellipsis, or a very short file name such as "TS.md". */
+export function truncationHint(text: string): string | undefined {
+  if (/(\u2026|\.\.\.)$/.test(text)) return "ends with an ellipsis, so the page probably shortened it";
+  if (/^[^\s./]{1,3}\.[A-Za-z0-9]{1,5}$/.test(text)) return "looks like the end of a longer file name";
+  return undefined;
+}
+
+/** Warnings for one encoded step's target, for the import report. */
+export function targetWarnings(stepId: string, target: unknown): string[] {
+  if (!isObj(target)) return [];
+  const out: string[] = [];
+  for (const k of ["text", "name", "label"] as const) {
+    const v = target[k];
+    const hint = typeof v === "string" ? truncationHint(v) : undefined;
+    if (hint) out.push(`${stepId}: target ${k} "${v}" ${hint}. Check it against the page and use the full visible text, or a role and name.`);
+  }
+  return out;
+}
 const ROLES = new Set(["button", "link", "textbox", "checkbox", "radio", "combobox", "tab", "menuitem", "heading", "searchbox", "option"]);
 
 /** Picks a target from Recorder selectors: aria/Name[role="x"] → role+name, aria/Name → text or label, text/… → text. CSS/XPath only → undefined. */
@@ -72,8 +110,10 @@ export function importRecording(raw: unknown, m: Manifest, file: string): Record
   let n = 0, inputs = 0;
   let inScope = false;
   let origin: string | undefined;
+  const warnings: string[] = [];
   const add = (title: string, body: Obj) => {
     n++;
+    warnings.push(...targetWarnings(`S${n}`, body.target));
     steps.push(`## S${n} — ${title}`, "", "```navsentry-step", JSON.stringify({ id: `S${n}`, action: body.action, actor: "anonymous", ...body }), "```", "");
   };
   raw.steps.forEach((st, index) => {
@@ -152,9 +192,11 @@ export function importRecording(raw: unknown, m: Manifest, file: string): Record
     ...(envs.length ? ["> fill steps run only in safe-validate (development profile). In observe mode they are NOT_TESTED and the flow is INCOMPLETE.", ""] : []),
     "## Steps not encoded", "",
     ...(skipped.length ? ["| Recording step | Type | Why |", "|---|---|---|", ...skipped.map((s) => `| ${s.index} | ${s.type} | ${s.reason} |`)] : ["None."]), "",
+    "## Targets to check", "",
+    ...(warnings.length ? warnings.map((w) => `- ${w}`) : ["None."]), "",
     "## Next", "",
     "- `navsentry flow lint --flows <dir>`",
     "- `navsentry scan --mode flow --flows <dir> --engine playwright` (development profile) after the owner approves it.", "",
   ].join("\n");
-  return { id, flow, report, encoded: n, skipped };
+  return { id, flow, report, encoded: n, skipped, warnings };
 }

@@ -5,6 +5,8 @@
  * and never overwrites an existing file.
  */
 import { isIP } from "node:net";
+import { existsSync } from "node:fs";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parseManifest, profileOf, type Manifest } from "./config.js";
 import { classifyAddress } from "./scope.js";
 
@@ -61,6 +63,26 @@ export function suggestEnvironment(t: ParsedTarget): InitEnvironment {
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "my-web";
 
+/**
+ * Warns when a public host gets the development profile: development allows safe-validate (writes
+ * with cleanup) and the browser engine, which is meant for hosts the owner runs locally or in dev.
+ */
+export function environmentWarning(t: ParsedTarget, environment: InitEnvironment): string | undefined {
+  if (t.privateLabel || profileOf(environment) !== "development") return undefined;
+  return `Warning: ${t.host} is not a loopback or private address, but environment ${environment} uses the development profile, which allows safe-validate writes and the browser engine. Use staging or production for a shared or public host.`;
+}
+
+/**
+ * True when `file` would be written inside a NavSentry source checkout. The repository is public,
+ * so a manifest naming a real target must not land there by accident.
+ */
+export function insideNavSentryCheckout(file: string, root: string): boolean {
+  const r = resolve(root);
+  const f = resolve(file);
+  const rel = relative(r, f);
+  return rel !== ".." && !rel.startsWith(".." + sep) && !isAbsolute(rel) && existsSync(join(r, ".git"));
+}
+
 /** Builds the manifest object and validates it with the normal parser (throws ConfigError). */
 export function buildInitManifest(a: InitAnswers): Record<string, unknown> {
   const t = parseTarget(a.url);
@@ -83,7 +105,8 @@ export function buildInitManifest(a: InitAnswers): Record<string, unknown> {
     targets: { origins: [t.origin], allowed_paths: ["/**"], denied_paths: [], seed_paths: [t.seedPath] },
     ...(t.privateLabel ? { network: { allow_private: [{ host: t.host, approved_by: owner, reason: "approved at navsentry init" }] } } : {}),
     safety: { mode: "observe" },
-    transports: { order: ["direct-http"], visual_computer_use: false },
+    // The approved headless shell is offered on every non-production profile (development today); scan refuses it on production.
+    transports: { order: production ? ["direct-http"] : ["direct-http", "playwright-browser"], visual_computer_use: false },
     checks: { disabled: [] },
     report: { language: a.language ?? "en", formats: ["json", "markdown", "sarif"], evidence: "redacted-only" },
   };
@@ -109,6 +132,11 @@ export async function askInit(p: Prompter, url: string, opts: { environment?: In
     environment = e as InitEnvironment;
   }
   p.say(`Target: ${t.origin} (environment ${environment}, ${profileOf(environment)} profile)`);
+  const warning = environmentWarning(t, environment);
+  if (warning) {
+    p.say(warning);
+    if (!yes(await p.ask(`Keep environment ${environment} for ${t.host}? (yes/no): `))) throw new InitError("environment not confirmed; nothing was written. Run again with --environment staging or production");
+  }
   if (!yes(await p.ask(`Do you own ${t.origin} or have written authorization to test it? (yes/no): `))) throw new InitError("authorization not confirmed; nothing was written");
   const owner = (await p.ask("Owner (person or team responsible for the target): ")).trim();
   if (!owner) throw new InitError("an owner is required; nothing was written");

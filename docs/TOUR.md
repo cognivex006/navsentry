@@ -36,7 +36,7 @@ cd examples/demo
 
 It holds `navsentry.json` (the manifest) and `flows/` (two approved story flows). Every command finds `navsentry.json` automatically, so no `--config` is needed.
 
-For your own application, create the manifest with `navsentry init <url>` instead. It asks you to confirm that you are authorized to test the target, then writes `navsentry.json`.
+For your own application, create the manifest with `navsentry init <url>` instead. It asks you to confirm that you are authorized to test the target, then writes `navsentry.json`. Run it from your own project folder: init refuses to write inside a NavSentry checkout, because the repository is public. On the development profile (`local`, `dev`) the manifest already lists `playwright-browser`, so `--engine playwright` works without editing it. If you pick `local` or `dev` for a host that is not loopback or private, init warns and asks again.
 
 ## 3. One page
 

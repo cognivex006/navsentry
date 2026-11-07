@@ -1,13 +1,15 @@
 # NavSentry Report — demo-before (local)
 
-- Run ID: `9a2a09b4-fa92-4433-99d5-aa4fb38b16ad`
-- Started: 2026-11-06T07:07:00.924Z · Finished: 2026-11-06T07:07:04.465Z
+- Run ID: `0858cfcf-c21b-49f2-9ae1-4207ddb50e1d`
+- Started: 2026-11-07T15:14:15.944Z · Finished: 2026-11-07T15:14:18.570Z
 - Tool: navsentry 0.2.0 · Node 26.13.0 · win32-x64
 - Mode: `observe` · Profile: `development` · Origins: `http://127.0.0.1:4173`
 - Execution status: **COMPLETE** · Security result: **FINDINGS**
 - Requests: 39/100 · Denied before execution: 4
 
 ## Summary
+
+> 🔴 **Do I need to fix something now?** Yes. Fix 11 issue(s) now, before the next release. They are listed under "What to do first".
 
 | 🔴 IMMEDIATE | 🟠 CAUTION | 🟡 PLANNED | 🔵 OPTIONAL | ⚪ INFO |
 |---|---|---|---|---|
