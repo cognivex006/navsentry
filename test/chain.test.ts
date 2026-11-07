@@ -1,13 +1,14 @@
 /** SPEC-0.1.3 milestone f: chained flows (`requires` / `imports`), SPEC §10 test 8. */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { approveCommand, main } from "../src/cli.js";
 import { flowHash } from "../src/flow/classify.js";
 import { lintFlows, topoOrder } from "../src/flow/lint.js";
-import { parseFlowText, resolveDeps, type FlowDoc } from "../src/flow/parse.js";
+import { approveText } from "../src/flow/author.js";
+import { loadFlowFiles, parseFlowText, resolveDeps, type FlowDoc } from "../src/flow/parse.js";
 import { executeTest } from "../src/runner.js";
 import { FIXTURE_TOKENS, startDemo } from "./fixtures/demo-server.js";
 import { localManifest } from "./helpers.js";
@@ -130,8 +131,17 @@ test("CLI: approve covers the closure; selection pulls in eligible dependencies;
     assert.equal(await main(["test", "--config", mpath, "--flows", flows, "--include-drafts", "--only", "order-detail", "--flows-only", "--project", dir, "--out", out]), 0);
     const fr = JSON.parse(readFileSync(join(out, "flows.json"), "utf8")) as { flows: { id: string; status: string }[] };
     assert.deepEqual(fr.flows.map((f) => `${f.id}:${f.status}`).sort(), ["list-orders:PASS", "order-detail:PASS"]);
-    // Approve only the dependent; in production the draft dependency is not selected.
-    assert.equal(await approveCommand(["--flows", join(flows, "detail.flow.md"), "--by", "owner"], { ask: async () => "yes", say: () => {} }), 0);
+    // flow approve pulls an unapproved dependency into the same decision.
+    const said: string[] = [];
+    const copy = join(dir, "flows-copy");
+    cpSync(flows, copy, { recursive: true });
+    assert.equal(await approveCommand(["--flows", join(copy, "detail.flow.md"), "--by", "owner"], { ask: async () => "yes", say: (l) => { said.push(l); } }), 0);
+    assert.ok(said.some((l) => /list-orders is included because a selected flow requires it/.test(l)));
+    assert.deepEqual(loadFlowFiles(copy).docs.map((d) => d.header.review.status), ["approved", "approved"]);
+    rmSync(copy, { recursive: true, force: true });
+    // A dependent approved before that rule (only its own header written): in production the draft dependency is not selected.
+    const detail = loadFlowFiles(flows).docs.find((d) => d.header.id === "order-detail")!;
+    writeFileSync(join(flows, "detail.flow.md"), approveText(detail, "owner", "2026-11-08"));
     const prod = join(dir, "prod.json");
     writeFileSync(prod, JSON.stringify({ ...base, environment: "production", authorization: { ...base.authorization, reference: "CHG-9", expires_at: "2099-01-01" } }));
     const pout = join(dir, "prod-run");

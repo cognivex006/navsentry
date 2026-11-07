@@ -17,7 +17,7 @@ import { parseExtractor, type ExtractorSpec } from "./analyzer/extractor.js";
 import { validatePageModel } from "./analyzer/page-model.js";
 import { Redactor } from "./redact.js";
 import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { CASES, CATEGORIES } from "./catalog.js";
 import { compareRuns, renderCompareMarkdown } from "./compare.js";
 import { ConfigError, loadManifest } from "./config.js";
@@ -26,7 +26,7 @@ import { renderJson, renderMarkdown, renderSarif, securityResult, validateRunRes
 import { executeTest, planRun } from "./runner.js";
 import { analyzeRun } from "./flow/analyze.js";
 import { approveText, initTemplate } from "./flow/author.js";
-import { ApproveError, confirmApproval, selectForApproval, type ApprovePrompter } from "./flow/approve.js";
+import { ApproveError, confirmApproval, isApproved, selectForApproval, type ApprovePrompter } from "./flow/approve.js";
 import { bindManifest, classify } from "./flow/classify.js";
 import { manualLine } from "./flow/execute.js";
 import { lintFlows } from "./flow/lint.js";
@@ -721,41 +721,52 @@ function selectFlows(m: Manifest, argv: string[]): { docs: FlowDoc[]; warnings: 
  * `prompter` is a test seam; the CLI passes none and builds one only on a TTY.
  */
 export async function approveCommand(rest: string[], prompter?: ApprovePrompter): Promise<number> {
-  const target = resolve(need(rest, "--flows"));
+  const flowsArg = need(rest, "--flows");
+  const target = resolve(flowsArg);
+  if (!existsSync(target)) throw new UsageError(`--flows ${flowsArg} does not exist`);
   const isDir = statSync(target).isDirectory();
   // Load the whole flow root so the approval hash covers the dependency closure.
   const root = resolve(arg(rest, "--root") ?? (isDir ? target : dirname(target)));
   const { docs, problems } = loadFlowFiles(root);
   if (problems.length) throw new FlowError(problems);
-  const inSel = (d: FlowDoc) => (isDir ? resolve(root, d.file).startsWith(target) : resolve(root, d.file) === target);
+  const inSel = (d: FlowDoc) => {
+    const rel = relative(target, resolve(root, d.file));
+    return isDir ? rel !== "" && rel !== ".." && !rel.startsWith(".." + sep) && !isAbsolute(rel) : rel === "";
+  };
   if (!docs.some(inSel)) throw new UsageError(isDir ? `no .flow.md files in ${target}` : "--flows must be inside --root (default: its own directory)");
-  const { todo, current } = selectForApproval(docs, inSel);
-  for (const d of todo) {
+  for (const d of docs.filter(inSel)) {
     const missing = d.header.requires.filter((id) => !d.deps?.some((x) => x.header.id === id));
     if (missing.length) throw new UsageError(`cannot approve ${d.header.id}: required flow(s) ${missing.join(", ")} not found in ${root}`);
   }
-  // SPEC-0.2.0 §4.5: fixture and login entries are part of the approved content.
+  // SPEC-0.2.0 §4.5: fixture and login entries are part of the approved content, so the manifest is
+  // bound before anything is judged approved or stale.
   const cfg = arg(rest, "--config") ?? (existsSync(resolve(DEFAULT_MANIFEST)) ? resolve(DEFAULT_MANIFEST) : undefined);
   const manifest = cfg ? loadManifest(cfg) : undefined;
   if (manifest) bindManifest(docs, manifest);
-  else if (todo.some((d) => d.steps.some((s) => s.fixture))) throw new UsageError("this flow set uses fixtures: pass --config <manifest> so the approval covers the fixture entries");
+  else if (docs.filter(inSel).some((d) => d.steps.some((s) => s.fixture))) throw new UsageError("this flow set uses fixtures: pass --config <manifest> so the approval covers the fixture entries");
+  const { todo, current } = selectForApproval(docs, inSel);
+  // A dependent is never approved on top of a draft: unapproved dependencies join the same decision.
+  const seen = new Set(todo.map((d) => d.header.id));
+  const addDeps = (d: FlowDoc) => { for (const x of d.deps ?? []) if (!isApproved(x) && !seen.has(x.header.id)) { seen.add(x.header.id); todo.push(x); addDeps(x); } };
+  for (const d of [...todo]) addDeps(d);
   let p = prompter;
   let rl: ReturnType<typeof createInterface> | undefined;
   if (!p) {
-    if (!process.stdin.isTTY || !process.stdout.isTTY) throw new UsageError(`flow approve is the owner's decision, so it runs only in an interactive terminal. Run it yourself: navsentry flow approve --flows ${rest[rest.indexOf("--flows") + 1]}`);
+    if (!process.stdin.isTTY || !process.stdout.isTTY) throw new UsageError(`flow approve is the owner's decision, so it runs only in an interactive terminal. Run it yourself: navsentry flow approve --flows ${flowsArg}`);
     rl = createInterface({ input: process.stdin, output: process.stdout });
     const r = rl;
     p = { ask: (q) => r.question(q), say: (l) => print(l) };
   }
   try {
     if (current.length) p.say(`already approved (unchanged): ${current.map((d) => d.header.id).join(", ")}`);
+    if (!todo.length) { p.say("nothing to approve: every selected flow already has a valid approval"); return 0; }
+    p.say(manifest ? `manifest: ${cfg}` : "manifest: none (no fixture or login entries are bound)");
+    for (const d of todo) if (d.bindings) p.say(`  ${d.header.id} is approved together with manifest entries: ${Object.keys(JSON.parse(d.bindings)).join(", ")}`);
+    for (const d of todo) if (!inSel(d)) p.say(`  ${d.header.id} is included because a selected flow requires it and it is not approved`);
     const by = await confirmApproval(p, todo, { ...(arg(rest, "--by") ? { by: arg(rest, "--by")! } : {}), ...(manifest ? { owner: manifest.authorization.owner } : {}) });
     const ref = arg(rest, "--reference");
     const today = new Date().toISOString().slice(0, 10);
-    for (const d of todo) {
-      if (d.bindings) p.say(`approving ${d.header.id} with manifest entries: ${Object.keys(JSON.parse(d.bindings)).join(", ")}`);
-      writeFileSync(resolve(root, d.file), approveText(d, by, today, ref));
-    }
+    for (const d of todo) writeFileSync(resolve(root, d.file), approveText(d, by, today, ref));
     p.say(`approved ${todo.map((d) => d.header.id).join(", ")} by ${by}; editing a flow invalidates its approval`);
     return 0;
   } catch (e) {

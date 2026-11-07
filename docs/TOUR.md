@@ -86,7 +86,7 @@ navsentry flow lint --flows flows
 navsentry flow approve --flows flows
 ```
 
-It shows a short summary of every draft in `flows/` and asks once: your name, then yes. This is the one step that stays with you; it is refused without an interactive terminal.
+It shows a short summary of every draft in `flows/` and asks once: your name, then yes. This is the one step that stays with you. It is refused without an interactive terminal, and the NavSentry skill forbids agents from running it.
 
 You can also draft flows from a run with `navsentry flow analyze --from-run runs/deep/run.json --out flows/drafts`.
 

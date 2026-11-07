@@ -1,8 +1,8 @@
 /**
  * `navsentry flow approve` (authorize once): the owner reviews a short summary of every draft in a
  * file or folder and approves them with one answer on an interactive terminal. The questions are
- * asked through a Prompter, and the CLI provides one only on a TTY, so an agent cannot approve on
- * the owner's behalf. Nothing here sends network traffic.
+ * asked through a Prompter, and the CLI provides one only on a TTY. That stops pipes and agent shell
+ * tools; a pseudo-terminal can still type, so the consumer skill also forbids agents from running it. Nothing here sends network traffic.
  */
 import { flowHash } from "./classify.js";
 import type { FlowDoc } from "./parse.js";
@@ -52,6 +52,6 @@ export async function confirmApproval(p: ApprovePrompter, todo: FlowDoc[], opts:
   let by = opts.by?.trim();
   if (!by) by = (await p.ask(`Approver name${opts.owner ? ` (${opts.owner})` : ""}: `)).trim() || opts.owner?.trim() || "";
   if (!by || by.length > 100) throw new ApproveError("an approver name (1-100 characters) is required; nothing was approved");
-  if (!yes(await p.ask(`Approve these ${todo.length} flow(s) as ${by}? (yes/no): `))) throw new ApproveError("not approved; nothing was changed");
+  if (!yes(await p.ask(`Approve these ${todo.length} flow(s) as ${by}? (yes/no, ใช่): `))) throw new ApproveError("not approved; nothing was changed");
   return by;
 }

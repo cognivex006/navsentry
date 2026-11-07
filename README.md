@@ -205,7 +205,7 @@ navsentry flow lint --config my-manifest.json --flows navsentry/flows
 navsentry flow approve --flows navsentry/flows
 ```
 
-The owner runs `flow approve` in their own terminal. It lists every draft in the folder (steps, requests, state-changing steps), asks for the approver name and one yes, and approves them all. Without an interactive terminal it is refused, so an agent cannot approve for you.
+The owner runs `flow approve` in their own terminal. It lists every draft in the folder (steps, requests, state-changing steps), asks for the approver name and one yes, and approves them all. It is refused without an interactive terminal, and the NavSentry skill forbids agents from running it.
 
 ```bash
 navsentry test --config my-manifest.json --flows navsentry/flows --out runs/before

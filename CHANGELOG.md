@@ -76,7 +76,7 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 - README gains *Scan modes at a glance*, *Computer Use (visual driver)* and *Try it locally*, written for the demo shop v2 in `examples/demo/`.
 
 ### Changed
-- **Approve once (breaking):** `flow approve` needs an interactive terminal, like `init`. Without one it is refused, so an agent can no longer approve flows for the owner, even with `--by`.
+- **Approve once (breaking):** `flow approve` needs an interactive terminal, like `init`. Without one it is refused, even with `--by`. That stops pipes and agent shell tools; the consumer skill also forbids agents from running it, because a pseudo-terminal could still type. Unapproved flows that a selected flow requires join the same decision.
   - `--flows` takes a folder. Every draft or stale approval in it is listed with its steps, requests and state-changing steps, and approved with one name and one yes. Valid approvals are left alone.
   - `--by` is optional: the approver is asked for, with the manifest owner as the default.
   - `navsentry next` suggests the single folder command, and the consumer skill asks the user to run it.

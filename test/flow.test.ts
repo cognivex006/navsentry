@@ -328,9 +328,33 @@ test("approve once: one summary and one yes approve every draft in a folder; no 
   assert.equal(await approveCommand(["--flows", flows], ok), 0);
   const docs = loadFlowFiles(flows).docs;
   assert.deepEqual(docs.map((d) => `${d.header.id}:${d.header.review.status}:${d.header.review.approved_by}:${d.header.review.content_sha256 === flowHash(d)}`).sort(), ["story-a:approved:Team A:true", "story-b:approved:Team A:true"]);
-  await assert.rejects(approveCommand(["--flows", flows], owner(["Team A", "yes"])), /nothing to approve/);
-  await assert.rejects(approveCommand(["--flows", join(flows, "story-a.flow.md")], owner(["", "yes"])), /nothing to approve/, "a valid approval is never rewritten");
+  const again = owner(["Team A", "yes"]);
+  assert.equal(await approveCommand(["--flows", flows], again), 0, "nothing to approve is not an error");
+  assert.ok(again.said.some((l) => /nothing to approve/.test(l)));
+  const before = readFileSync(join(flows, "story-a.flow.md"), "utf8");
+  assert.equal(await approveCommand(["--flows", join(flows, "story-a.flow.md")], owner(["", "yes"])), 0);
+  assert.equal(readFileSync(join(flows, "story-a.flow.md"), "utf8"), before, "a valid approval is never rewritten");
+  await assert.rejects(approveCommand(["--flows", join(dir, "missing")], owner([])), /does not exist/);
   const c = join(dir, "flows", "story-c.flow.md");
   assert.equal(await main(["flow", "init", "--id", "story-c", "--title", "Story C", "--out", flows]), 0);
   await assert.rejects(approveCommand(["--flows", c], owner(["", "yes"])), /approver name/, "no name and no manifest owner");
+  // A sibling folder that shares the name prefix is not part of the selection.
+  const root = join(dir, "nav");
+  assert.equal(await main(["flow", "init", "--id", "in-sel", "--title", "In", "--out", join(root, "flows")]), 0);
+  assert.equal(await main(["flow", "init", "--id", "sibling", "--title", "Sibling", "--out", join(root, "flows2")]), 0);
+  const sib = owner(["Team A", "yes"]);
+  assert.equal(await approveCommand(["--flows", join(root, "flows"), "--root", root], sib), 0);
+  assert.ok(!sib.said.some((l) => l.startsWith("- sibling")), "flows2 is not selected by --flows flows");
+  assert.equal(loadFlowFiles(join(root, "flows2")).docs[0]!.header.review.status, "draft");
+});
+
+test("approve once: an unapproved dependency joins the decision, never left as a draft under an approved dependent", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "navsentry-approve-deps-"));
+  const mk = (id: string, requires: string[]) => ["# " + id, "", "```navsentry-flow", JSON.stringify({ flow: "1", id, title: id, story: `story ${id}`, actors: ["anonymous"], level: "integration", ...(requires.length ? { requires } : {}) }, null, 2), "```", "", "## S1", "```navsentry-step", JSON.stringify({ id: "S1", action: "http", actor: "anonymous", request: { method: "GET", path: `/${id}` }, expect: { status: "2xx" } }), "```", ""].join("\n");
+  writeFileSync(join(dir, "base.flow.md"), mk("base", []));
+  writeFileSync(join(dir, "dependent.flow.md"), mk("dependent", ["base"]));
+  const p = owner(["Team A", "yes"]);
+  assert.equal(await approveCommand(["--flows", join(dir, "dependent.flow.md")], p), 0);
+  assert.ok(p.said.some((l) => /base is included because a selected flow requires it/.test(l)));
+  assert.deepEqual(loadFlowFiles(dir).docs.map((d) => `${d.header.id}:${d.header.review.status}`).sort(), ["base:approved", "dependent:approved"]);
 });
