@@ -443,6 +443,8 @@ export interface StepResult {
   assertions: AssertionResult[];
   requestIds: string[];
   securityCase?: string;
+  /** Browser engine only: PNG file name in the run's `shots/` folder, taken right after the step. */
+  screenshot?: string;
 }
 
 export interface FlowResult {

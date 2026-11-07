@@ -5,6 +5,11 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Added
+- Replay timeline: `scan --mode flow --engine playwright` takes a viewport screenshot of the headless browser right after every browser step (navigate, click, see, fill, select, submit).
+  - The PNGs go to `<run>/shots/`, which has its own `.gitignore`. At most 60 per run.
+  - TEST-REPORT.md gets a "Replay timeline" section with each step's status and screenshot. A FAIL step shows what was expected, what was observed and the page at that moment.
+  - `flows.json` steps carry `screenshot`.
+  - A failed screenshot never changes a step's result. The screenshots add no requests.
 - 0.3.0-f NavSentry Recorder (SPEC-0.3.0 §7, owner decisions D7 and D10). A Chrome/Edge MV3 extension in `extension/`, loaded unpacked and shipped in the package. It records clicks, field changes and submits with a screenshot per step.
   - **What it never records:** typed values, and screenshots of password fields.
   - **Scope:** taken from an imported `navsentry.json` (`targets.origins`). Host access is asked one origin at a time.

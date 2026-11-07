@@ -14,6 +14,7 @@
 `navsentry report --input run.json --format markdown|html|json|sarif [--lang th]` re-renders from a validated run file. `--input flows.json --format markdown|json|junit` re-renders a flow result.
 
 ## Reading a report
+- **Replay timeline** (browser flows): TEST-REPORT.md shows a screenshot of the headless browser after each browser step, from `<run>/shots/` (git-ignored, at most 60 per run). It is evidence of what NavSentry clicked and what the page showed, including the page at a failed step. To drive a page step by step yourself, use `navsentry browse start`.
 - **Execution status** (COMPLETE/PARTIAL/FAILED) is about the tool; **security result** (FINDINGS / NO_FINDINGS_IN_TESTED_SCOPE / INCOMPLETE) is about the target.
 - Coverage lists every catalog case; NOT_TESTED rows carry a reason (manual-active, sast-only, planned, disabled…).
 - Every report has the same twelve sections, in this order. A section without data says so.
