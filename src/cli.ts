@@ -30,7 +30,8 @@ import { ApproveError, confirmApproval, isApproved, selectForApproval, type Appr
 import { bindManifest, classify } from "./flow/classify.js";
 import { manualLine } from "./flow/execute.js";
 import { lintFlows } from "./flow/lint.js";
-import { FLOW_ID, FlowError, loadFlowFiles, type FlowDoc } from "./flow/parse.js";
+import { FLOW_ID, FlowError, loadFlowFiles, parseFlowText, type FlowDoc } from "./flow/parse.js";
+import { LoginDraftError, loginFlowFromDraft, type LoginDraft } from "./flow/login.js";
 import { renderFlowSection, renderJunit, renderTestMarkdown, validateFlowRunResult } from "./report/flow-render.js";
 import type { Manifest } from "./config.js";
 import type { AnalyzerResult, CodeInventory, Engine, FlowRunResult, RunResult, ScanMode } from "./types.js";
@@ -99,6 +100,7 @@ Story flows (Markdown test cases; zero network):
   navsentry flow analyze --config <manifest.json> --from-run <run.json> --out <dir> [--lang en|th]
   navsentry flow import --openapi <spec.json> --config <manifest.json> --out <dir>   (local OpenAPI JSON → drafts)
   navsentry flow from-recording --input <recording.json> [--config <manifest.json>] --out <dir>   (DevTools Recorder JSON or NavSentry Recorder .navrec.zip → draft)
+  navsentry flow login-from-draft --flows <draft.flow.md> --actor <name> --out <dir>   (sign-in draft → login flow + manifest entries to add by hand; no network)
   navsentry inventory --config <manifest.json> [--project <dir>] [--out <dir>]   (development: read-only code inventory)
   navsentry flow lint --config <manifest.json> --flows <path>
   navsentry flow approve --flows <file|dir> [--by <name>] [--config <manifest>] [--reference <ref>] [--root <flows-dir>]   (owner only, interactive terminal: one summary and one yes for every draft)
@@ -856,6 +858,30 @@ async function flowCommand(argv: string[]): Promise<number> {
       }
       print(`operations=${outp.operations.length} encoded=${outp.operations.filter((o) => o.encoded).length} draft flows written: ${written}; existing, not modified: ${outp.skippedExisting.length ? outp.skippedExisting.join(", ") : "none"}`);
       print(`IMPORT: ${join(dir, "IMPORT.md")}`);
+      return 0;
+    }
+    case "login-from-draft": {
+      // Login helper: a recorded sign-in draft becomes a login flow; the manifest is never edited here.
+      const path = resolve(need(rest, "--flows"));
+      if (!existsSync(path) || statSync(path).isDirectory()) throw new UsageError("--flows must name one .flow.md draft");
+      const parsed = parseFlowText(readFileSync(path, "utf8"), path.split(/[\\/]/).pop() ?? "draft.flow.md");
+      if (!parsed.doc) throw new FlowError(parsed.problems);
+      let ld: LoginDraft;
+      try { ld = loginFlowFromDraft(parsed.doc, need(rest, "--actor")); } catch (e) { if (e instanceof LoginDraftError) throw new UsageError(e.message); throw e; }
+      const dir = resolve(need(rest, "--out"));
+      mkdirSync(dir, { recursive: true });
+      const f = join(dir, `${ld.id}.flow.md`);
+      if (existsSync(f)) throw new UsageError(`${f} already exists; NavSentry never overwrites a flow`);
+      writeFileSync(f, ld.flow, { flag: "wx" });
+      print(`FLOW: ${f} (draft)`);
+      for (const m of ld.mapped) print(`  ${m.step} fills {{${m.to}}}`);
+      for (const d of ld.dropped) print(`  ${d.step} dropped: ${d.reason}`);
+      print("\nAdd these entries to navsentry.json yourself (owner decision: login actors need safe-validate on the development profile). Check auth_endpoints.login against the real sign-in request:");
+      print(ld.manifestSnippet);
+      const a = JSON.parse(ld.manifestSnippet).actors as Record<string, { username_env: string; password_env: string }>;
+      const env = Object.values(a)[0]!;
+      const actorName = Object.keys(a)[0]!;
+      print(`\nThen set ${env.username_env} and ${env.password_env} in your shell, set "actor": "${actorName}" on the steps that need the session, and approve with: navsentry flow approve --flows ${f}`);
       return 0;
     }
     case "from-recording": {
