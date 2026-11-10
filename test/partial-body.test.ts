@@ -49,3 +49,32 @@ test("an undecoded content-encoding is never a body PASS; JWT checks are bounded
   assert.equal(checkJwt(ex(`token ${jwt}`, {})).status, "PASS");
   assert.equal(checkJwt(ex(`token ${jwt}`, { status: "truncated" })).status, "INCONCLUSIVE", "a later weak token could be in the cut part");
 });
+
+test("email and JWT scans are linear: hostile 8 MiB bodies finish quickly, real values are still found", async () => {
+  const { findEmails, findJwts } = await import("../src/checks/passive.js");
+  assert.deepEqual(findEmails("mail admin@example.test, or ops.team+x@mail.example.co.th now"), ["admin@example.test", "ops.team+x@mail.example.co.th"]);
+  assert.deepEqual(findEmails("logo@2x.png xadmin@example.test"), ["logo@2x.png", "xadmin@example.test"]);
+  const b64 = (o: object) => Buffer.from(JSON.stringify(o)).toString("base64url");
+  const jwt = `${b64({ alg: "HS256" })}.${b64({ sub: "1" })}.sig`;
+  assert.deepEqual(findJwts(`Bearer ${jwt} and x${jwt}`), [jwt]);
+  for (const hostile of ["ab+".repeat(3_000_000), "a@".repeat(3_000_000), "eyJ-".repeat(2_000_000), "eyJaaaaaaaa.".repeat(600_000)]) {
+    const t0 = Date.now();
+    findEmails(hostile); findJwts(hostile);
+    assert.ok(Date.now() - t0 < 5000, `took ${Date.now() - t0} ms on ${hostile.slice(0, 12)}…`);
+  }
+});
+
+test("error signatures are bounded: still found, and hostile one-line bodies finish quickly", () => {
+  for (const leak of [
+    "at com.shop.web.OrderController.show(OrderController.java:42)",
+    "   at Shop.Web.Orders.Show(Int32 id) in C:\\src\\Orders.cs:line 17",
+    "Server Error in '/' Application.",
+    "Error\n    at show (/srv/app/orders.js:10:5)",
+    "Warning: Undefined variable $x in /var/www/index.php on line 3",
+  ]) assert.equal(checkErrorDisclosure(ex(leak, {})).status, "FAIL", leak);
+  for (const hostile of ["Warning: " + " in ".repeat(2_000_000), "at a" + ".b".repeat(3_000_000), "\n at " + "x (/".repeat(1_500_000), "Server Error in '" + "x".repeat(7_000_000)]) {
+    const t0 = Date.now();
+    checkErrorDisclosure(ex(hostile, {}));
+    assert.ok(Date.now() - t0 < 5000, `took ${Date.now() - t0} ms on ${hostile.slice(0, 14)}…`);
+  }
+});

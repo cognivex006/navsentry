@@ -21,6 +21,51 @@ function result(ruleId: string, ex: Exchange, status: CheckStatus, summary: stri
 /** Body checks scan the whole retained buffer, up to the default capture.memory_buffer_bytes. */
 export const BODY_SCAN_BYTES = 8 * 1024 * 1024;
 
+/** The scanned body text, decoded once per exchange and shared by every body check. */
+const TEXT = new WeakMap<Exchange, string>();
+export function bodyText(ex: Exchange): string {
+  let t = TEXT.get(ex);
+  if (t === undefined) { t = ex.raw?.body.toString("utf8", 0, BODY_SCAN_BYTES) ?? ""; TEXT.set(ex, t); }
+  return t;
+}
+
+const EMAIL_LOCAL = /[A-Za-z0-9._%+-]/;
+const EMAIL_AT = /^[A-Za-z0-9._%+-]{1,64}@(?:[A-Za-z0-9-]{1,63}\.){1,8}[A-Za-z]{2,24}(?![A-Za-z0-9-])/;
+
+/**
+ * Email addresses, found around each "@" with bounded, anchored matching: linear in the body size,
+ * so a hostile page cannot stall the scan (a global unbounded regex backtracks quadratically).
+ */
+export function findEmails(text: string, max = 1000): string[] {
+  const out: string[] = [];
+  for (let at = text.indexOf("@"); at !== -1 && out.length < max; at = text.indexOf("@", at + 1)) {
+    let start = at;
+    while (start > 0 && at - start < 64 && EMAIL_LOCAL.test(text[start - 1]!)) start--;
+    if (start > 0 && /[A-Za-z0-9_]/.test(text[start - 1]!)) continue; // the local part runs on: not a word boundary
+    const m = EMAIL_AT.exec(text.slice(start, at + 1 + 8 * 64 + 25));
+    if (m) out.push(m[0]);
+  }
+  return out;
+}
+
+const B64URL = /[A-Za-z0-9_-]/;
+
+/** JWT-shaped tokens (header.payload.signature), scanned forward from each "eyJ" at a boundary: linear. */
+export function findJwts(text: string, max = 10): string[] {
+  const out = new Set<string>();
+  const seg = (i: number) => { let j = i; while (j < text.length && j - i < 16384 && B64URL.test(text[j]!)) j++; return j; };
+  for (let i = text.indexOf("eyJ"); i !== -1 && out.size < max; i = text.indexOf("eyJ", i + 3)) {
+    if (i > 0 && B64URL.test(text[i - 1]!)) continue;
+    const a = seg(i);
+    if (a - i < 8 || text[a] !== ".") continue;
+    const b = seg(a + 1);
+    if (b - a - 1 < 5 || text[b] !== ".") continue;
+    const c = seg(b + 1);
+    out.add(text.slice(i, c));
+  }
+  return [...out];
+}
+
 /**
  * A body scan that saw only part of the body (capture truncated or aborted, bytes not decoded, or a
  * body longer than the scanned window) keeps a FAIL (the match is evidence) but never turns
@@ -131,7 +176,7 @@ export function checkVersionDisclosure(ex: Exchange): CheckResult {
     }
   }
   if (isHtml(ex) && ex.raw.status >= 400) {
-    const body = ex.raw.body.toString("utf8", 0, BODY_SCAN_BYTES);
+    const body = bodyText(ex);
     const m = body.match(/(Apache|nginx|Microsoft-IIS|Apache Tomcat|Jetty|Kestrel|Express)[/ ]v?\d+(\.\d+)+/i);
     if (m) hits.push(`error page: ${m[0].slice(0, 60)}`);
   }
@@ -141,13 +186,13 @@ export function checkVersionDisclosure(ex: Exchange): CheckResult {
 }
 
 const ERROR_SIGNATURES: [string, RegExp][] = [
-  ["Java stack trace", /\bat [a-z_$][\w$]*(\.[\w$]+)+\([\w$]+\.java:\d+\)/i],
-  [".NET stack trace", /\bat [\w.`<>]+\(.*\) in .+:line \d+/i],
-  ["ASP.NET error page", /Server Error in '.*' Application|<title>Runtime Error<\/title>|System\.Web\.HttpException/i],
+  ["Java stack trace", /\bat [a-z_$][\w$]{0,100}(?:\.[\w$]{1,100}){1,30}\([\w$]{1,100}\.java:\d{1,6}\)/i],
+  [".NET stack trace", /\bat [\w.`<>]{1,300}\([^)\n]{0,300}\) in [^\n]{1,300}?:line \d{1,6}/i],
+  ["ASP.NET error page", /Server Error in '[^'\n]{0,200}' Application|<title>Runtime Error<\/title>|System\.Web\.HttpException/i],
   ["Python traceback", /Traceback \(most recent call last\):/],
-  ["Node.js stack trace", /\n\s+at .+ \((\/|[A-Z]:\\).+:\d+:\d+\)/],
+  ["Node.js stack trace", /\n[ \t]{1,40}at [^\n(]{1,300} \((?:\/|[A-Z]:\\)[^\n)]{1,300}:\d{1,6}:\d{1,6}\)/],
   ["Go panic", /goroutine \d+ \[running\]:/],
-  ["PHP error", /(Fatal error|Warning|Parse error): .+ in .+ on line \d+/],
+  ["PHP error", /(?:Fatal error|Warning|Parse error): [^\n]{1,300}? in [^\n]{1,300}? on line \d{1,6}/],
   ["SQL error message", /(SQLSTATE\[|ORA-\d{5}|Microsoft OLE DB Provider for SQL Server|You have an error in your SQL syntax|PG::|SqlException)/i],
   ["Exception class name", /\b(java\.lang\.|System\.)[A-Z]\w*Exception\b/],
 ];
@@ -156,7 +201,7 @@ export function checkErrorDisclosure(ex: Exchange): CheckResult {
   const id = "NSC-ERR-001";
   if (!ex.raw) return result(id, ex, "ERROR", "No response", [], ex.record.error);
   if (!hasBody(ex)) return bodyBound(ex, result(id, ex, "PASS", "No body"), BODY_SCAN_BYTES);
-  const body = ex.raw.body.toString("utf8", 0, BODY_SCAN_BYTES);
+  const body = bodyText(ex);
   const hits = ERROR_SIGNATURES.filter(([, re]) => re.test(body)).map(([n]) => n);
   return hits.length ? result(id, ex, "FAIL", `Internal error details exposed (HTTP ${ex.raw.status})`, hits) : bodyBound(ex, result(id, ex, "PASS", "No stack trace or internal error signature"), BODY_SCAN_BYTES);
 }
@@ -171,17 +216,16 @@ export function checkInternalIp(ex: Exchange): CheckResult {
   const id = "NSC-INFO-003";
   if (!ex.raw) return result(id, ex, "ERROR", "No response", [], ex.record.error);
   const inHeaders = (headerText(ex).match(PRIVATE_IP) ?? []).length;
-  const inBody = (ex.raw.body.toString("utf8", 0, BODY_SCAN_BYTES).match(PRIVATE_IP) ?? []).length;
+  const inBody = (bodyText(ex).match(PRIVATE_IP) ?? []).length;
   if (inHeaders + inBody === 0) return bodyBound(ex, result(id, ex, "PASS", "No private IP literals"), BODY_SCAN_BYTES);
   return result(id, ex, "FAIL", "Private IP address literals disclosed", [`headers: ${inHeaders} match(es)`, `body: ${inBody} match(es)`, "values masked"]);
 }
 
-const EMAIL = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
 
 export function checkEmail(ex: Exchange): CheckResult {
   const id = "NSC-INFO-004";
   if (!ex.raw) return result(id, ex, "ERROR", "No response", [], ex.record.error);
-  const hits = (ex.raw.body.toString("utf8", 0, BODY_SCAN_BYTES).match(EMAIL) ?? []).filter((e) => !/\.(png|jpe?g|gif|svg|webp|css|js)$/i.test(e));
+  const hits = findEmails(bodyText(ex)).filter((e) => !/\.(png|jpe?g|gif|svg|webp|css|js)$/i.test(e));
   if (!hits.length) return bodyBound(ex, result(id, ex, "PASS", "No email addresses"), BODY_SCAN_BYTES);
   const domains = [...new Set(hits.map((e) => e.split("@")[1]?.toLowerCase().replace(/^[^.]+\./, "*.")))].slice(0, 5);
   return result(id, ex, "FAIL", `${hits.length} email address(es) in response`, [`count: ${hits.length}`, `domain shapes: ${domains.join(", ")}`, "addresses masked"]);
@@ -190,7 +234,7 @@ export function checkEmail(ex: Exchange): CheckResult {
 export function checkPii(ex: Exchange): CheckResult {
   const id = "NSC-PRIV-001";
   if (!ex.raw) return result(id, ex, "ERROR", "No response", [], ex.record.error);
-  const body = ex.raw.body.toString("utf8", 0, BODY_SCAN_BYTES);
+  const body = bodyText(ex);
   const ids = (body.match(/(?<![\d.])\d[- ]?\d{4}[- ]?\d{5}[- ]?\d{2}[- ]?\d(?![\d.])/g) ?? []).filter(isThaiNationalId).length;
   const cards = (body.match(/(?<![\d.])(?:\d[ -]?){13,19}(?![\d.])/g) ?? []).filter((m) => /^[3-6]/.test(m) && luhn(m)).length;
   if (ids + cards === 0) return bodyBound(ex, result(id, ex, "PASS", "No checksum-valid national ID or card numbers"), BODY_SCAN_BYTES);
@@ -258,7 +302,6 @@ export function checkCookies(ex: Exchange): CheckResult[] {
   ];
 }
 
-const JWT_RE = /\beyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]*/g;
 
 function b64json(s: string): Record<string, unknown> | undefined {
   try {
@@ -272,8 +315,7 @@ function b64json(s: string): Record<string, unknown> | undefined {
 export function checkJwt(ex: Exchange): CheckResult {
   const id = "NSC-SESS-004";
   if (!ex.raw) return result(id, ex, "ERROR", "No response", [], ex.record.error);
-  const text = `${headerText(ex)}\n${ex.raw.body.toString("utf8", 0, BODY_SCAN_BYTES)}`;
-  const tokens = [...new Set(text.match(JWT_RE) ?? [])].slice(0, 10);
+  const tokens = [...new Set([...findJwts(headerText(ex)), ...findJwts(bodyText(ex))])].slice(0, 10);
   if (!tokens.length) return result(id, ex, "NOT_TESTED", "No JWT observed in response", [], "no token");
   const problems: string[] = [];
   tokens.forEach((t, i) => {
