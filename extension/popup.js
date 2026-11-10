@@ -83,7 +83,7 @@ async function render() {
     } else if (s.withheld && s.type !== "left-scope") {
       const p = document.createElement("div");
       p.className = "withheld";
-      p.textContent = "🔒 screenshot withheld (password field)";
+      p.textContent = `🔒 no screenshot (${s.withheldReason ?? "password field"})`;
       li.append(p);
     }
     const tools = document.createElement("div");
@@ -148,7 +148,7 @@ async function save() {
     if (s.target) out.target = s.target;
     if (s.note) out.note = s.note;
     if (s.end) out.end = true;
-    if (s.withheld) out.withheld = true;
+    if (s.withheld) { out.withheld = true; if (s.withheldReason) out.withheldReason = String(s.withheldReason).slice(0, 60); }
     if (s.shot) {
       const url = (await chrome.storage.local.get(`shot_${rec.id}_${s.n}`))[`shot_${rec.id}_${s.n}`];
       if (url) {
@@ -169,9 +169,16 @@ async function save() {
   const host = new URL(rec.origin).hostname.replace(/[^a-z0-9.-]/gi, "-");
   try {
     const id = await chrome.downloads.download({ url, filename: `navsentry-${host}-${rec.createdAt.slice(0, 10)}.navrec.zip`, saveAs: true });
-    // The path the person chose, so the next command can be copied as is.
-    const [item] = await chrome.downloads.search({ id });
-    await chrome.storage.local.set({ lastSaved: item?.filename || `navsentry-${host}-${rec.createdAt.slice(0, 10)}.navrec.zip` });
+    // Wait for the download to finish (or be cancelled) before offering the command for its path.
+    const done = await new Promise((resolve) => {
+      const check = async () => { const [it] = await chrome.downloads.search({ id }); if (!it || it.state !== "in_progress") { chrome.downloads.onChanged.removeListener(on); resolve(it); } };
+      const on = (d) => { if (d.id === id && d.state) void check(); };
+      chrome.downloads.onChanged.addListener(on);
+      void check();
+    });
+    if (!done || done.state !== "complete" || !done.filename) { msg("Not saved (the download was cancelled or failed)."); return; }
+    // The path stays in this browser's extension storage only, to show the next command.
+    await chrome.storage.local.set({ lastSaved: done.filename });
     msg(`Saved ${steps.length} step(s). Run the command below in your project folder.`);
     await render();
   } finally {
@@ -205,5 +212,4 @@ $("copy").onclick = async () => {
 };
 $("save").onclick = () => void save();
 chrome.storage.onChanged.addListener(() => void render());
-chrome.tabs.onActivated.addListener(() => void render());
 void render();

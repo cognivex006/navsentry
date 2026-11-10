@@ -47,6 +47,8 @@ $("file").onchange = async () => {
 $("reset").onclick = async () => {
   if (!confirm("Remove the imported scope? Recording stops working until you import a manifest again.")) return;
   const list = (await chrome.storage.local.get("allowedOrigins")).allowedOrigins ?? [];
+  // A running recording stops first, so nothing is recorded after the scope is gone.
+  await chrome.runtime.sendMessage({ cmd: "stop" });
   await chrome.storage.local.remove("allowedOrigins");
   // Host access granted earlier is given back too.
   if (list.length) await chrome.permissions.remove({ origins: list.map((o) => `${o}/*`) });

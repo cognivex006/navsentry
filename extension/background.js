@@ -31,26 +31,34 @@ async function allowedOrigin(url) {
   return chrome.permissions.contains({ origins: [`${o}/*`] });
 }
 
-async function shot(windowId) {
+/**
+ * Screenshot of the recording tab only: captureVisibleTab photographs whatever tab is active, so
+ * a click that opened another tab or left the origin gets no screenshot.
+ */
+async function shot(rec) {
   try {
-    return await chrome.tabs.captureVisibleTab(windowId, { format: "jpeg", quality: 60 });
+    const [active] = await chrome.tabs.query({ active: true, windowId: rec.windowId });
+    if (!active || active.id !== rec.tabId || !active.url) return { reason: "another tab was in front" };
+    if (new URL(active.url).origin !== rec.origin || !(await allowedOrigin(active.url))) return { reason: "the page was outside the scope" };
+    return { img: await chrome.tabs.captureVisibleTab(rec.windowId, { format: "jpeg", quality: 60 }) };
   } catch {
-    return null;
+    return { reason: "the browser refused the screenshot" };
   }
 }
 
-async function addStep(step, windowId, withScreenshot) {
+async function addStep(step, withheldReason) {
   const rec = await get("rec", null);
   if (!rec || !rec.active) return;
   if (rec.steps.length >= MAX_STEPS) { rec.active = false; rec.stoppedReason = `step limit ${MAX_STEPS} reached`; await set({ rec }); return; }
   const n = rec.steps.length + 1;
   const s = { n, at: new Date().toISOString(), ...step };
-  if (withScreenshot) {
+  if (!withheldReason) {
     // Let the page react to the action before the screenshot.
     await new Promise((r) => setTimeout(r, 400));
-    const img = await shot(windowId);
-    if (img) { await set({ [`shot_${rec.id}_${n}`]: img }); s.shot = true; }
-  } else s.withheld = true;
+    const r = await shot(rec);
+    if (r.img) { await set({ [`shot_${rec.id}_${n}`]: r.img }); s.shot = true; }
+    else { s.withheld = true; s.withheldReason = r.reason; }
+  } else { s.withheld = true; s.withheldReason = withheldReason; }
   rec.steps.push(s);
   await set({ rec });
 }
@@ -69,7 +77,7 @@ async function start(tab) {
   if (old) await clearShots(old);
   const rec = { id: crypto.randomUUID(), active: true, tabId: tab.id, windowId: tab.windowId, origin: new URL(tab.url).origin, createdAt: new Date().toISOString(), steps: [], lastUrl: tab.url, inScope: true };
   await set({ rec });
-  await addStep({ type: "navigate", url: displayUrl(tab.url) }, tab.windowId, true);
+  await addStep({ type: "navigate", url: displayUrl(tab.url) });
   await inject(tab.id);
   return { ok: true };
 }
@@ -88,8 +96,9 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
       if (!["click", "change", "submit"].includes(msg.type)) return reply({ ok: false });
       const t = msg.target && typeof msg.target === "object" ? msg.target : undefined;
       const target = t ? { role: String(t.role || "").slice(0, 40), name: String(t.name || "").slice(0, 120), tag: String(t.tag || "").slice(0, 20), password: t.password === true, ...(t.type ? { type: String(t.type).slice(0, 20) } : {}), ...(t.label ? { label: String(t.label).slice(0, 120) } : {}) } : undefined;
-      // A password field is never photographed.
-      await addStep({ type: msg.type, ...(target ? { target } : {}) }, rec.windowId, !(target?.password));
+      // No screenshot of a password field, and none right after typing: the typed text would be on it.
+      const why = target?.password ? "password field" : msg.type === "change" ? "typed text would be visible" : undefined;
+      await addStep({ type: msg.type, ...(target ? { target } : {}) }, why);
       return reply({ ok: true });
     }
     if (msg?.cmd === "start") {
@@ -120,12 +129,12 @@ chrome.tabs.onUpdated.addListener((tabId, info, tab) => serial(async () => {
   const ok = (await allowedOrigin(tab.url)) && new URL(tab.url).origin === rec.origin;
   if (!ok) {
     // Out of scope: record the fact without the address or a screenshot, and pause until the person comes back.
-    if (rec.inScope) { rec.inScope = false; await set({ rec }); await addStep({ type: "left-scope" }, rec.windowId, false); }
+    if (rec.inScope) { rec.inScope = false; await set({ rec }); await addStep({ type: "left-scope" }, "outside the scope"); }
     return;
   }
   const back = !rec.inScope;
   rec.inScope = true;
   await set({ rec });
-  if (back) await addStep({ type: "navigate", url: displayUrl(tab.url) }, rec.windowId, true);
+  if (back) await addStep({ type: "navigate", url: displayUrl(tab.url) });
   await inject(tabId);
 }));

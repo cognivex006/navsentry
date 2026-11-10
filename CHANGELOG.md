@@ -77,10 +77,10 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 
 ### Changed
 - Recorder extension UI:
-  - Before you start, the popup shows whether the open tab is in the imported scope, and lists what the recorder never does: it never records typed values, never photographs password fields, has no network access, and records only scoped origins.
+  - Before you start, the popup shows whether the open tab is in the imported scope, and what the recorder never does. It never stores typed values and has no network access. It takes no screenshot right after typing or on a password field, and it photographs only the tab you started while that tab is on an in-scope origin; before this change, a click that opened another tab could photograph that tab. The popup also warns that a later screenshot can show text that stays on the page.
   - Buttons are enabled only when they can act. Steps are numbered cards.
-  - After saving, the popup shows the exact `flow from-recording` command for the saved file, with a Copy button. Clear asks first.
-  - The options page shows each origin's access state. A new button removes the scope and gives back any host access that was granted.
+  - After the download completes, the popup shows the exact `flow from-recording` command for the saved file, with a Copy button. A cancelled save is reported as such. Clear asks first.
+  - The options page shows each origin's access state. A new button stops any recording, removes the scope and gives back any host access that was granted.
   - Dark mode. Not yet exercised in a headed browser (pending governance); the static checks now also forbid HTML sinks.
 - **Approve once (breaking):** `flow approve` needs an interactive terminal, like `init`. Without one it is refused, even with `--by`. That stops pipes and agent shell tools; the consumer skill also forbids agents from running it, because a pseudo-terminal could still type. Unapproved flows that a selected flow requires join the same decision.
   - `--flows` takes a folder. Every draft or stale approval in it is listed with its steps, requests and state-changing steps, and approved with one name and one yes. Valid approvals are left alone; when nothing needs approval it says so and exits 0.
