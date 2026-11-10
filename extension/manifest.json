@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "NavSentry Recorder",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Record a user journey on a site you are authorized to test: steps and screenshots, never typed values. Saves a .navsentry recording for `navsentry flow from-recording`.",
   "minimum_chrome_version": "116",
   "action": { "default_title": "NavSentry Recorder", "default_popup": "popup.html" },

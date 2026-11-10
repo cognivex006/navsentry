@@ -46,7 +46,7 @@ test("finds plugin and skill installations per host without touching them", () =
     mkdirSync(join(s.project, ".claude", "skills", "navsentry"), { recursive: true });
     writeFileSync(join(s.project, ".claude", "skills", "navsentry", "SKILL.md"), skill("navsentry"));
     mkdirSync(join(s.home, ".gemini", "config", "plugins", "navsentry", ".antigravity-plugin"), { recursive: true });
-    writeFileSync(join(s.home, ".gemini", "config", "plugins", "navsentry", ".antigravity-plugin", "plugin.json"), JSON.stringify({ name: "navsentry", version: "0.3.0" }));
+    writeFileSync(join(s.home, ".gemini", "config", "plugins", "navsentry", ".antigravity-plugin", "plugin.json"), JSON.stringify({ name: "navsentry", version: "99.0.0" }));
 
     const found = findInstallations(["claude", "codex", "gemini", "antigravity"], s.home, s.project);
     const by = (host: string, kind: string) => found.filter((i) => i.host === host && i.kind === kind).map((i) => i.status);
