@@ -176,7 +176,7 @@ async function save() {
       chrome.downloads.onChanged.addListener(on);
       void check();
     });
-    if (!done || done.state !== "complete" || !done.filename) { msg("Not saved (the download was cancelled or failed)."); return; }
+    if (!done || done.state !== "complete" || !done.filename) { await chrome.storage.local.remove("lastSaved"); msg("Not saved (the download was cancelled or failed)."); await render(); return; }
     // The path stays in this browser's extension storage only, to show the next command.
     await chrome.storage.local.set({ lastSaved: done.filename });
     msg(`Saved ${steps.length} step(s). Run the command below in your project folder.`);
