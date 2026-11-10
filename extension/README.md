@@ -15,14 +15,17 @@ It is not published in the Chrome Web Store or Edge Add-ons (owner decision D7).
 
 ## Set the scope
 
-1. Open the extension's options (**Details → Extension options**, or **Scope** in the popup).
+1. Open the extension's options (**Details → Extension options**, or **Scope settings** in the popup).
 2. Choose your project's `navsentry.json`. Only `targets.origins` is read, and only when `authorization.acknowledged` is true.
 
-The first time you press **Record** on an origin, the browser asks you to grant the recorder access to that one origin. It never asks for all sites.
+The first time you press **Record** on an origin, the browser asks you to grant the recorder access to that one origin. It never asks for all sites. **Remove the imported scope** on the same page clears the scope and gives back any access you granted.
 
 ## Record
 
-1. Open a page of the application and press **● Record** in the popup.
+1. Open a page of the application and open the popup. Check what it shows before you start:
+   - **Scope badge:** *in scope ✓*, *not in scope* (with the origins that are) or *no scope*. **● Record** is enabled only on an in-scope page.
+   - **What this recorder never does:** it never records what you type, never photographs password fields, has no network access, and records only origins in your imported scope.
+   Then press **● Record**.
 2. Use the site normally. Each click, field change and form submit becomes a step with a screenshot.
    - Typed values are not recorded; only that a field was filled is recorded.
    - Password fields are never photographed.
@@ -32,7 +35,9 @@ The first time you press **Record** on an origin, the browser asks you to grant 
    - **Delete** steps you do not want.
    - Tick **flow ends here** on the last step that matters.
    - Add a note for the reviewer, for example "order list is shown".
-5. Press **⬇ Save**. The browser's download dialog saves `navsentry-<host>-<date>.navrec.zip`.
+5. Press **⬇ Save file**. The browser's download dialog saves `navsentry-<host>-<date>.navrec.zip`. The popup then shows the exact `navsentry flow from-recording` command for the file you saved, with a **Copy command** button.
+
+Buttons are enabled only when they can act: Stop while recording, Save and Clear after stopping. Clear asks before it deletes the recording.
 
 ## Turn it into a flow
 

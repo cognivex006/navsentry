@@ -148,6 +148,11 @@ test("extension: no network APIs, narrow permissions, no field values read", () 
     for (const bad of [/\bfetch\s*\(/, /XMLHttpRequest/, /WebSocket/, /sendBeacon/, /\beval\s*\(/, /new Function\b/, /importScripts/, /EventSource/, /<script[^>]+src=["']https?:/i])
       assert.ok(!bad.test(src), `${f} must not use ${bad}`);
   }
+  // Page text is rendered as text: no HTML injection sinks in the extension's own pages.
+  for (const f of readdirSync(EXT).filter((x) => x.endsWith(".js"))) assert.ok(!/innerHTML|outerHTML|insertAdjacentHTML|document\.write/.test(readFileSync(join(EXT, f), "utf8")), `${f} uses an HTML sink`);
+  // The popup states its guarantees and the scope before recording.
+  const popup = readFileSync(join(EXT, "popup.html"), "utf8");
+  for (const s of ["Never records what you type", "Never photographs password fields", "Never sends anything", "scope-badge"]) assert.ok(popup.includes(s), `popup shows ${s}`);
   const content = readFileSync(join(EXT, "content.js"), "utf8");
   assert.ok(!/\.value\b/.test(content), "the content script never reads a field value");
   assert.ok(!existsSync(join(EXT, "node_modules")));

@@ -7,12 +7,16 @@
 </head>
 <body class="options">
 <h1>NavSentry Recorder — scope</h1>
-<p>Import the NavSentry manifest (<code>navsentry.json</code>) of the application you are authorized to test. Only <code>targets.origins</code> is read; nothing else from the file is kept.</p>
-<p><input id="file" type="file" accept=".json,application/json"></p>
-<p id="msg" class="msg" role="status"></p>
+<section class="scope">
+  <p><b>Step 1.</b> Choose the <code>navsentry.json</code> of the application you are authorized to test. <code>navsentry init &lt;url&gt;</code> wrote it in your project folder.</p>
+  <p><input id="file" type="file" accept=".json,application/json"></p>
+  <p id="msg" class="msg" role="status" aria-live="polite"></p>
+  <p class="hint">Only <code>targets.origins</code> and the authorization flag are read. Nothing else from the file is kept, and nothing is sent anywhere.</p>
+</section>
 <h2>Origins in scope</h2>
-<ul id="origins"></ul>
-<p class="hint">The recorder asks the browser for access to one origin at a time, when you press Record on it. It never asks for all sites.</p>
+<ul id="origins" class="origins"></ul>
+<p class="hint"><b>Step 2.</b> Open one of these origins and press <b>Record</b> in the popup. The browser then asks for access to that one origin only; the recorder never asks for all sites.</p>
+<button id="reset" type="button" class="quiet">Remove the imported scope</button>
 <script type="module" src="options.js"></script>
 </body>
 </html>
