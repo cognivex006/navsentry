@@ -880,7 +880,8 @@ async function flowCommand(argv: string[]): Promise<number> {
       print(ld.manifestSnippet);
       const a = JSON.parse(ld.manifestSnippet).actors as Record<string, { username_env: string; password_env: string }>;
       const env = Object.values(a)[0]!;
-      print(`\nThen set ${env.username_env} and ${env.password_env} in your shell, set "actor": "<name>" on the steps that need the session, and approve with: navsentry flow approve --flows ${dir}`);
+      const actorName = Object.keys(a)[0]!;
+      print(`\nThen set ${env.username_env} and ${env.password_env} in your shell, set "actor": "${actorName}" on the steps that need the session, and approve with: navsentry flow approve --flows ${f}`);
       return 0;
     }
     case "from-recording": {

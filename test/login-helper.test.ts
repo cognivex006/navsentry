@@ -50,6 +50,25 @@ test("refusals: no password fill, no submit, bad actor name", () => {
   const noSubmit = parseFlowText(draft([SIGNIN[0]!, SIGNIN[1]!, SIGNIN[2]!], { input1: VARS.input1, input2: VARS.input2 }), "b.flow.md").doc!;
   assert.throws(() => loginFlowFromDraft(noSubmit, "alice"), /never submits/);
   assert.throws(() => loginFlowFromDraft(noSubmit, "Alice!"), LoginDraftError);
+  assert.throws(() => loginFlowFromDraft(noSubmit, "a_b"), /letters, digits and - only/);
+});
+
+test("the password goes only into the password field: env first, then the field's own label; ambiguity is refused", () => {
+  // DevTools drafts carry no _PASSWORD env: the field's own label decides, never parent selector text.
+  const devtools = { input1: { env: "NAVSENTRY_REC_SIGNIN_1" }, input2: { env: "NAVSENTRY_REC_SIGNIN_2" } };
+  const steps = [SIGNIN[0]!, { action: "fill", target: { label: "Email (password-login form)" }, value: { var: "input1" } }, { action: "fill", target: { label: "Password" }, value: { var: "input2" } }, SIGNIN[5]!];
+  const twoHits = parseFlowText(draft(steps, devtools), "c.flow.md").doc!;
+  assert.throws(() => loginFlowFromDraft(twoHits, "alice"), /more than one field looks like a password/);
+  const clean = parseFlowText(draft([SIGNIN[0]!, { action: "fill", target: { label: "Email" }, value: { var: "input1" } }, { action: "fill", target: { label: "Password" }, value: { var: "input2" } }, SIGNIN[5]!], devtools), "d.flow.md").doc!;
+  assert.deepEqual(loginFlowFromDraft(clean, "alice").mapped, [{ step: "S2", to: "username" }, { step: "S3", to: "password" }]);
+  // The recorder's _PASSWORD env wins over labels.
+  const env = parseFlowText(draft(steps, { input1: { env: "NAVSENTRY_REC_INPUT_1" }, input2: { env: "NAVSENTRY_REC_INPUT_2_PASSWORD" } }), "e.flow.md").doc!;
+  assert.deepEqual(loginFlowFromDraft(env, "alice").mapped.find((x) => x.to === "password"), { step: "S3", to: "password" });
+  // A fill after the password is never the username.
+  const after = parseFlowText(draft([SIGNIN[0]!, { action: "fill", target: { label: "Password" }, value: { var: "input2" } }, { action: "fill", target: { label: "Email" }, value: { var: "input1" } }, SIGNIN[5]!], VARS), "f.flow.md").doc!;
+  const la = loginFlowFromDraft(after, "alice");
+  assert.deepEqual(la.mapped, [{ step: "S2", to: "password" }]);
+  assert.match(la.dropped[0]!.reason, /before the password/);
 });
 
 test("CLI: writes the login flow, prints the manifest entries, never touches the manifest or overwrites", async () => {
