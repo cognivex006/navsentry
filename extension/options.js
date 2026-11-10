@@ -14,13 +14,19 @@ async function render() {
   const list = (await chrome.storage.local.get("allowedOrigins")).allowedOrigins ?? [];
   const ul = $("origins");
   ul.replaceChildren();
-  if (!list.length) { const li = document.createElement("li"); li.textContent = "None yet."; ul.append(li); }
+  if (!list.length) { const li = document.createElement("li"); li.textContent = "None yet: import a navsentry.json above."; ul.append(li); }
   for (const o of list) {
     const li = document.createElement("li");
     const granted = await chrome.permissions.contains({ origins: [`${o}/*`] });
-    li.textContent = `${o} — ${granted ? "access granted" : "access asked on Record"}`;
+    const code = document.createElement("code");
+    code.textContent = o;
+    const badge = document.createElement("span");
+    badge.className = `badge ${granted ? "ok" : "warn"}`;
+    badge.textContent = granted ? "access granted" : "access asked on Record";
+    li.append(code, " ", badge);
     ul.append(li);
   }
+  $("reset").disabled = !list.length;
 }
 
 $("file").onchange = async () => {
@@ -34,7 +40,19 @@ $("file").onchange = async () => {
   if (!origins.length) { $("msg").textContent = "No valid origins in targets.origins."; return; }
   if (j?.authorization?.acknowledged !== true) { $("msg").textContent = "The manifest does not acknowledge authorization; nothing was imported."; return; }
   await chrome.storage.local.set({ allowedOrigins: origins });
-  $("msg").textContent = `Imported ${origins.length} origin(s).`;
+  $("msg").textContent = `Imported ${origins.length} origin(s) from ${f.name}. Open one and press Record in the popup.`;
+  await render();
+};
+
+$("reset").onclick = async () => {
+  if (!confirm("Remove the imported scope? Recording stops working until you import a manifest again.")) return;
+  const list = (await chrome.storage.local.get("allowedOrigins")).allowedOrigins ?? [];
+  // A running recording stops first, so nothing is recorded after the scope is gone.
+  await chrome.runtime.sendMessage({ cmd: "stop" });
+  await chrome.storage.local.remove("allowedOrigins");
+  // Host access granted earlier is given back too.
+  if (list.length) await chrome.permissions.remove({ origins: list.map((o) => `${o}/*`) });
+  $("msg").textContent = "Scope removed.";
   await render();
 };
 

@@ -128,7 +128,8 @@ export function importNavrec(buf: Buffer, m: Manifest, file: string): NavrecImpo
   let n = 0, inputs = 0, origin: string | undefined, inScope = false;
   const shotLine = (s: Obj) => {
     const name = typeof s.screenshot === "string" && files.has(s.screenshot) ? s.screenshot : undefined;
-    if (!name) return s.withheld ? "_screenshot withheld (password field)_" : "_no screenshot_";
+    // The reason is the recorder's own short text; it is cleaned and shown as data.
+    if (!name) return s.withheld ? `_screenshot withheld (${clean(s.withheldReason, 60) || "password field"})_` : "_no screenshot_";
     const local = `${id}.shots/${name.slice(6)}`;
     shots.set(name.slice(6), files.get(name)!);
     return `![step screenshot](${local})`;

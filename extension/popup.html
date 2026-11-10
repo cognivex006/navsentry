@@ -6,17 +6,49 @@
 <link rel="stylesheet" href="ui.css">
 </head>
 <body class="popup">
-<header><strong>NavSentry Recorder</strong> <span id="status" class="pill">idle</span></header>
-<p class="hint">Records steps and screenshots on in-scope pages only. Typed values are never recorded; password fields are never photographed.</p>
+<header class="bar">
+  <div class="brand"><span class="logo" aria-hidden="true">◆</span> NavSentry Recorder</div>
+  <span id="status" class="pill" role="status">idle</span>
+</header>
+
+<section class="scope" aria-label="Scope of this tab">
+  <div class="scope-line"><span id="scope-badge" class="badge">…</span> <span id="origin" class="origin"></span></div>
+  <p id="scope-help" class="hint"></p>
+</section>
+
+<details class="promise" open>
+  <summary>What this recorder never does</summary>
+  <ul>
+    <li><b>Never stores what you type</b>: a step says only which field you used. There is no screenshot right after typing or on a password field. A later screenshot can still show text that stays on the page, so record with test data.</li>
+    <li><b>Never sends anything</b>: it has no network access. The file is saved only where you choose.</li>
+    <li><b>Records only the tab you started, on origins in your imported scope.</b> Leaving the scope pauses recording, and other tabs are never photographed.</li>
+  </ul>
+</details>
+
 <div class="row">
-  <button id="record" type="button">● Record</button>
+  <button id="record" type="button" class="primary">● Record</button>
   <button id="stop" type="button">■ Stop</button>
-  <button id="save" type="button">⬇ Save</button>
-  <button id="clear" type="button">Clear</button>
+  <button id="save" type="button">⬇ Save file</button>
+  <button id="clear" type="button" class="quiet">Clear</button>
 </div>
-<p id="msg" class="msg" role="status"></p>
-<ol id="steps"></ol>
-<footer><a href="options.html" target="_blank">Scope (import manifest)</a></footer>
+<p id="msg" class="msg" role="status" aria-live="polite"></p>
+
+<section id="next" class="next" hidden>
+  <div class="next-title">Next: import it with NavSentry</div>
+  <code id="next-cmd"></code>
+  <button id="copy" type="button" class="quiet">Copy command</button>
+</section>
+
+<section id="empty" class="empty" hidden>
+  <ol>
+    <li>Open a page of the site in your scope.</li>
+    <li>Press <b>Record</b>, then use the site as a user would.</li>
+    <li>Press <b>Stop</b>, review the steps, and press <b>Save file</b>.</li>
+  </ol>
+</section>
+
+<ol id="steps" class="steps"></ol>
+<footer><a href="options.html" target="_blank">Scope settings (import navsentry.json)</a></footer>
 <script type="module" src="popup.js"></script>
 </body>
 </html>
