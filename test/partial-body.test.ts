@@ -52,7 +52,7 @@ test("an undecoded content-encoding is never a body PASS; JWT checks are bounded
 
 test("email and JWT scans are linear: hostile 8 MiB bodies finish quickly, real values are still found", async () => {
   const { findEmails, findJwts } = await import("../src/checks/passive.js");
-  assert.deepEqual(findEmails("mail admin@example.test, or ops.team+x@mail.example.co.th now"), ["admin@example.test", "ops.team+x@mail.example.co.th"]);
+  assert.deepEqual(findEmails("mail admin@example.test, or ops.team+x@mail.example.test now"), ["admin@example.test", "ops.team+x@mail.example.test"]);
   assert.deepEqual(findEmails("logo@2x.png xadmin@example.test"), ["logo@2x.png", "xadmin@example.test"]);
   const b64 = (o: object) => Buffer.from(JSON.stringify(o)).toString("base64url");
   const jwt = `${b64({ alg: "HS256" })}.${b64({ sub: "1" })}.sig`;
