@@ -78,3 +78,13 @@ test("error signatures are bounded: still found, and hostile one-line bodies fin
     assert.ok(Date.now() - t0 < 5000, `took ${Date.now() - t0} ms on ${hostile.slice(0, 14)}…`);
   }
 });
+
+test("JWT: junk eyJ strings never make a PASS or hide a weak token", () => {
+  const b64 = (o: object) => Buffer.from(JSON.stringify(o)).toString("base64url");
+  const good = `${b64({ alg: "HS256" })}.${b64({ exp: 2, iat: 1, iss: "i", aud: "a" })}.sig`;
+  const weak = `${b64({ alg: "none" })}.${b64({ sub: "1" })}.`;
+  const junk = Array.from({ length: 12 }, (_, i) => `eyJjunk${i}xx.abcdef.x`).join(" ");
+  assert.equal(checkJwt(ex(junk, {})).status, "INCONCLUSIVE");
+  assert.equal(checkJwt(ex(`${junk} ${weak}`, {})).status, "FAIL", "the weak token is still found behind junk");
+  assert.equal(checkJwt(ex(`${junk} ${good}`, {})).status, "PASS");
+});

@@ -315,19 +315,23 @@ function b64json(s: string): Record<string, unknown> | undefined {
 export function checkJwt(ex: Exchange): CheckResult {
   const id = "NSC-SESS-004";
   if (!ex.raw) return result(id, ex, "ERROR", "No response", [], ex.record.error);
-  const tokens = [...new Set([...findJwts(headerText(ex)), ...findJwts(bodyText(ex))])].slice(0, 10);
-  if (!tokens.length) return result(id, ex, "NOT_TESTED", "No JWT observed in response", [], "no token");
+  const shaped = [...new Set([...findJwts(headerText(ex), 50), ...findJwts(bodyText(ex), 50)])];
+  if (!shaped.length) return result(id, ex, "NOT_TESTED", "No JWT observed in response", [], "no token");
+  // Only tokens that decode count, so junk eyJ strings can neither fill the cap nor make a PASS.
+  const decoded = shaped.map((t) => { const [h, p] = t.split("."); return { header: b64json(h ?? ""), payload: b64json(p ?? "") }; }).filter((x) => x.header && x.payload);
+  const tokens = decoded.slice(0, 10);
+  const more = decoded.length > tokens.length || shaped.length >= 100;
+  if (!tokens.length) return result(id, ex, "INCONCLUSIVE", `${shaped.length} JWT-shaped string(s), none decodes as a JWT`, [], "no decodable token");
   const problems: string[] = [];
-  tokens.forEach((t, i) => {
-    const [h, p] = t.split(".");
-    const header = b64json(h ?? ""), payload = b64json(p ?? "");
-    if (!header || !payload) return;
-    const alg = String(header.alg ?? "");
+  tokens.forEach(({ header, payload }, i) => {
+    const alg = String(header!.alg ?? "");
     if (!alg || alg.toLowerCase() === "none") problems.push(`token#${i + 1}: alg=${alg || "missing"}`);
-    for (const claim of ["exp", "iss", "aud"]) if (!(claim in payload)) problems.push(`token#${i + 1}: ${claim} claim missing`);
-    if (typeof payload.exp === "number" && typeof payload.iat === "number" && payload.exp - payload.iat > 86400) problems.push(`token#${i + 1}: lifetime > 24h`);
+    for (const claim of ["exp", "iss", "aud"]) if (!(claim in payload!)) problems.push(`token#${i + 1}: ${claim} claim missing`);
+    if (typeof payload!.exp === "number" && typeof payload!.iat === "number" && (payload!.exp as number) - (payload!.iat as number) > 86400) problems.push(`token#${i + 1}: lifetime > 24h`);
   });
-  return problems.length ? result(id, ex, "FAIL", "JWT missing protection claims or weak alg", problems) : bodyBound(ex, result(id, ex, "PASS", `${tokens.length} JWT(s) carry alg/exp/iss/aud`), BODY_SCAN_BYTES);
+  if (problems.length) return result(id, ex, "FAIL", "JWT missing protection claims or weak alg", problems);
+  if (more) return result(id, ex, "INCONCLUSIVE", `${tokens.length} JWT(s) checked; more tokens were not inspected`, [], "token cap reached");
+  return bodyBound(ex, result(id, ex, "PASS", `${tokens.length} JWT(s) carry alg/exp/iss/aud`), BODY_SCAN_BYTES);
 }
 
 export function checkHttpsRedirect(ex: Exchange): CheckResult {
