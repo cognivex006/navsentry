@@ -4,6 +4,8 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-10
+
 ### Added
 - Login helper: `navsentry flow login-from-draft --flows <draft.flow.md> --actor <name> --out <dir>` turns a recorded sign-in draft into a login flow for one actor.
   - The password fill (the recorder's `*_PASSWORD` field, or the single fill whose own label says password) becomes `{{password}}`, and the fill before it becomes `{{username}}`. An ambiguous draft is refused, so the password is never typed into a visible field. Every step runs as the actor. Disallowed steps, extra fills, `depends_on` and `object_owner` are dropped.
