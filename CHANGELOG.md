@@ -5,6 +5,10 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Added
+- Login helper: `navsentry flow login-from-draft --flows <draft.flow.md> --actor <name> --out <dir>` turns a recorded sign-in draft into a login flow for one actor.
+  - The password fill (the recorder's `*_PASSWORD` field, or the single fill whose own label says password) becomes `{{password}}`, and the fill before it becomes `{{username}}`. An ambiguous draft is refused, so the password is never typed into a visible field. Every step runs as the actor. Disallowed steps, extra fills, `depends_on` and `object_owner` are dropped.
+  - It prints the manifest entries to add by hand (`safety.mode`, `auth_endpoints.login`, the actor with `NAVSENTRY_*` env names), then the approve command.
+  - The manifest is never edited, and the login path is a placeholder the parser refuses until the owner sets it. No network.
 - [SPEC-0.3.0](docs/specs/SPEC-0.3.0-AGENT-FIRST-AND-RECORDER.md): agent-first use, self-contained reports, a Computer Use middle path and a flow recorder. Accepted 2026-11-06 with owner decisions D1–D10 (recommended options).
 - Replay timeline: `scan --mode flow --engine playwright` takes a viewport screenshot of the headless browser right after every browser step (navigate, click, see, fill, select, submit).
   - The PNGs go to `<run>/shots/`, which has its own `.gitignore`. At most 60 per run.
@@ -71,6 +75,7 @@ All notable changes to this project are documented here. Format: [Keep a Changel
   - **Terminal colour:** run summaries and `compare` output are coloured, only on a TTY. `NO_COLOR` or `--no-color` turns it off.
 
 ### Fixed
+- Body checks never PASS on a partial body (hard rule 5): NSC-ERR-001, NSC-INFO-001 (error pages), NSC-INFO-003, NSC-INFO-004, NSC-PRIV-001 and NSC-SESS-004 are INCONCLUSIVE, with the reason, when the capture was truncated or aborted, a content-encoding was not decoded, only part of the body was retained, or the body is longer than the scan window. The checks now scan the whole retained buffer (up to 8 MiB) instead of the first 64 KiB to 1 MiB, so large pages are judged in full. Each body is decoded once per exchange, and the email, JWT and error-signature patterns are bounded or linear, so a hostile page cannot stall a scan. A match in the inspected part is still a FAIL. This replaces the stale `fix/truncated-body-honesty` branch, which predates streamed capture.
 - Docs out of step with 0.2.0: case counts (57 cases, 26 automated), coverage classes, the transport table and Computer Use boundary, M2 status, exit code 4 in the flow exit table, the test-suite list, GATE-09/10 and report artifacts.
 - The consumer skill says that loopback targets need an owner-confirmed `network.allow_private` entry, and exit codes are a readable list.
 - README gains *Scan modes at a glance*, *Computer Use (visual driver)* and *Try it locally*, written for the demo shop v2 in `examples/demo/`.
