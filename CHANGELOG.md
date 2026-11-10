@@ -5,6 +5,10 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Added
+- Login helper: `navsentry flow login-from-draft --flows <draft.flow.md> --actor <name> --out <dir>` turns a recorded sign-in draft into a login flow for one actor.
+  - The password fill (the recorder's `*_PASSWORD` field, or the single fill whose own label says password) becomes `{{password}}`, and the fill before it becomes `{{username}}`. An ambiguous draft is refused, so the password is never typed into a visible field. Every step runs as the actor. Disallowed steps, extra fills, `depends_on` and `object_owner` are dropped.
+  - It prints the manifest entries to add by hand (`safety.mode`, `auth_endpoints.login`, the actor with `NAVSENTRY_*` env names), then the approve command.
+  - The manifest is never edited, and the login path is a placeholder the parser refuses until the owner sets it. No network.
 - [SPEC-0.3.0](docs/specs/SPEC-0.3.0-AGENT-FIRST-AND-RECORDER.md): agent-first use, self-contained reports, a Computer Use middle path and a flow recorder. Accepted 2026-11-06 with owner decisions D1–D10 (recommended options).
 - Replay timeline: `scan --mode flow --engine playwright` takes a viewport screenshot of the headless browser right after every browser step (navigate, click, see, fill, select, submit).
   - The PNGs go to `<run>/shots/`, which has its own `.gitignore`. At most 60 per run.
