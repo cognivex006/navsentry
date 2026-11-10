@@ -156,6 +156,10 @@ Credentials come only from environment variables. NavSentry treats them as secre
 - **http login:** the declared body is sent once to `auth_endpoints.login`. The only placeholders allowed in the body are `{{username}}` and `{{password}}`. The response's `set-cookie` values become the actor's session. The login counts against `max_mutations` and is never retried.
 - **Browser login:** the referenced flow runs first, in the actor's own browser context, with `--engine playwright`. It may use only `navigate`, `fill` (values `{{username}}` and `{{password}}` only), `submit`, `click`, `see` and `wait_for`, and every step runs as that actor. Its submit must match `auth_endpoints.login`. The cookies in the context afterwards become the session for the actor's http steps too. Select the login flow together with the flows that use it.
 - **Cookie session:** `cookie_env` holds a full `Cookie` header value. It is refused in the production profile.
+- **Login helper:** record the sign-in once, with the Recorder extension, DevTools Recorder or `browse end --save-flow`. Then run `navsentry flow login-from-draft --flows <draft.flow.md> --actor <name> --out <dir>`.
+  - It writes `login-<name>.flow.md`, with the first fill as `{{username}}`, the password fill as `{{password}}` and every step running as the actor. Other fills and steps that a login flow may not use are dropped and listed.
+  - It prints the `safety`, `auth_endpoints.login` and `actors.<name>` entries to add to `navsentry.json` yourself. The login path is a placeholder that the manifest parser refuses until you set the real sign-in request path.
+  - It sends nothing and never edits the manifest.
 - A failed login (wrong password, non-2xx response, no session cookie, or a login flow that is not PASS) makes that actor's steps `NOT_TESTED` with "login failed", never a FAIL of the target. That actor cannot create fixtures.
 
 ## Browser requests in safe-validate (0.2.0-b)
