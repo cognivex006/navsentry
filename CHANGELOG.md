@@ -4,6 +4,12 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 
 ## [Unreleased]
 
+### Added
+- Headed visual driver, ready but still refused: `browse start --headed` would launch Playwright's full Chromium build with the same isolation and request routing as headless. In that window a person's clicks and main-frame navigations are logged as `click (human)` / `navigate (human)` in VISUAL-SESSION.md (role and name are page data). Events while an agent command runs, and for 1.5 s after it, are the agent's. The page binding is removed before page scripts run, so a page cannot forge one. Human actions never go into `--save-flow` drafts. `HEADED_BROWSER_APPROVED` stays `false`.
+
+### Security
+- Governance finding (2026-11-11): Playwright 1.64.1's Chromium builds, the approved headless shell included, are Chrome for Testing binaries whose ABOUT file points to Google's Terms of Service. The previous review assumed open-source Chromium. No primary source states their terms, so the full build stays PENDING_REVIEW and the headless shell entry needs the owner to re-confirm it (`governance/third-party.json`).
+
 ## [0.3.0] - 2026-11-10
 
 ### Added

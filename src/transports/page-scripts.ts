@@ -67,3 +67,30 @@ export function describeInPage(a: { ref?: string; x?: number; y?: number }): Ele
   return info;
 }
 
+
+/**
+ * Init script for the headed visual driver: reports trusted clicks (a person's, or the agent's own, which the
+ * session tells apart by timing) with the role and accessible name of the nearest interactive element. It runs
+ * before page scripts, keeps the binding in its closure and removes it from `window`, so later page code cannot
+ * call it. Role and name are page data. Never reads field values.
+ */
+export function humanWatchScript(binding: string): string {
+  return `(() => {
+  const b = window[${JSON.stringify(binding)}];
+  try { delete window[${JSON.stringify(binding)}]; } catch (e) {}
+  if (typeof b !== "function") return;
+  const sel = "a[href],button,input,select,textarea,summary,[role=button],[role=link],[role=tab],[role=menuitem],[role=checkbox],[role=radio],[role=combobox]";
+  addEventListener("click", (ev) => {
+    if (!ev.isTrusted) return;
+    const t = ev.target && ev.target.closest ? ev.target.closest(sel) : null;
+    if (!t) { b({ role: "", name: "" }); return; }
+    const tag = t.tagName.toLowerCase();
+    const type = (t.getAttribute("type") || "").toLowerCase();
+    const role = t.getAttribute("role") || (tag === "a" ? "link" : tag === "button" || type === "submit" || type === "button" ? "button" : tag === "select" ? "combobox" : tag === "input" || tag === "textarea" ? "textbox" : tag);
+    let name = t.getAttribute("aria-label") || "";
+    if (!name && t.labels && t.labels.length) name = t.labels[0].innerText || "";
+    if (!name && tag !== "input" && tag !== "textarea" && tag !== "select") name = t.innerText || "";
+    b({ role, name: String(name).replace(/\s+/g, " ").trim().slice(0, 120) });
+  }, true);
+})();`;
+}

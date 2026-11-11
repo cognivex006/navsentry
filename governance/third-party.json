@@ -151,9 +151,9 @@
         "https://chromium.googlesource.com/chromium/src/+/main/LICENSE",
         "https://github.com/microsoft/playwright/blob/main/NOTICE"
       ],
-      "findings": "Not yet reviewed. Same open-source Chromium source and download host as the approved headless shell, but a different, larger binary with a GUI. Until an owner review records APPROVED, the code refuses --headed (HEADED_BROWSER_APPROVED = false in src/transports/playwright.ts). Branded chrome/msedge channels stay NOT approved.",
-      "reviewed": "2026-11-06",
-      "review_due": "2026-12-06",
+      "findings": "Review started 2026-11-11, not concluded. The code path is ready (launch with headless:false, probe for the full build, human clicks and navigations logged as actor human) and was exercised once against the local fixture; HEADED_BROWSER_APPROVED stays false. Open question that blocks approval: Playwright 1.64.1's browsers.json titles this build 'Chrome for Testing', and the installed binary's ABOUT file reads 'Google Chrome ... See the Terms of Service at chrome://terms'. playwright.dev/docs/browsers still says Playwright uses 'open source Chromium builds' from Microsoft's CDN. No primary source read on 2026-11-11 (Chrome for Testing site and README, the Chrome for Testing blog post, the Chrome terms page, the Playwright browsers page) states which terms govern Chrome for Testing binaries; the Chrome terms page binds 'Chrome' to the Google Terms of Service and does not name Chrome for Testing. The same finding applies to the approved headless shell (title 'Chrome Headless Shell', same ABOUT text, plus a Chromium BSD LICENSE.headless_shell), whose 2026-11-03 approval assumed open-source Chromium builds; the owner should re-confirm that entry. Branded chrome/msedge channels stay NOT approved.",
+      "reviewed": "2026-11-11",
+      "review_due": "2026-12-11",
       "decision": "PENDING_REVIEW"
     },
     {

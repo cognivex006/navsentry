@@ -251,6 +251,8 @@ export interface VisualAction {
   seq: number;
   at: string;
   action: "navigate" | "screenshot" | "click" | "scroll" | "snapshot" | "type" | "key";
+  /** Absent for agent commands. `human`: a person's click or navigation in the headed window (role and name are page data). */
+  actor?: "human";
   x?: number;
   y?: number;
   dx?: number;

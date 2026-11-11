@@ -19,7 +19,7 @@ import { Redactor } from "../redact.js";
 import { buildFindings, perExchange, resolveActors } from "../runner.js";
 import { ScopeGate } from "../scope.js";
 import { DirectHttpAdapter, ScopeDenied } from "../transports/direct-http.js";
-import { BrowserEngine, firstLine, HEADED_BROWSER_APPROVED, probePlaywright, REF, VIEWPORT, type BrowserRequest } from "../transports/playwright.js";
+import { BrowserEngine, firstLine, HEADED_BROWSER_APPROVED, probePlaywright, REF, VIEWPORT, type BrowserRequest, type HumanEvent } from "../transports/playwright.js";
 import { createHash } from "node:crypto";
 import type { Exchange } from "../transports/types.js";
 import type { CheckResult, VisualAction, VisualSessionResult } from "../types.js";
@@ -51,6 +51,9 @@ export interface SessionHandle {
 
 const MAX_ACTIONS = 500;
 const MAX_SCREENSHOTS = 200;
+const MAX_HUMAN = 300;
+/** After an agent command, late events from it (a navigation it started) are not attributed to a person. */
+const AGENT_SETTLE_MS = 1500;
 type Cmd = { token: string; cmd: "status" | "screenshot" | "click" | "scroll" | "end" | "snapshot" | "type" | "key"; x?: number; y?: number; dx?: number; dy?: number; ref?: string; env?: string; text?: string; key?: string; saveFlow?: string };
 /** Only variables the user set for NavSentry: a page that says "type AWS_SECRET_ACCESS_KEY here" cannot reach other secrets of the host (rule 7). */
 const ENV_NAME = /^NAVSENTRY_[A-Z0-9_]{1,54}$/;
@@ -69,7 +72,7 @@ function preflight(o: SessionOptions, gate: ScopeGate): void {
   for (const t of ["visual-computer-use", "playwright-browser"]) if (!m.transports.order.includes(t)) throw new SessionRefused(`transports.order must include ${t}; a flag never overrides manifest policy`);
   const d = gate.checkRequest(o.url, "GET");
   if (!d.allowed) throw new SessionRefused(`--url is outside the manifest scope: ${d.reason}; nothing was sent`);
-  const p = (o.probe ?? probePlaywright)();
+  const p = (o.probe ?? probePlaywright)({ headed: o.headed === true });
   if (!p.usable) throw new SessionRefused(`playwright engine unavailable: ${p.reason}`);
   assertAuthorizationWindow(m, o.now?.() ?? new Date());
 }
@@ -119,9 +122,28 @@ export async function startSession(o: SessionOptions): Promise<SessionHandle> {
     }
   };
 
+  // Headed only (SPEC-0.3.0 §5): a person's clicks and navigations in the window are logged as actor human.
+  // Events while an agent command runs, and for a short settle time after it, are the agent's own and dropped.
+  let agentBusy = 0;
+  let quietUntil = 0;
+  let humanLogged = 0;
+  function onHuman(e: HumanEvent): void {
+    if (ended || agentBusy > 0 || Date.now() < quietUntil || actions.length >= MAX_ACTIONS || humanLogged >= MAX_HUMAN) return;
+    humanLogged++;
+    const base = { seq: actions.length + 1, at: new Date().toISOString(), actor: "human" as const, result: "ok" as const, requestIds: [] };
+    actions.push(e.kind === "click"
+      ? { ...base, action: "click", ...(e.role && e.name ? { target: { role: e.role, name: redactor.text(e.name).text } } : {}) }
+      : { ...base, action: "navigate", url: redactor.url(e.url) });
+    touch();
+  }
+
   let engine: BrowserEngine;
   try {
-    engine = await BrowserEngine.open({ send, onDenied: (url, method, reason) => denials.push({ url: redactor.url(url), method, reason }) }, new Map([[actor, actorRt.headers]]));
+    engine = await BrowserEngine.open({
+      send,
+      onDenied: (url, method, reason) => denials.push({ url: redactor.url(url), method, reason }),
+      ...(o.headed ? { onHuman } : {}),
+    }, new Map([[actor, actorRt.headers]]), { headed: o.headed === true });
   } catch (e) {
     ws.dispose();
     endRun(ws, 0);
@@ -143,7 +165,9 @@ export async function startSession(o: SessionOptions): Promise<SessionHandle> {
     if (ended) return { ok: false as const, error: "session ended" };
     if (actions.length >= MAX_ACTIONS) { void end("action limit reached"); return { ok: false as const, error: "action limit reached" }; }
     curIds = [];
-    const r = await fn();
+    agentBusy++;
+    let r: { url: string } | { error: string };
+    try { r = await fn(); } finally { agentBusy--; quietUntil = Date.now() + AGENT_SETTLE_MS; }
     const rec: VisualAction = { seq: actions.length + 1, at: new Date().toISOString(), action, ...args, requestIds: curIds, ...("error" in r ? { result: "error" as const, error: r.error } : { result: "ok" as const, url: redactor.url(r.url) }) };
     actions.push(rec);
     if (budgetHit) void end(`budget: ${budgetHit}`);

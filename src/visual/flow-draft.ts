@@ -29,6 +29,7 @@ export function draftFlowFromSession(r: VisualSessionResult): FlowDraft {
   let inputs = 0;
   for (const a of r.actions) {
     if (a.result !== "ok") continue;
+    if (a.actor === "human") { skipped.push(`#${a.seq} ${a.action} by a person in the headed window: not encoded, add it by hand if it belongs to the flow`); continue; }
     if (a.action === "click") {
       if (a.target?.name && a.target.role) step(`Click ${a.target.role} "${a.target.name}"`, { action: "click", target: { role: a.target.role, name: a.target.name } });
       else skipped.push(`#${a.seq} click at ${a.x ?? "?"},${a.y ?? "?"}: no role and accessible name, add a target by hand`);
