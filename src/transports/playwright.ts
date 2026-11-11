@@ -13,7 +13,7 @@ import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import type { Exchange } from "./types.js";
 import type { UiTarget } from "../flow/parse.js";
-import { describeInPage, snapshotInPage } from "./page-scripts.js";
+import { describeInPage, humanWatchScript, snapshotInPage } from "./page-scripts.js";
 
 /** Minimal structural types of the playwright-core API used here (it is an optional peer). */
 interface PwRequest { postDataBuffer(): Buffer | null; url(): string; method(): string; headers(): Record<string, string>; resourceType(): string; isNavigationRequest(): boolean; frame(): { parentFrame(): unknown } }
@@ -32,6 +32,7 @@ interface PwPage {
   on(ev: "console", fn: (m: PwConsoleMessage) => void): void;
   on(ev: "popup", fn: (p: PwPage) => void): void;
   on(ev: "pageerror", fn: (e: Error) => void): void;
+  on(ev: "framenavigated", fn: (f: { parentFrame(): unknown; url(): string }) => void): void;
   close(): Promise<void>;
   mouse: PwMouse;
   screenshot(o: { path: string; type: "png"; fullPage: false }): Promise<unknown>;
@@ -47,6 +48,8 @@ interface PwContext {
   newPage(): Promise<PwPage>;
   close(): Promise<void>;
   cookies(urls?: string[]): Promise<{ name: string; value: string }[]>;
+  exposeBinding(name: string, fn: (src: unknown, arg: unknown) => void): Promise<void>;
+  addInitScript(o: { content: string }): Promise<void>;
 }
 interface PwBrowser { newContext(o: Record<string, unknown>): Promise<PwContext>; close(): Promise<void> }
 interface PwChromium { executablePath(): string; launch(o: Record<string, unknown>): Promise<PwBrowser> }
@@ -102,7 +105,17 @@ export interface BrowserEngineOptions {
    * Without this hook every non-observe request is refused (observe engine, visual driver).
    */
   mutate?(req: BrowserRequest & { body: Buffer; contentType: string }): Promise<Exchange | undefined>;
+  /**
+   * Headed visual driver (SPEC-0.3.0 §5): a person's input in the visible window. Clicks come from a page
+   * listener, so role and name are page data; navigations come from Playwright. The caller decides which
+   * events happened while the agent itself was acting.
+   */
+  onHuman?(e: HumanEvent): void;
 }
+
+export type HumanEvent = { actor: string; kind: "click"; role: string; name: string } | { actor: string; kind: "navigate"; url: string };
+/** Name of the page binding for human clicks; the init script takes it off `window` before page scripts run. */
+const HUMAN_BINDING = "__navsentryHuman";
 
 /** Browser builds come from the process's PLAYWRIGHT_BROWSERS_PATH (read once by playwright-core at load). */
 function loadChromium(): PwChromium {
@@ -112,7 +125,7 @@ function loadChromium(): PwChromium {
 
 /** Availability without launching anything: package version pinned and the headless shell installed. */
 export type PlaywrightProbe = { available: boolean; usable: boolean; reason: string; version?: string };
-export function probePlaywright(): { available: boolean; usable: boolean; reason: string; version?: string } {
+export function probePlaywright(o: { headed?: boolean } = {}): { available: boolean; usable: boolean; reason: string; version?: string } {
   let version: string;
   try {
     version = (createRequire(import.meta.url)("playwright-core/package.json") as { version: string }).version;
@@ -122,10 +135,12 @@ export function probePlaywright(): { available: boolean; usable: boolean; reason
   if (version !== PLAYWRIGHT_VERSION) return { available: true, usable: false, reason: `playwright-core ${version} is not the governance-approved ${PLAYWRIGHT_VERSION}`, version };
   let exe: string;
   try {
-    exe = headlessShellPath(loadChromium());
+    exe = o.headed ? loadChromium().executablePath() : headlessShellPath(loadChromium());
   } catch (e) {
     return { available: true, usable: false, reason: `browser path unresolved: ${(e as Error).message}`, version };
   }
+  if (o.headed && !existsSync(exe)) return { available: true, usable: false, reason: "the full Chromium build is not installed; run `npx playwright-core install chromium` (NavSentry never downloads it)", version };
+  if (o.headed) return { available: true, usable: true, reason: "playwright-core with the full Chromium build (headed visual driver); every request is fulfilled through ScopeGate and Budget (S1)", version };
   if (!existsSync(exe)) return { available: true, usable: false, reason: "Chromium headless shell is not installed; run `npx playwright-core install --only-shell chromium` (NavSentry never downloads it)", version };
   return { available: true, usable: true, reason: "playwright-core with Chromium headless shell; every request is fulfilled through ScopeGate and Budget (S1)", version };
 }
@@ -154,17 +169,22 @@ export interface ElementInfo { role: string; name: string; tag: string; type?: s
 export const ALLOWED_KEYS: ReadonlySet<string> = new Set(["Enter", "Tab", "Escape", "Backspace", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End"]);
 export const REF = /^e[0-9]{1,5}$/;
 const MAX_SNAPSHOT = 200;
-/** Headed mode needs the full Chromium build, which governance has not approved (only the headless shell is). Flip only with a dated APPROVED governance entry. */
+/**
+ * Headed mode needs Playwright's full Chromium build, which governance has not approved (PENDING_REVIEW,
+ * governance/third-party.json). The code path (launch, probe, human-action logging) is ready and tested; flip
+ * only with a dated APPROVED governance entry.
+ */
 export const HEADED_BROWSER_APPROVED = false;
 
 export class BrowserEngine {
   private contexts = new Map<string, { ctx: PwContext; page: PwPage }>();
   private constructor(private readonly browser: PwBrowser, private readonly opts: BrowserEngineOptions, private readonly actorHeaders: Map<string, Record<string, string>>) {}
 
-  static async open(opts: BrowserEngineOptions, actorHeaders: Map<string, Record<string, string>>): Promise<BrowserEngine> {
+  static async open(opts: BrowserEngineOptions, actorHeaders: Map<string, Record<string, string>>, launch: { headed?: boolean } = {}): Promise<BrowserEngine> {
     const ch = loadChromium();
-    // headless: true selects the Chromium headless shell, the only approved build.
-    const browser = await ch.launch({ headless: true, args: ISOLATION_ARGS, env: {}, handleSIGINT: false, handleSIGTERM: false });
+    // headless: true selects the Chromium headless shell; headed uses the full build (visual driver only).
+    // The isolation flags and request routing are the same either way (S1).
+    const browser = await ch.launch({ headless: !launch.headed, args: ISOLATION_ARGS, env: {}, handleSIGINT: false, handleSIGTERM: false });
     return new BrowserEngine(browser, opts, actorHeaders);
   }
 
@@ -178,7 +198,17 @@ export class BrowserEngine {
       await ws.close({ code: 1008, reason: "blocked by NavSentry" });
     });
     await ctx.route("**", (r) => this.handle(r, actor));
+    const human = this.opts.onHuman;
+    if (human) {
+      await ctx.exposeBinding(HUMAN_BINDING, (_src, arg) => {
+        const a = arg as { role?: unknown; name?: unknown } | null;
+        if (!a || typeof a.role !== "string" || typeof a.name !== "string") return;
+        human({ actor, kind: "click", role: a.role.slice(0, 40), name: a.name.slice(0, 120) });
+      });
+      await ctx.addInitScript({ content: humanWatchScript(HUMAN_BINDING) });
+    }
     const page = await ctx.newPage();
+    if (human) page.on("framenavigated", (f) => { if (f.parentFrame() === null) human({ actor, kind: "navigate", url: f.url() }); });
     const watch = (p: PwPage) => {
       p.on("console", (m) => { const l = m.location(); this.opts.onConsole?.({ actor, type: m.type(), text: m.text(), sourceUrl: l.url, ...(l.lineNumber ? { line: l.lineNumber } : {}) }); });
       p.on("pageerror", (e) => this.opts.onConsole?.({ actor, type: "pageerror", text: String(e.stack ?? e.message), sourceUrl: "" }));

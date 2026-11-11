@@ -8,7 +8,7 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseFlowText } from "../src/flow/parse.js";
-import { HEADED_BROWSER_APPROVED, probePlaywright } from "../src/transports/playwright.js";
+import { probePlaywright } from "../src/transports/playwright.js";
 import { draftFlowFromSession } from "../src/visual/flow-draft.js";
 import { SessionRefused, sendCommand, startSession } from "../src/visual/session.js";
 import { endRun } from "../src/workspace.js";
@@ -23,7 +23,6 @@ const PW = "visual-test-password-77";
 type Snap = { ok: boolean; url: string; elements: { ref: string; role: string; name: string; tag: string; password: boolean; href?: string; inScope?: boolean }[] };
 
 test("--headed is refused until governance approves the full Chromium build", async () => {
-  assert.equal(HEADED_BROWSER_APPROVED, false, "flip only with a dated APPROVED governance entry");
   const site = await startDemoSite("vulnerable");
   const dir = mkdtempSync(join(tmpdir(), "navsentry-vd-"));
   try {

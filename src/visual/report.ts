@@ -29,7 +29,7 @@ export function renderVisualSession(r: VisualSessionResult): string {
       : a.action === "type" ? `${a.ref ?? ""}${tgt} · ${a.env ? `from env ${a.env}` : `text sha256 ${a.textSha256 ?? "?"}`} · ${a.length ?? 0} chars (value not recorded)`
       : a.action === "key" ? a.key ?? ""
       : "";
-    out.push(`| ${a.seq} | ${a.action} | ${args} | ${a.result === "error" ? `error: ${esc(a.error ?? "")}` : "ok"} | ${a.url ? `\`${esc(a.url)}\`` : "—"} | ${a.requestIds.length} |`);
+    out.push(`| ${a.seq} | ${a.actor === "human" ? `${a.action} (human)` : a.action} | ${args} | ${a.result === "error" ? `error: ${esc(a.error ?? "")}` : "ok"} | ${a.url ? `\`${esc(a.url)}\`` : "—"} | ${a.requestIds.length} |`);
   }
   out.push("", "## Denials", "");
   if (!r.denials.length) out.push("None.");
