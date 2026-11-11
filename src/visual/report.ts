@@ -24,7 +24,7 @@ export function renderVisualSession(r: VisualSessionResult): string {
   out.push("## Action log", "", "| # | Action | Arguments | Result | URL after | Requests |", "|---|---|---|---|---|---|");
   for (const a of r.actions) {
     const tgt = a.target ? ` ${a.target.role} "${a.target.name}"` : "";
-    const args = a.action === "click" ? `${a.ref ?? `${a.x},${a.y}`}${tgt}`
+    const args = a.action === "click" ? `${a.ref ?? (a.x !== undefined ? `${a.x},${a.y}` : "")}${tgt}`.trim()
       : a.action === "scroll" ? `${a.dx},${a.dy}`
       : a.action === "type" ? `${a.ref ?? ""}${tgt} · ${a.env ? `from env ${a.env}` : `text sha256 ${a.textSha256 ?? "?"}`} · ${a.length ?? 0} chars (value not recorded)`
       : a.action === "key" ? a.key ?? ""
