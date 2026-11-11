@@ -1,6 +1,6 @@
 {
   "name": "navsentry",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Authorized, non-destructive web security validation with evidence-based reports, story-flow test cases (Integration/E2E), fix verification and version doctor.",
   "contextFileName": "skills/navsentry/SKILL.md"
 }
