@@ -4,6 +4,8 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-11
+
 ### Added
 - Headed visual driver, ready but still refused: `browse start --headed` would launch Playwright's full Chromium build with the same isolation and request routing as headless. In that window a person's clicks and main-frame navigations are logged as `click (human)` / `navigate (human)` in VISUAL-SESSION.md (role and name are page data). Events while an agent command runs, and for 1.5 s after it, are the agent's. The page binding is removed before page scripts run, so a page cannot forge one. Human actions never go into `--save-flow` drafts. `HEADED_BROWSER_APPROVED` stays `false`. Checked once by hand on 2026-11-11 against the local demo shop, with the flag set to true only in a throwaway copy: a person's clicks and navigations showed up as human, and the agent's showed up as agent. That check found and fixed two bugs: element names lost the letter "s" (a `\s` inside the init-script template string), and the action log printed `undefined,undefined` for a click without coordinates.
 

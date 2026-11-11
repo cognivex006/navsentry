@@ -1,4 +1,4 @@
-# Coverage (v0.3.0)
+# Coverage (v0.3.1)
 
 | Automation class | Cases | Meaning in a run |
 |---|---|---|
