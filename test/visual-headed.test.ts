@@ -13,7 +13,8 @@ const skip = probe.usable ? false : `playwright engine unavailable: ${probe.reas
 const ORIGIN = "http://127.0.0.1:9";
 
 const PAGES: Record<string, string> = {
-  "/": `<!doctype html><title>t</title><button style="position:absolute;left:40px;top:40px;width:120px;height:40px">Buy now</button>
+  "/": `<!doctype html><title>t</title><button style="position:absolute;left:40px;top:40px;width:120px;height:40px">Buy  shoes
+  now</button>
 <a href="/next" style="position:absolute;left:40px;top:120px">Next page</a>
 <script>try { window.__navsentryHuman && window.__navsentryHuman({ role: "button", name: "forged" }); } catch (e) {}
 document.title = typeof window.__navsentryHuman;</script>`,
@@ -43,16 +44,24 @@ test("trusted clicks and main-frame navigations reach onHuman; page code cannot 
     const snap = await e.snapshot("anonymous");
     assert.ok(!("error" in snap));
     assert.equal(snap.title, "undefined", "the binding is gone before page scripts run");
-    const buy = snap.elements.find((x) => x.name === "Buy now")!;
+    const buy = snap.elements.find((x) => x.name === "Buy shoes now")!;
     await e.clickAt("anonymous", buy.x, buy.y);
     const next = snap.elements.find((x) => x.name === "Next page")!;
     await e.clickAt("anonymous", next.x, next.y);
     await new Promise((r) => setTimeout(r, 500));
     assert.ok(!events.some((x) => x.kind === "click" && x.name === "forged"), "a page script could not forge an event");
-    assert.ok(events.some((x) => x.kind === "click" && x.role === "button" && x.name === "Buy now"));
+    assert.ok(events.some((x) => x.kind === "click" && x.role === "button" && x.name === "Buy shoes now"));
     assert.ok(events.some((x) => x.kind === "click" && x.role === "link" && x.name === "Next page"));
     assert.ok(events.some((x) => x.kind === "navigate" && x.url === `${ORIGIN}/next`));
   } finally {
     await e.close();
   }
+});
+
+test("a human click without coordinates renders without undefined", async () => {
+  const { renderVisualSession } = await import("../src/visual/report.js");
+  const md = renderVisualSession({ schemaVersion: 1, id: "x", engine: "visual-driver/playwright-browser", actor: "anonymous", startUrl: `${ORIGIN}/`, startedAt: "", endedAt: "", endReason: "", viewport: { width: 1, height: 1 }, screenshots: 0,
+    actions: [{ seq: 1, at: "", action: "click", actor: "human", target: { role: "link", name: "Browse products" }, result: "ok", requestIds: [] }], requests: [], denials: [], checks: [], findings: [], incompleteReasons: [], executionStatus: "COMPLETE" });
+  assert.match(md, /\| 1 \| click \(human\) \| link "Browse products" \|/);
+  assert.doesNotMatch(md, /undefined/);
 });

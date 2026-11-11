@@ -90,7 +90,7 @@ export function humanWatchScript(binding: string): string {
     let name = t.getAttribute("aria-label") || "";
     if (!name && t.labels && t.labels.length) name = t.labels[0].innerText || "";
     if (!name && tag !== "input" && tag !== "textarea" && tag !== "select") name = t.innerText || "";
-    b({ role, name: String(name).replace(/\s+/g, " ").trim().slice(0, 120) });
+    b({ role, name: String(name).replace(/\\s+/g, " ").trim().slice(0, 120) });
   }, true);
 })();`;
 }
