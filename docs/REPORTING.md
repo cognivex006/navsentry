@@ -12,9 +12,12 @@
 | `client-findings.json` | `scan --mode page\|spider`: client-asset findings with masked previews only |
 | `page-models/` | With `--analyze`: one redacted page model per HTML page |
 | `VISUAL-SESSION.md`, `session.json` | `navsentry browse`: action log and findings of a visual-driver session |
+| `MANIFEST.json` | `scan` and `test` (0.4.0): size and SHA-256 of every file the run wrote (files already in `--out` are not listed). Checked by `navsentry verify` |
 | `junit.xml` | With `--flows --junit`: one testsuite per flow, one testcase per step (NOT_TESTED/INCONCLUSIVE → skipped) |
 
 `navsentry report --input run.json --format markdown|html|json|sarif [--lang th] [--out <file>]` re-renders from a validated run file. `--out` writes the file and never overwrites one; without it, HTML is refused on a terminal (scan already wrote `REPORT.html`) and every format still goes to stdout when piped. `--input flows.json --format markdown|json|junit` re-renders a flow result.
+
+`navsentry verify --run <dir> [--json]` checks a run folder against `MANIFEST.json` and lists every file that was modified, is missing or was added; it exits 1 on any change. The manifest is not signed: it catches accidental or partial changes (a copy that lost files, an edited report), not someone who also rewrites the manifest. Runs written before 0.4.0 have no manifest, and verify says so instead of passing.
 
 ## Reading a report
 - **Replay timeline** (browser flows): TEST-REPORT.md shows a screenshot of the headless browser after each browser step, from `<run>/shots/` (git-ignored, at most 60 per run). It is evidence of what NavSentry clicked and what the page showed, including the page at a failed step. To drive a page step by step yourself, use `navsentry browse start`.
@@ -51,6 +54,7 @@
 1. `navsentry test … --out runs/before`
 2. Fix (see the finding card's fix and before/after examples) and deploy to the same environment.
 3. `navsentry test … --out runs/after`
+   - Optional: `navsentry verify --run runs/before` before comparing a run folder that was copied or kept for a while.
 4. `navsentry compare --before runs/before/run.json --after runs/after/run.json`
    - `IMPROVED_NO_DRIFT` → done; `IMPROVED_WITH_DRIFT` → each drift row needs owner approval; `REGRESSED` → stop; `FUNCTIONAL_REGRESSION` (a flow step went PASS → FAIL/ERROR) → stop and get the owner's decision.
    - Pass the run directories to compare flows too: `navsentry compare --before runs/before --after runs/after`.
