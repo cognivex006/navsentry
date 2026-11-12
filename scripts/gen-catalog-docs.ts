@@ -7,6 +7,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { CASES, CATEGORIES, RESERVED_IDS, SOURCES, type CaseDef } from "../src/catalog.js";
 import { SNAPSHOT } from "../src/knowledge/advisories.js";
+import { ASVS5_NO_REQUIREMENT, ASVS5_REQUIREMENTS, ASVS5_SOURCE } from "../src/asvs5.js";
 import { snapshotStatus } from "../src/knowledge/model.js";
 import { mdEscape } from "../src/knowledge/propose.js";
 
@@ -107,7 +108,7 @@ function catalogMd(): string {
       out.push(`<a id="${anchor(c.id)}"></a>`, "", `### ${c.id} — ${c.titleEn}`, "", `**${c.titleTh}**`, "");
       out.push("| Field | Value |", "|---|---|");
       out.push(`| Severity (default) | ${c.severity} |`, `| Priority | ${PRIORITY_TH[c.priority]} |`, `| Automation | ${AUTO_TH[c.automation]}${c.milestone ? ` (${c.milestone})` : ""} |`);
-      out.push(`| OWASP Top 10:2025 | ${c.owasp2025.join("<br>") || "—"} |`, `| OWASP Top 10:2021 | ${c.owasp2021.join("<br>") || "—"} |`, `| CWE | ${c.cwe.join(", ") || "—"} |`, `| OWASP WSTG | ${c.wstg.join(", ") || "—"} |`, `| OWASP ASVS 5.0 (chapter) | ${c.asvs5Chapter.join(", ") || "—"} |`, `| CVE | ${c.cve?.join(", ") ?? "—"} |`);
+      out.push(`| OWASP Top 10:2025 | ${c.owasp2025.join("<br>") || "—"} |`, `| OWASP Top 10:2021 | ${c.owasp2021.join("<br>") || "—"} |`, `| CWE | ${c.cwe.join(", ") || "—"} |`, `| OWASP WSTG | ${c.wstg.join(", ") || "—"} |`, `| OWASP ASVS 5.0 (chapter) | ${c.asvs5Chapter.join(", ") || "—"} |`, `| OWASP ASVS ${ASVS5_SOURCE.version} (requirements, ${ASVS5_SOURCE.status}) | ${c.id in ASVS5_REQUIREMENTS ? (ASVS5_REQUIREMENTS[c.id]!.join(", ") || `none: ${ASVS5_NO_REQUIREMENT[c.id] ?? "—"}`) : "— (outside ASVS)"} |`, `| CVE | ${c.cve?.join(", ") ?? "—"} |`);
       out.push(`| Seen in sources | ${c.sources.length ? c.sources.map((s) => `${s.src} ×${s.count} (${esc(s.label)}; ${s.severity}${s.status ? `; ${s.status}` : ""})`).join("<br>") : "— (required by NavSentry scope, no source occurrence yet)"} |`, "");
       out.push("**FACT (ข้อเท็จจริง)**", "", c.fact, "");
       out.push("**EVIDENCE (หลักฐานที่ต้องเก็บ)**", "", ...c.evidence.map((e) => `- ${e}`), "");
