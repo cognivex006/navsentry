@@ -42,7 +42,7 @@ If discovery fails, check that the installed folder contains SKILL.md with name/
 
 A host's own Computer Use or browser tool must never be pointed at the target: NavSentry cannot enforce scope or the Budget there. Use the NavSentry visual driver instead ([ADR-0009](adr/0009-visual-driver-on-owned-browser.md)): `navsentry browse start` launches a browser that NavSentry owns, and the agent drives it with `browse screenshot`, `click`, `scroll` and `end`. Every request the page makes still goes through ScopeGate and the Budget.
 
-Requirements: development profile (`local` or `dev`), `transports.visual_computer_use: true`, `visual-computer-use` and `playwright-browser` in `transports.order`, and the Chromium headless shell (`navsentry doctor` shows `visual-computer-use USABLE`). The driver is observe-only: no typing. DOM checks inside the browser (CSP violations, cookie visibility, framing) are not implemented yet and stay NOT_TESTED. See the canonical skill for handling separate manual evidence and resuming interrupted work.
+Requirements: development profile (`local` or `dev`), `transports.visual_computer_use: true`, `visual-computer-use` and `playwright-browser` in `transports.order`, and the Chromium headless shell (`navsentry doctor` shows `visual-computer-use USABLE`). The driver can type values from env vars (never logged) since 0.3.0. DOM checks inside the browser (CSP violations, cookie visibility, framing) are not implemented yet and stay NOT_TESTED. See the canonical skill for handling separate manual evidence and resuming interrupted work.
 
 ### Tips for Claude Code and Codex
 

@@ -50,6 +50,7 @@ import { renderHtml } from "./report/html.js";
 import { paint } from "./report/color.js";
 import { nextSteps, renderNext } from "./next.js";
 import { runMcpServer } from "./mcp.js";
+import { MANIFEST_FILE, buildManifest, renderVerify, verifyRun } from "./integrity.js";
 import { fileURLToPath } from "node:url";
 import { DEFAULT_MANIFEST, INIT_ENVIRONMENTS, InitError, askInit, buildInitManifest, insideNavSentryCheckout, type InitEnvironment } from "./init.js";
 import { createInterface } from "node:readline/promises";
@@ -87,6 +88,7 @@ Usage:
   navsentry knowledge lookup --product <name> [--version <v>] | --id <CVE|advisory|alias> [--json]
   navsentry knowledge propose --input <file.json> [--config <manifest.json>] [--project <dir>]   (offline)
   navsentry report --input <run.json|flows.json> --format markdown|html|json|sarif|junit [--lang en|th] [--out <file>]   (--no-color on any command)
+  navsentry verify --run <dir> [--json]   (checks the run folder against MANIFEST.json; exit 1 on any change)
   navsentry compare --before <dir|run.json> --after <dir|run.json>   (reads flows.json beside run.json)
   navsentry catalog [--category <CODE>]
 
@@ -237,6 +239,12 @@ export async function main(argv: string[]): Promise<number> {
         } else print(body);
         return 0;
       }
+      case "verify": {
+        const dir = need(rest, "--run");
+        const v = verifyRun(statSync(dir).isDirectory() ? dir : dirname(dir));
+        print(rest.includes("--json") ? JSON.stringify({ kind: "navsentry-verify", ...v }, null, 2) : renderVerify(v));
+        return v.status === "PASS" ? 0 : 1;
+      }
       case "compare": {
         const runPath = (p: string) => (statSync(p).isDirectory() ? join(p, "run.json") : p);
         const bp = runPath(need(rest, "--before")), ap = runPath(need(rest, "--after"));
@@ -353,7 +361,9 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
   const out = outArg ? resolve(outArg) : join(ws.root, ".navsentry", "runs", r.runId);
   mkdirSync(out, { recursive: true });
   const lang = m.report.language;
+  const written: string[] = [];
   const write = (): number => {
+    written.length = 0;
     // The agent-facing summary is written first so its size is recorded in run.json (§6.4-C item 7).
     const cf = clientFindings ? JSON.stringify({ kind: "navsentry-client-findings", schemaVersion: "1", runId: r.runId, entries: clientFindings, truncated: r.assets?.clientFindings.truncated ?? 0 }, null, 2) + "\n" : undefined;
     if (cf && r.assets?.cost) r.assets.cost.agentVisibleBytes = Buffer.byteLength(cf);
@@ -371,13 +381,14 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
       if (argv.includes("--junit")) files.push(["junit.xml", renderJunit(flowRun)]);
     }
     if (models.length) mkdirSync(join(out, "page-models"), { recursive: true });
-    for (const [n, c] of files) { authorize(ws, join(out, n)); writeFileSync(join(out, n), c); }
+    for (const [n, c] of files) { authorize(ws, join(out, n)); writeFileSync(join(out, n), c); written.push(n); }
     if (shots.size) {
       // Screenshots can show personal data from the page: kept beside the report, never committed.
       mkdirSync(join(out, "shots"), { recursive: true });
       authorize(ws, join(out, "shots", ".gitignore"));
       writeFileSync(join(out, "shots", ".gitignore"), "*\n");
-      for (const [n, b] of shots) { authorize(ws, join(out, "shots", n)); writeFileSync(join(out, "shots", n), b); }
+      written.push("shots/.gitignore");
+      for (const [n, b] of shots) { authorize(ws, join(out, "shots", n)); writeFileSync(join(out, "shots", n), b); written.push(`shots/${n}`); }
     }
     return files.length;
   };
@@ -390,6 +401,8 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
     if (r.executionStatus === "COMPLETE") r.executionStatus = "PARTIAL";
   }
   write();
+  // Integrity manifest (SPEC-0.4.0 §3): sizes and SHA-256 of what this run wrote, checked by `navsentry verify`.
+  writeFileSync(join(out, MANIFEST_FILE), JSON.stringify(buildManifest(out, r.runId, TOOL_VERSION, written), null, 2) + "\n");
   const sec = securityResult(r);
   if (r.workspace.status === "FAIL") process.stderr.write(`WORKSPACE_DIRTY: created=${r.workspace.created.length} modified=${r.workspace.modified.length} deleted=${r.workspace.deleted.length} cleanup=${r.workspace.cleanup}\n`);
   if (argv.includes("--json")) {
