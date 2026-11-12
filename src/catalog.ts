@@ -289,7 +289,7 @@ export const CASES: CaseDef[] = [
   {
     id: "NSC-INFO-008", category: "INFO", titleEn: "Source maps with source content served publicly", titleTh: "เปิดให้ดาวน์โหลด source map ที่มีซอร์สโค้ดฉบับเต็ม",
     severity: "medium", priority: "PLANNED", automation: "auto",
-    owasp2021: [T21.A05], owasp2025: [T25.A02], cwe: ["CWE-540"], wstg: ["WSTG-INFO-05"], asvs5Chapter: [V5.V13],
+    owasp2021: [T21.A05], owasp2025: [T25.A02], cwe: ["CWE-540"], wstg: ["WSTG-INFO-05"], asvs5Chapter: [V5.V13, V5.V15],
     sources: [],
     fact: "A production source map with a non-empty sourcesContent array is reachable, exposing the original source code, comments and internal structure.",
     evidence: ["Map display URL, the actor that fetched it, and that sourcesContent is not empty (content never kept)"],
@@ -361,7 +361,7 @@ export const CASES: CaseDef[] = [
   {
     id: "NSC-PRIV-001", category: "PRIV", titleEn: "National ID / personal identifier disclosure", titleTh: "เปิดเผยเลขบัตรประชาชน/ข้อมูลส่วนบุคคล",
     severity: "high", priority: "IMMEDIATE", automation: "auto",
-    owasp2021: [T21.A01, T21.A02], owasp2025: [T25.A01, T25.A04], cwe: ["CWE-359", "CWE-200"], wstg: ["WSTG-INFO-05"], asvs5Chapter: [V5.V14, V5.V8],
+    owasp2021: [T21.A01, T21.A02], owasp2025: [T25.A01, T25.A04], cwe: ["CWE-359", "CWE-200"], wstg: ["WSTG-INFO-05"], asvs5Chapter: [V5.V14, V5.V8, V5.V15],
     sources: [{ src: "SRC-E", count: 1, label: "Privacy Violation: National ID Disclosure", severity: "critical", status: "Exception" }],
     fact: "API or page responses contain 13-digit values that pass the Thai national ID checksum (or card numbers passing Luhn), exposing PII regulated by PDPA.",
     evidence: ["Count of checksum-valid matches per response (values never stored)", "Actor that received them (anonymous vs authenticated)"],
@@ -511,7 +511,7 @@ export const CASES: CaseDef[] = [
   {
     id: "NSC-CRYPT-006", category: "CRYPT", titleEn: "Cleartext HTTP served without redirect to HTTPS", titleTh: "เปิดให้ใช้ HTTP แบบไม่เข้ารหัสโดยไม่ Redirect ไป HTTPS",
     severity: "medium", priority: "IMMEDIATE", automation: "auto",
-    owasp2021: [T21.A02], owasp2025: [T25.A04], cwe: ["CWE-319"], wstg: ["WSTG-CRYP-03"], asvs5Chapter: [V5.V12],
+    owasp2021: [T21.A02], owasp2025: [T25.A04], cwe: ["CWE-319"], wstg: ["WSTG-CRYP-03"], asvs5Chapter: [V5.V12, V5.V4],
     sources: [{ src: "SRC-E", count: 1, label: "Endpoints reachable over plain HTTP on service ports (web scan targets)", severity: "medium" }],
     fact: "An in-scope http:// origin serves application content instead of redirecting to HTTPS.",
     evidence: ["Status and Location of the http:// response"],
@@ -600,7 +600,7 @@ export const CASES: CaseDef[] = [
   {
     id: "NSC-AC-005", category: "AC", titleEn: "Server-side request forgery (SSRF)", titleTh: "SSRF — หลอกให้เซิร์ฟเวอร์ยิงคำขอไปยังปลายทางภายใน",
     severity: "high", priority: "IMMEDIATE", automation: "manual-active",
-    owasp2021: [T21.A10], owasp2025: [T25.A01], cwe: ["CWE-918"], wstg: ["WSTG-INPV-19"], asvs5Chapter: [V5.V1, V5.V15],
+    owasp2021: [T21.A10], owasp2025: [T25.A01], cwe: ["CWE-918"], wstg: ["WSTG-INPV-19"], asvs5Chapter: [V5.V1, V5.V15, V5.V13],
     sources: [],
     fact: "A server-side fetch uses a user-controlled URL/host without allowlisting, reaching internal services or cloud metadata.",
     evidence: ["Authorized out-of-band test with an owner-controlled callback host in staging"],

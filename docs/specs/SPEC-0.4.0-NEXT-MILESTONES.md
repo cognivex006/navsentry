@@ -10,7 +10,7 @@
 |---|---|---|---|
 | M4 integrity manifest + `navsentry verify` | ✅ ทำแล้ว (§3) | | ไม่ต้องใช้ของภายนอก ไม่มี network ไม่ติดอะไร |
 | M4 resumable runs | | ✅ | ต้องตัดสินว่า Budget และ approval ข้ามการ resume อย่างไร (กฎข้อ 4) และต่อยอดจาก manifest (§4) |
-| M4 ASVS 5.0 IDs | | ✅ | ต้องตรวจทีละข้อจากเอกสาร OWASP ต้นฉบับ และต้องมีคนรีวิวแยก (§5) |
+| M4 ASVS 5.0 IDs | ✅ จับคู่แล้ว รอรีวิวแยก (§5) | การ promote เข้า run.json และรายงาน | จับคู่จากต้นฉบับ OWASP แล้ว แต่ยังต้องมีคนอื่นรีวิวก่อนนับว่า verified |
 | M4 DevSift adapter | | ✅ | ต้องรู้ก่อนว่า DevSift ต้องมี entry ใน governance หรือไม่ (D3) |
 | M1b+ DOM checks (CSP, cookie, framing) | | ✅ | ใช้ Chromium headless shell ซึ่งเป็น Chrome for Testing ที่รอเจ้าของยืนยัน terms ใหม่ (D1) |
 | M1b+ YAML manifests | | ✅ | ต้องเพิ่ม dependency (กฎข้อ 2) |
@@ -41,8 +41,12 @@ An item moves to the next phase when it needs something not yet allowed: a depen
 ## 4. Resumable runs (next phase)
 Needs D4. A resume must never send more requests than the original Budget allowed, never outlive the authorization window, and never reuse an approval hash for flows that changed. A resumed run would check the earlier run folder with `verify` before it trusts anything in it.
 
-## 5. ASVS 5.0 requirement IDs (next phase)
-Each case's ASVS mapping must be checked against the OWASP ASVS 5.0 source text, recorded with the source and date, and reviewed by someone else before `catalog.ts` marks it verified. Unverified mappings stay unverified.
+## 5. ASVS 5.0 requirement IDs (mapped, pending independent review)
+- `src/asvs5.ts` maps 49 cases to requirement IDs, matched by hand on 2026-11-12 against the requirement text in OWASP/ASVS `5.0/en/` at tag `v5.0.0_release` (commit `5cf9b032440be53ce345ab3c130fda46ba1ce7a2`). Only IDs are stored, never requirement text.
+- Three cases map no requirement, and each one says why: NSC-INFO-003 (internal IPs), NSC-INFO-006 (browser console) and NSC-CRYPT-004 (pinning, deprecated). The infrastructure cases and NSC-INFO-005 are outside ASVS.
+- Four chapter mappings were missing a chapter that their requirement belongs to, and are extended: NSC-INFO-008 +V15, NSC-PRIV-001 +V15, NSC-CRYPT-006 +V4, NSC-AC-005 +V13. These reach `run.json` through the existing `asvs5Chapter` field.
+- Status is `pending-independent-review`. Until someone other than the author checks each mapping and flips the status, the IDs appear only in the generated catalog docs, not in `run.json`, reports or SARIF (next phase).
+- Tests (`test/asvs5.test.ts`): every ID exists in the 297-ID list from the pinned source, belongs to a chapter the case maps, has no duplicates, and an empty mapping always gives a reason.
 
 ## 6. Out of scope for this phase
 Everything in the table marked phase หน้า. Nothing in this spec makes an unavailable capability usable.

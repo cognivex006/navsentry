@@ -7,8 +7,10 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ### Added
 - Run integrity manifest: `scan` and `test` write `MANIFEST.json` with the size and SHA-256 of every file the run wrote. `navsentry verify --run <dir> [--json]` lists modified, missing and added files and exits 1 on any change. The manifest is not signed, so it catches accidental changes, not a deliberate edit that also rewrites it.
 - [SPEC-0.4.0](docs/specs/SPEC-0.4.0-NEXT-MILESTONES.md) (draft): splits M1b+, M3, M4 and M5 into work done now and work moved to the next phase, with the owner decisions D1–D6 each blocked item needs.
+- ASVS 5.0 requirement IDs for 49 cases (`src/asvs5.ts`), matched against OWASP ASVS `v5.0.0_release` (commit 5cf9b03) on 2026-11-12. They are marked pending independent review and appear only in the generated case catalog. Three cases state why no requirement fits.
 
 ### Changed
+- `asvs5Chapter` gains a chapter its requirement needs: NSC-INFO-008 and NSC-PRIV-001 add V15, NSC-CRYPT-006 adds V4, NSC-AC-005 adds V13. This shows in `run.json` finding mappings.
 - DEV-PLAN and AGENT-INTEGRATIONS no longer list visual-driver typing as missing; it shipped in 0.3.0.
 
 ## [0.3.1] - 2026-11-11
