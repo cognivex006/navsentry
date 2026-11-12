@@ -1,6 +1,6 @@
 {
   "name": "navsentry",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Authorized, non-destructive web security validation with evidence-based reports, story-flow test cases (Integration/E2E), fix verification and version doctor.",
   "author": {
     "name": "NavSentry contributors"

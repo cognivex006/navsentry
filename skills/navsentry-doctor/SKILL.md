@@ -2,7 +2,7 @@
 name: navsentry-doctor
 description: Check NavSentry CLI, plugin and skill versions across Claude Code, Codex, Gemini CLI and Antigravity, report outdated or mismatched installations, and update a selected host's NavSentry skills when the user asks. Use for NavSentry install, update, version or doctor requests.
 metadata:
-  version: "0.3.1"
+  version: "0.4.0"
 ---
 
 # NavSentry doctor
