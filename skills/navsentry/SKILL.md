@@ -2,7 +2,7 @@
 name: navsentry
 description: Plan and run authorized, non-destructive web security checks with the NavSentry CLI (single page, spider crawl, story flows, playwright engine, Computer Use visual driver, safe-validate), read its REPORT.md / run.json, use the case catalog's VERIFY / FIX / RECHECK prompts, and draft, lint and replay story flows as Integration/E2E test cases. Use when asked to security-test, scan a page, explore a site with Computer Use, create or run test cases, verify a fix, or compare before/after for a web application the user owns or is authorized to test.
 metadata:
-  version: "0.3.1"
+  version: "0.4.0"
 ---
 
 # NavSentry (consumer skill)

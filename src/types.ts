@@ -2,7 +2,7 @@
 
 export const REPORT_SCHEMA_VERSION = "1";
 export const TOOL_NAME = "navsentry";
-export const TOOL_VERSION = "0.3.1";
+export const TOOL_VERSION = "0.4.0";
 
 /** Result of a single check execution. Only PASS/FAIL are conclusive. */
 export type CheckStatus = "PASS" | "FAIL" | "INCONCLUSIVE" | "NOT_TESTED" | "ERROR";

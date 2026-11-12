@@ -4,6 +4,8 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-12
+
 ### Added
 - Run integrity manifest: `scan` and `test` write `MANIFEST.json` with the size and SHA-256 of every file the run wrote. `navsentry verify --run <dir> [--json]` lists modified, missing and added files and exits 1 on any change. The manifest is not signed, so it catches accidental changes, not a deliberate edit that also rewrites it.
 - [SPEC-0.4.0](docs/specs/SPEC-0.4.0-NEXT-MILESTONES.md) (draft): splits M1b+, M3, M4 and M5 into work done now and work moved to the next phase, with the owner decisions D1–D6 each blocked item needs.
