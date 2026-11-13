@@ -302,7 +302,7 @@ Profiles: `local` and `dev` manifests use the `development` profile; `staging` a
 ## Limitations
 
 - Zero findings does not mean the application is secure. Injection, access control and business-logic issues need authorized manual testing.
-- The default engine is HTTP and TLS. The playwright engine and the visual driver run only in the development profile; DOM checks such as CSP violations, cookie visibility and framing in the browser are not implemented yet and stay `NOT_TESTED`.
+- The default engine is HTTP and TLS. The playwright engine and the visual driver run only in the development profile; on playwright flow runs on `--engine playwright` add DOM checks after the flows: session-like cookies readable through `document.cookie` (NSC-SESS-002, names only), a cross-origin framing probe on up to 5 HTML documents (NSC-CONF-003; the parent page is served from memory and never sent) and CSP violations the browser enforced (NSC-CONF-002).
 - `safe-validate` (development profile only) changes state only through fixtures that the owner declares, and cleans them up by id. Login actors (http or browser) and cookie sessions take credentials from env vars only. Side effects such as emails or webhooks are not undone, and a run that leaves data behind is `FAILED`. See [docs/FLOWS.md](docs/FLOWS.md#fixtures-and-mutations-safe-validate-020-a).
 
 ## More

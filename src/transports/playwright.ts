@@ -13,7 +13,7 @@ import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import type { Exchange } from "./types.js";
 import type { UiTarget } from "../flow/parse.js";
-import { describeInPage, humanWatchScript, snapshotInPage } from "./page-scripts.js";
+import { cookieNamesInPage, cspWatchScript, describeInPage, humanWatchScript, snapshotInPage } from "./page-scripts.js";
 
 /** Minimal structural types of the playwright-core API used here (it is an optional peer). */
 interface PwRequest { postDataBuffer(): Buffer | null; url(): string; method(): string; headers(): Record<string, string>; resourceType(): string; isNavigationRequest(): boolean; frame(): { parentFrame(): unknown } }
@@ -41,6 +41,7 @@ interface PwPage {
   locator(selector: string): PwLocator;
   keyboard: { press(key: string): Promise<void> };
   waitForEvent(ev: "framenavigated", o: { timeout: number }): Promise<unknown>;
+  frames(): { url(): string; parentFrame(): unknown }[];
 }
 interface PwContext {
   route(p: string, fn: (r: PwRoute) => Promise<void>): Promise<void>;
@@ -111,7 +112,16 @@ export interface BrowserEngineOptions {
    * events happened while the agent itself was acting.
    */
   onHuman?(e: HumanEvent): void;
+  /** CSP violations reported by the browser (M1b+). Page data: a page can fake or hide them. */
+  onCsp?(e: CspViolation): void;
 }
+
+/** A CSP violation the browser reported in the page (M1b+ DOM checks). Blocked origin only, never the full URL. */
+export interface CspViolation { actor: string; directive: string; blocked: string; disposition: string }
+
+/** Reserved, never-resolvable parent origin for the cross-origin framing probe; served locally, never sent. */
+export const FRAME_PROBE_ORIGIN = "https://navsentry-frame-probe.invalid";
+const CSP_BINDING = "__navsentryCsp";
 
 export type HumanEvent = { actor: string; kind: "click"; role: string; name: string } | { actor: string; kind: "navigate"; url: string };
 /** Name of the page binding for human clicks; the init script takes it off `window` before page scripts run. */
@@ -206,6 +216,15 @@ export class BrowserEngine {
       });
       await ctx.addInitScript({ content: humanWatchScript(HUMAN_BINDING) });
     }
+    const csp = this.opts.onCsp;
+    if (csp) {
+      await ctx.exposeBinding(CSP_BINDING, (_src, arg) => {
+        const a = arg as { directive?: unknown; blocked?: unknown; disposition?: unknown } | null;
+        if (!a || typeof a.directive !== "string" || typeof a.blocked !== "string") return;
+        csp({ actor, directive: a.directive.slice(0, 60), blocked: a.blocked.slice(0, 200), disposition: typeof a.disposition === "string" ? a.disposition.slice(0, 20) : "" });
+      });
+      await ctx.addInitScript({ content: cspWatchScript(CSP_BINDING) });
+    }
     const page = await ctx.newPage();
     if (human) page.on("framenavigated", (f) => { if (f.parentFrame() === null) human({ actor, kind: "navigate", url: f.url() }); });
     const watch = (p: PwPage) => {
@@ -225,6 +244,13 @@ export class BrowserEngine {
     let u: URL;
     try { u = new URL(url); } catch { await route.abort("blockedbyclient"); return; }
     if (u.protocol !== "http:" && u.protocol !== "https:") { await route.abort("blockedbyclient"); return; }
+    const probe = this.frameProbes.get(url);
+    if (u.origin === FRAME_PROBE_ORIGIN) {
+      // The probe parent page is served from memory and never sent; any other path on the probe origin is refused.
+      if (probe !== undefined && rq.method() === "GET") await route.fulfill({ status: 200, headers: { "content-type": "text/html; charset=utf-8" }, body: Buffer.from(probe) });
+      else await route.abort("blockedbyclient");
+      return;
+    }
     const observe = OBSERVE_METHODS.has(rq.method());
     if (!observe && !this.opts.mutate) {
       // The browser would send a body NavSentry cannot vet; observe mode sends no state-changing request.
@@ -255,6 +281,48 @@ export class BrowserEngine {
     const out: Record<string, string> = {};
     for (const [k, vs] of Object.entries(raw.headers)) if (!DROP_RESPONSE.has(k)) out[k] = vs.join(k === "set-cookie" ? "\n" : ", ");
     await route.fulfill({ status: raw.status, headers: out, body: raw.body });
+  }
+
+  private readonly frameProbes = new Map<string, string>();
+
+  /** Names (never values) of the cookies page scripts can read on the actor's current page. */
+  async readableCookieNames(actor: string): Promise<{ url: string; names: string[] } | { error: string }> {
+    const s = this.contexts.get(actor);
+    if (!s) return { error: "no page loaded for this actor" };
+    try {
+      return { url: s.page.url(), names: await s.page.evaluate(cookieNamesInPage, 50) };
+    } catch (e) {
+      return { error: `cookie read failed: ${firstLine(e)}` };
+    }
+  }
+
+  /**
+   * Cross-origin framing probe (NSC-CONF-003 in the browser): a page on FRAME_PROBE_ORIGIN, served from memory,
+   * embeds `url` in an iframe. The framed load goes through route → ScopeGate → Budget like any request.
+   * "framed" when the frame ends on the target URL, "blocked" when the browser replaced it with an error page.
+   * It runs in a separate page of the actor's context, so the flow's own page is not touched.
+   */
+  async framingProbe(actor: string, url: string): Promise<"framed" | "blocked" | { error: string }> {
+    const s = this.contexts.get(actor);
+    if (!s) return { error: "no page loaded for this actor" };
+    const probeUrl = `${FRAME_PROBE_ORIGIN}/frame-${this.frameProbes.size + 1}`;
+    this.frameProbes.set(probeUrl, `<!doctype html><title>probe</title><iframe src="${url.replace(/[&"<>]/g, (c) => `&#${c.charCodeAt(0)};`)}" width="400" height="300"></iframe>`);
+    let page: PwPage | undefined;
+    try {
+      page = await s.ctx.newPage();
+      await page.goto(probeUrl, { timeout: ACTION_TIMEOUT_MS, waitUntil: "load" });
+      const child = page.frames().find((f) => f.parentFrame() !== null);
+      if (!child) return { error: "probe frame not created" };
+      const at = child.url();
+      if (at === url) return "framed";
+      if (at.startsWith("chrome-error:") || at === "about:blank") return "blocked";
+      return { error: `frame ended on an unexpected URL` };
+    } catch (e) {
+      return { error: `framing probe failed: ${firstLine(e)}` };
+    } finally {
+      this.frameProbes.delete(probeUrl);
+      await page?.close().catch(() => undefined);
+    }
   }
 
   async navigate(actor: string, url: string): Promise<{ status?: number; error?: string }> {

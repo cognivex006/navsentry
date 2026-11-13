@@ -14,7 +14,7 @@ import { allAdapters } from "./transports/registry.js";
 import type { Exchange } from "./transports/types.js";
 import { applyConsoleSilent, functionalResult, runFlows, type FlowBrowser } from "./flow/execute.js";
 import { ConsoleInspector } from "./console/detect.js";
-import { BrowserEngine, firstLine, probePlaywright, type BrowserRequest, type ConsoleEvent, type PlaywrightProbe } from "./transports/playwright.js";
+import { BrowserEngine, firstLine, probePlaywright, type BrowserRequest, type ConsoleEvent, type CspViolation, type PlaywrightProbe } from "./transports/playwright.js";
 import { bindManifest, classify, flowSetHash } from "./flow/classify.js";
 import { fillPath, flowOrigin, VAR_SENTINEL } from "./flow/lint.js";
 import { UI_ACTIONS, type FlowDoc } from "./flow/parse.js";
@@ -405,6 +405,10 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
   let flowBrowser: FlowBrowser | undefined;
   let inspector: ConsoleInspector | undefined;
   let browserMissing: string | undefined;
+  // M1b+ DOM checks: CSP violations seen in the browser, and the HTML main documents each actor loaded.
+  const cspViolations: CspViolation[] = [];
+  const browserDocs: { actor: string; url: string; ex: Exchange }[] = [];
+  let domSend: ((flow: { id: string; step: string }, fn: () => Promise<unknown>) => Promise<{ ids: string[]; budget?: BudgetExceeded }>) | undefined;
   if (opts.flows && opts.browser) {
     const p = (opts.browser.probe ?? probePlaywright)();
     if (!p.usable) { incomplete.push(`playwright engine unavailable: ${p.reason}; UI steps NOT_TESTED`); browserMissing = p.reason; }
@@ -424,6 +428,7 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
           cur.ids.push(ex.record.id);
           if (q.mainDocument && !ex.record.error) {
             cur.doc = ex;
+            if (/text\/html/i.test(ex.raw?.headers["content-type"]?.[0] ?? "") && !browserDocs.some((d) => d.actor === q.actor && d.url === q.url)) browserDocs.push({ actor: q.actor, url: q.url, ex });
             checks.push(...perExchange(ex, q.actor, q.url).filter((c) => !disabled.has(c.ruleId)));
           }
           return ex;
@@ -454,9 +459,10 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
             throw e;
           }
         } : undefined;
-        engine = await BrowserEngine.open({ send: sendBrowser, onDenied: (url, method, reason) => denials.push({ url: redactor.url(url), method, reason }), onConsole, ...(mutate ? { mutate } : {}) }, actorMap);
+        engine = await BrowserEngine.open({ send: sendBrowser, onDenied: (url, method, reason) => denials.push({ url: redactor.url(url), method, reason }), onConsole, onCsp: (v) => { if (cspViolations.length < 200) cspViolations.push(v); }, ...(mutate ? { mutate } : {}) }, actorMap);
         const eng = engine;
         const finish = () => { const c = cur!; cur = undefined; if (c.budget) throw c.budget; return c; };
+        domSend = async (flow, fn) => { const c: NonNullable<typeof cur> = { flow, ids: [] }; cur = c; try { await fn(); } finally { cur = undefined; } return { ids: c.ids, ...(c.budget ? { budget: c.budget } : {}) }; };
         flowBrowser = {
           navigate: async (actor, url, flow) => {
             cur = { flow, ids: [] };
@@ -588,6 +594,10 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
       for (const k of ["attribute", "script"] as const) if (c[k]) observations.push({ kind: "marker-reflection", context: k, url: ex.record.url, requestId: ex.record.id, count: c[k] });
     }
     if (!disabled.has("NSC-INJ-004")) checks.push({ ruleId: "NSC-INJ-004", status: "NOT_TESTED", target: "marker reflections", transport: "direct-http", summary: "Output encoding not tested", observations: observations.map((o) => `marker reflected in ${o.context} context (${o.count}x) at ${o.url}`), requestIds: observations.map((o) => o.requestId), reason: "testing output encoding needs an injection payload (active-approved); marker reflections are recorded in run.json observations" });
+  }
+  if (engine && domSend) {
+    try { checks.push(...(await domChecks(engine, domSend, browserDocs, cspViolations, actorsOf(browserDocs), disabled, (u) => redactor.url(u), incomplete))); }
+    catch (e) { incomplete.push(`DOM checks stopped: ${firstLine(e)}`); }
   }
   await engine?.close();
   budget.close();
@@ -925,4 +935,62 @@ async function crawl(
     if (scan.base) { try { base = new URL(scan.base, finalUrl).toString(); } catch { /* keep the page URL */ } }
     return { hrefs: scan.hrefs, base };
   }
+}
+
+const actorsOf = (docs: { actor: string }[]): string[] => [...new Set(docs.map((d) => d.actor))];
+/** At most this many documents get the framing probe (one extra framed request each). */
+export const MAX_FRAMING_PROBES = 5;
+
+/**
+ * M1b+ DOM checks (SPEC-0.4.0): run after the flows, in the same browser contexts.
+ * - NSC-SESS-002: session-like cookie names readable through document.cookie (names only, values never read out).
+ * - NSC-CONF-003: a cross-origin parent page (served from memory) tries to frame each HTML document.
+ * - NSC-CONF-002: CSP violations the browser reported, as evidence the policy is enforced.
+ * Everything a page reports is target data: a page can hide its cookies or fake a violation.
+ */
+async function domChecks(
+  engine: BrowserEngine,
+  send: (flow: { id: string; step: string }, fn: () => Promise<unknown>) => Promise<{ ids: string[]; budget?: BudgetExceeded }>,
+  docs: { actor: string; url: string; ex: Exchange }[],
+  csp: CspViolation[],
+  actors: string[],
+  disabled: Set<string>,
+  url: (u: string) => string,
+  incomplete: string[],
+): Promise<CheckResult[]> {
+  const out: CheckResult[] = [];
+  const base = { transport: "playwright-browser", requestIds: [] as string[] };
+  if (!disabled.has("NSC-SESS-002")) {
+    for (const actor of actors) {
+      const r = await engine.readableCookieNames(actor);
+      if ("error" in r) { out.push({ ...base, ruleId: "NSC-SESS-002", status: "INCONCLUSIVE", target: `browser cookies (${actor})`, summary: "Cookies readable by scripts not checked", observations: [], reason: r.error }); continue; }
+      const sessionish = r.names.filter((n) => P.SESSIONISH_COOKIE.test(n));
+      out.push(sessionish.length
+        ? { ...base, ruleId: "NSC-SESS-002", status: "FAIL", target: `document.cookie at ${url(r.url)}`, summary: "Session-like cookie(s) readable by page scripts (browser-confirmed)", observations: [...sessionish.map((n) => `readable by document.cookie: ${n} (value not read out)`), `actor ${actor}`], lifecycle: "VALIDATED" }
+        : { ...base, ruleId: "NSC-SESS-002", status: "PASS", target: `document.cookie at ${url(r.url)}`, summary: "No session-like cookie readable by page scripts", observations: [`${r.names.length} script-readable cookie name(s), none session-like`, `actor ${actor}`] });
+    }
+  }
+  if (!disabled.has("NSC-CONF-003")) {
+    let n = 0;
+    for (const d of docs) {
+      if (n >= MAX_FRAMING_PROBES) { incomplete.push(`framing probe: ${docs.length - MAX_FRAMING_PROBES} document(s) not probed (limit ${MAX_FRAMING_PROBES})`); break; }
+      n++;
+      let res: Awaited<ReturnType<BrowserEngine["framingProbe"]>> = { error: "not run" };
+      const sent = await send({ id: "dom-checks", step: `framing-${n}` }, async () => { res = await engine.framingProbe(d.actor, d.url); });
+      if (sent.budget) { incomplete.push(`framing probe stopped: ${sent.budget.message}`); break; }
+      const target = `framed from a cross-origin parent: ${url(d.url)}`;
+      const r = res as "framed" | "blocked" | { error: string };
+      if (r === "framed") out.push({ ...base, ruleId: "NSC-CONF-003", status: "FAIL", target, requestIds: sent.ids, summary: "Page loads inside a cross-origin frame (browser-confirmed)", observations: ["the browser rendered the document in an iframe on a foreign origin", `actor ${d.actor}`], lifecycle: "VALIDATED" });
+      else if (r === "blocked") out.push({ ...base, ruleId: "NSC-CONF-003", status: "PASS", target, requestIds: sent.ids, summary: "Browser refused to render the page in a cross-origin frame", observations: [`actor ${d.actor}`] });
+      else out.push({ ...base, ruleId: "NSC-CONF-003", status: "INCONCLUSIVE", target, requestIds: sent.ids, summary: "Framing probe did not complete", observations: [], reason: r.error });
+    }
+  }
+  const enforced = csp.filter((v) => v.disposition !== "report");
+  if (!disabled.has("NSC-CONF-002") && enforced.length) {
+    // Report-only violations prove nothing about enforcement (the header check already flags report-only CSP).
+    const kinds = new Map<string, number>();
+    for (const v of enforced) { const k = `${v.disposition || "enforce"} ${v.directive} blocked ${v.blocked || "(no URL)"}`; kinds.set(k, (kinds.get(k) ?? 0) + 1); }
+    out.push({ ...base, ruleId: "NSC-CONF-002", status: "PASS", target: "CSP enforcement in the browser", summary: `The browser blocked ${enforced.length} resource(s) under CSP: the policy is enforced`, observations: [...kinds].slice(0, 20).map(([k, c]) => `${k} (${c}x)`) });
+  }
+  return out;
 }
