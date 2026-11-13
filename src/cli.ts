@@ -51,6 +51,7 @@ import { paint } from "./report/color.js";
 import { nextSteps, renderNext } from "./next.js";
 import { runMcpServer } from "./mcp.js";
 import { ResumeRefused } from "./resume.js";
+import { DevsiftError, MAX_DEVSIFT_BYTES, correlate, parseDevsiftReport, renderCorrelation } from "./devsift.js";
 import { cliTransportCheck, type CliKind } from "./transports/cli-http.js";
 import { MANIFEST_FILE, buildManifest, renderVerify, verifyRun } from "./integrity.js";
 import { fileURLToPath } from "node:url";
@@ -90,6 +91,7 @@ Usage:
   navsentry knowledge lookup --product <name> [--version <v>] | --id <CVE|advisory|alias> [--json]
   navsentry knowledge propose --input <file.json> [--config <manifest.json>] [--project <dir>]   (offline)
   navsentry report --input <run.json|flows.json> --format markdown|html|json|sarif|junit [--lang en|th] [--out <file>]   (--no-color on any command)
+  navsentry correlate --run <dir|run.json> --devsift <devsift report.json> [--json]   (leads between DevSift code cases and findings; runs nothing)
   navsentry verify --run <dir> [--json]   (checks the run folder against MANIFEST.json; exit 1 on any change)
   navsentry compare --before <dir|run.json> --after <dir|run.json>   (reads flows.json beside run.json)
   navsentry catalog [--category <CODE>]
@@ -241,6 +243,16 @@ export async function main(argv: string[]): Promise<number> {
         } else print(body);
         return 0;
       }
+      case "correlate": {
+        // DevSift correlation (SPEC-0.4.0 D3): reads two files, runs nothing, sends nothing.
+        const rp = need(rest, "--run");
+        const run = validateRunResult(JSON.parse(readFileSync(statSync(rp).isDirectory() ? join(rp, "run.json") : rp, "utf8")));
+        const dp = need(rest, "--devsift");
+        if (statSync(dp).size > MAX_DEVSIFT_BYTES) throw new DevsiftError(`DevSift report larger than ${MAX_DEVSIFT_BYTES} bytes`);
+        const res = correlate(run, parseDevsiftReport(readFileSync(dp, "utf8")));
+        print(rest.includes("--json") ? JSON.stringify(res, null, 2) : renderCorrelation(res));
+        return 0;
+      }
       case "verify": {
         const dir = need(rest, "--run");
         const v = verifyRun(statSync(dir).isDirectory() ? dir : dirname(dir));
@@ -268,7 +280,7 @@ export async function main(argv: string[]): Promise<number> {
         throw new UsageError(`unknown command ${cmd}`);
     }
   } catch (e) {
-    if (e instanceof ConfigError || e instanceof UsageError || e instanceof DoctorError || e instanceof FlowError || e instanceof WorkspaceError || e instanceof ProposalError || e instanceof OpenApiError || e instanceof RecordingError || e instanceof ResumeRefused) {
+    if (e instanceof ConfigError || e instanceof UsageError || e instanceof DoctorError || e instanceof FlowError || e instanceof WorkspaceError || e instanceof ProposalError || e instanceof OpenApiError || e instanceof RecordingError || e instanceof ResumeRefused || e instanceof DevsiftError) {
       process.stderr.write(`${e.message}\n`);
       return 3;
     }

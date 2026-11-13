@@ -11,7 +11,7 @@
 | M4 integrity manifest + `navsentry verify` | ✅ ทำแล้ว (§3) | | ไม่ต้องใช้ของภายนอก ไม่มี network ไม่ติดอะไร |
 | M4 resumable runs | ✅ ทำแล้วหลัง D4 (§4) | | ต้องตัดสินว่า Budget และ approval ข้ามการ resume อย่างไร (กฎข้อ 4) และต่อยอดจาก manifest (§4) |
 | M4 ASVS 5.0 IDs | ✅ จับคู่แล้ว รอรีวิวแยก (§5) | การ promote เข้า run.json และรายงาน | จับคู่จากต้นฉบับ OWASP แล้ว แต่ยังต้องมีคนอื่นรีวิวก่อนนับว่า verified |
-| M4 DevSift adapter | | ✅ | ต้องรู้ก่อนว่า DevSift ต้องมี entry ใน governance หรือไม่ (D3) |
+| M4 DevSift adapter | ✅ ทำแล้วหลัง D3 (§4.1) | | ต้องรู้ก่อนว่า DevSift ต้องมี entry ใน governance หรือไม่ (D3) |
 | M1b+ DOM checks (CSP, cookie, framing) | ✅ ทำแล้วหลัง D1 | | ใช้ Chromium headless shell ซึ่งเป็น Chrome for Testing ที่รอเจ้าของยืนยัน terms ใหม่ (D1) |
 | M1b+ YAML manifests | | ✅ | ต้องเพิ่ม dependency (กฎข้อ 2) |
 | M3 CLI transports (curl, PowerShell) | ✅ ทำแล้วหลัง D2 (Windows; Linux ยังไม่ได้รัน) | | curl และ PowerShell เป็น binary ภายนอก ต้องอนุมัติก่อน (D2); interface และ parity test มีไว้เพื่อ transport เหล่านี้เท่านั้น จึงย้ายไปด้วยกัน; การรันบน Linux ทำในเครื่องนี้ไม่ได้ |
@@ -55,6 +55,9 @@ An item moves to the next phase when it needs something not yet allowed: a depen
 - A seed URL or flow that sent any request in the earlier run is not sent again; each one is listed in `incompleteReasons`. The TLS probe is not repeated.
 - The authorization window is checked again against the same manifest. Flows are linted and approval-checked again as on any run.
 - The new run's report covers only what it sent; the earlier report remains the record of the rest. Tests: `test/resume.test.ts`.
+
+### 4.1 DevSift correlation (implemented, D3)
+`navsentry correlate --run <dir> --devsift <report.json> [--json]` (`src/devsift.ts`) reads a DevSift report file (`schema_version` "1", `tool` "devsift") and lists leads: a DevSift code case whose rule maps, through a fixed table, to a case NavSentry found. It reads only IDs, enums, the file path and the line number. Code excerpts and prompts are ignored. It never runs DevSift, installs nothing and sends nothing, and any other report version is refused. A lead is not proof and changes no finding. Tests: `test/devsift.test.ts`.
 
 ## 5. ASVS 5.0 requirement IDs (mapped, pending independent review)
 - `src/asvs5.ts` maps 49 cases to requirement IDs, matched by hand on 2026-11-12 against the requirement text in OWASP/ASVS `5.0/en/` at tag `v5.0.0_release` (commit `5cf9b032440be53ce345ab3c130fda46ba1ce7a2`). Only IDs are stored, never requirement text.
