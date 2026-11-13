@@ -50,6 +50,9 @@
   - ⚪ INFO is an observation with info severity.
 - Known vulnerabilities show the advisory's CVSS score and vector, with the source of the score.
 
+## Resuming an interrupted run
+`navsentry scan|test … --resume runs/before --out runs/before-2` continues a PARTIAL run as a new run (SPEC-0.4.0 §4). It refuses unless the earlier folder passes `verify` and the scope, mode and flows are unchanged. It uses only the request budget the earlier run had left, never resends a seed or flow that already sent a request, and records `resumedFrom` in run.json. Read both reports: each covers only what its run sent.
+
 ## Before/after workflow
 1. `navsentry test … --out runs/before`
 2. Fix (see the finding card's fix and before/after examples) and deploy to the same environment.

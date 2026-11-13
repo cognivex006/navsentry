@@ -189,6 +189,11 @@ export interface RunResult {
   observations?: MarkerObservation[];
   fixtures?: FixtureRunSummary;
   mutations?: MutationRecord[];
+  /**
+   * M4 resume (SPEC-0.4.0 D4): the earlier PARTIAL run this one continues. `budget.requestsMax` is then what that
+   * run had left. This run's findings cover only what it sent; the earlier report covers the rest.
+   */
+  resumedFrom?: { runId: string; manifestSha256: string; seedsSkipped: number; flowsSkipped: number };
 }
 
 /** The run marker reflected in an HTML attribute or script context. A fact only; it never sets NSC-INJ-004. */
