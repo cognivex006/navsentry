@@ -1,7 +1,7 @@
 /**
  * Optional transports. Each reports honest availability; none is ever mocked as live.
- * In v0.1 only `direct-http` executes requests. The others are probed (doctor/integrations)
- * and their safety-critical argument builders are implemented and unit-tested ahead of M3.
+ * direct-http executes requests by default; curl-cli and powershell-http execute them with `--transport`
+ * (M3, src/transports/cli-http.ts). The others are probed (doctor/integrations).
  */
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
@@ -58,36 +58,6 @@ export function assertSafeHeader(name: string, value: string): void {
   if (/[\r\n\0]/.test(value)) throw new Error("header value contains CR/LF/NUL");
 }
 
-/**
- * Builds curl argv (no shell). `-q` MUST be first so ~/.curlrc cannot inject options;
- * redirects are disabled so the runner re-checks scope per hop.
- */
-export function buildCurlArgv(method: HttpMethod, url: string, headers: Record<string, string>): string[] {
-  const u = new URL(url);
-  if (u.protocol !== "https:" && u.protocol !== "http:") throw new Error("scheme not allowed");
-  const argv = ["-q", "--silent", "--show-error", "--include", "--proto", "=http,https", "--max-redirs", "0", "--max-time", "15", "--max-filesize", "1048576", "--noproxy", "*", "-X", method];
-  for (const [k, v] of Object.entries(headers)) {
-    assertSafeHeader(k, v);
-    argv.push("-H", `${k}: ${v}`);
-  }
-  argv.push("--", u.toString());
-  return argv;
-}
-
-/**
- * PowerShell parameters are passed as data via a fixed script and -EncodedCommand-free argv;
- * user values never become script text. MaximumRedirection 0 keeps scope checks per hop.
- */
-export const PWSH_FIXED_SCRIPT =
-  "param([string]$Method,[string]$Uri,[string]$HeadersJson) $ErrorActionPreference='Stop'; $h=@{}; (ConvertFrom-Json $HeadersJson).psobject.properties | ForEach-Object { $h[$_.Name]=[string]$_.Value }; $r=Invoke-WebRequest -UseBasicParsing -Method $Method -Uri $Uri -Headers $h -MaximumRedirection 0 -TimeoutSec 15 -NoProxy -SkipHttpErrorCheck; [pscustomobject]@{status=[int]$r.StatusCode; headers=$r.Headers} | ConvertTo-Json -Depth 4 -Compress";
-
-export function buildPwshArgv(method: HttpMethod, url: string, headers: Record<string, string>): string[] {
-  const u = new URL(url);
-  if (u.protocol !== "https:" && u.protocol !== "http:") throw new Error("scheme not allowed");
-  for (const [k, v] of Object.entries(headers)) assertSafeHeader(k, v);
-  return ["-NoProfile", "-NonInteractive", "-Command", `& { ${PWSH_FIXED_SCRIPT} }`, "-Method", method, "-Uri", u.toString(), "-HeadersJson", JSON.stringify(headers)];
-}
-
 abstract class ProbedCli implements ExecutionAdapter {
   abstract readonly capabilities: TransportCapabilities;
   protected abstract candidates: string[];
@@ -97,7 +67,7 @@ abstract class ProbedCli implements ExecutionAdapter {
     if (!file) return { id: this.capabilities.id, available: false, usable: false, reason: "executable not found in trusted system locations" };
     const version = await runVersion(file, this.versionArgs);
     if (!version) return { id: this.capabilities.id, available: false, usable: false, reason: "executable present but version probe failed" };
-    return { id: this.capabilities.id, available: true, usable: false, reason: "detected; request execution is scheduled for milestone M3 (argv builder implemented and tested)", version };
+    return { id: this.capabilities.id, available: true, usable: true, reason: "fixed system path; `--transport` sends observe requests pinned to the ScopeGate-checked address (M3)", version };
   }
 }
 

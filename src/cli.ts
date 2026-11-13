@@ -50,6 +50,7 @@ import { renderHtml } from "./report/html.js";
 import { paint } from "./report/color.js";
 import { nextSteps, renderNext } from "./next.js";
 import { runMcpServer } from "./mcp.js";
+import { cliTransportCheck, type CliKind } from "./transports/cli-http.js";
 import { MANIFEST_FILE, buildManifest, renderVerify, verifyRun } from "./integrity.js";
 import { fileURLToPath } from "node:url";
 import { DEFAULT_MANIFEST, INIT_ENVIRONMENTS, InitError, askInit, buildInitManifest, insideNavSentryCheckout, type InitEnvironment } from "./init.js";
@@ -68,9 +69,9 @@ Usage:
   navsentry validate --config <manifest.json>
   navsentry plan --config <manifest.json> [--flows <path>] [--flows-only] [--include-drafts]   (zero network)
   navsentry discover --config <manifest.json> --dry-run
-  navsentry test --config <manifest.json> [--out <dir>] [--profile safe] [--env development|production] [--project <dir>]
+  navsentry test --config <manifest.json> [--transport direct-http|curl-cli|powershell-http] [--out <dir>] [--profile safe] [--env development|production] [--project <dir>]
                  [--flows <path>] [--flows-only] [--include-drafts] [--only <id,...>] [--level integration|e2e] [--junit]
-  navsentry scan [--config <manifest.json>] [--mode page|spider|flow] [--deep] [--engine http|playwright|analyzer] [--analyze [--extractors <dir>]]
+  navsentry scan [--config <manifest.json>] [--mode page|spider|flow] [--deep] [--engine http|playwright|analyzer] [--transport direct-http|curl-cli|powershell-http] [--analyze [--extractors <dir>]]
                  [--env development|production] [--url <in-scope URL>] [--flows <path>] [--out <dir>] [--project <dir>]
                  no --mode means page; --deep means spider with --analyze. page without --url scans the seed paths, like test; flow equals test --flows <path> --flows-only.
                  spider crawls from the seed paths, grouping pages by template; scan --engine computer-use exits 3: use browse.
@@ -301,6 +302,15 @@ interface RunOpts { analyze?: { extractors: string[]; draftsDir?: string }; asse
 /** Executes a run inside a managed workspace (SPEC-0.1.3 §7.2), writes the reports and returns the exit code. */
 async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<number> {
   for (const w of o.warnings ?? []) process.stderr.write(`warning: ${w}\n`);
+  // M3 (SPEC-0.4.0 D2): every request through curl or PowerShell instead of direct-http; refused before the run starts.
+  const tArg = arg(argv, "--transport");
+  let httpTransport: { kind: CliKind; file: string } | undefined;
+  if (tArg && tArg !== "direct-http") {
+    if (o.browser) throw new UsageError("--transport applies to the http engine; the playwright engine sends through direct-http");
+    const c = cliTransportCheck(tArg, m.transports.order, m.safety.mode);
+    if ("refused" in c) throw new UsageError(c.refused);
+    httpTransport = { kind: tArg as CliKind, file: c.file };
+  }
   const runId = randomUUID();
   // safe-validate: signals go through the coordinator so cleanup runs before the exit (SPEC-0.2.0 §6.2).
   const sv = m.safety.mode === "safe-validate";
@@ -314,7 +324,7 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
   let specs: ExtractorSpec[] = [];
   if (o.analyze && analyzer) specs = loadExtractors(ws.root, ws.work.path, o.analyze.draftsDir, analyzer);
   try {
-    res = await executeTest(m, { ...(sv ? { fixtureWorkDir: ws.work.path, onFixtures: (l: FixtureLifecycle) => coord!.attach(l), pendingFromPreviousRuns: ws.sweep.pendingFixtures } : {}), ...(o.analyze ? { analyze: { extractors: specs } } : {}), runId, ...(o.flows ? { flows: o.flows, flowsOnly: !!o.flowsOnly } : {}), ...(o.scanMode ? { scanMode: o.scanMode } : {}), ...(o.engine ? { engine: o.engine } : {}), ...(o.urls ? { urls: o.urls } : {}), ...(o.spider ? { spider: true } : {}), ...(o.browser ? { browser: { shotsDir: shotsWork } } : {}),
+    res = await executeTest(m, { ...(sv ? { fixtureWorkDir: ws.work.path, onFixtures: (l: FixtureLifecycle) => coord!.attach(l), pendingFromPreviousRuns: ws.sweep.pendingFixtures } : {}), ...(o.analyze ? { analyze: { extractors: specs } } : {}), runId, ...(o.flows ? { flows: o.flows, flowsOnly: !!o.flowsOnly } : {}), ...(o.scanMode ? { scanMode: o.scanMode } : {}), ...(o.engine ? { engine: o.engine } : {}), ...(o.urls ? { urls: o.urls } : {}), ...(o.spider ? { spider: true } : {}), ...(o.browser ? { browser: { shotsDir: shotsWork } } : {}), ...(httpTransport ? { httpTransport } : {}),
       ...(o.assets ? { assets: true, workDir: ws.work.path, cacheDir: join(ws.root, ".navsentry", "cache", "assets") } : {}) });
   } catch (e) {
     coord?.dispose();

@@ -9,7 +9,7 @@
 4. **Budget** (`budget.ts`) — max requests, requests/second, duration; exhaustion makes the run `PARTIAL`. A safe-validate create reserves its cleanup slots (`reserve`/`release`), which ordinary requests cannot use.
 4a. **Fixture lifecycle** (`fixtures/`) — config parsing, pending intents (`fixtures.pending.json`), create → id check → `exists`, reverse-order cleanup with `verify_gone`, leftovers (run FAILED), and the `SignalCoordinator` for SIGINT/SIGTERM. Every request goes through the runner's send (ScopeGate → Budget → connect-time check).
 5. **Transport router** (`transports/registry.ts`) — chooses the lowest-cost *usable* adapter whose declared capabilities satisfy the check; if none, the check is `NOT_TESTED` (never silently downgraded, e.g. a DOM check is never "proven" by HTTP).
-6. **Transports** — `direct-http` (usable), `tls-probe` (usable), `playwright-browser` (usable for development flows when the Chromium headless shell is installed, [ADR-0008](adr/0008-playwright-engine-s1.md)), `visual-computer-use` (the `navsentry browse` visual driver on that engine, [ADR-0009](adr/0009-visual-driver-on-owned-browser.md)), `curl-cli` / `powershell-http` (probe only), `zap-passive` (unavailable).
+6. **Transports** — `direct-http` (usable), `tls-probe` (usable), `playwright-browser` (usable for development flows when the Chromium headless shell is installed, [ADR-0008](adr/0008-playwright-engine-s1.md)), `visual-computer-use` (the `navsentry browse` visual driver on that engine, [ADR-0009](adr/0009-visual-driver-on-owned-browser.md)), `curl-cli` / `powershell-http` (usable with `--transport`, observe only, pinned to the ScopeGate-checked address; M3), `zap-passive` (unavailable).
 7. **Checks** (`checks/`) — deterministic functions over in-memory raw responses that emit redacted, value-free observations.
 8. **Redaction** (`redact.ts`) — applied to URLs, headers and body excerpts before anything is stored; binary/undecodable bodies are withheld (`safe:false` → run lists the gap).
 9. **Model & reports** — `RunResult` (schema v1) → JSON, Markdown (en/th), SARIF 2.1.0; `compare` for before/after.
@@ -22,8 +22,8 @@
 | direct-http | http | – | – | ✓ | in-process | usable | none |
 | tls-probe | tls | – | – | – | in-process | usable | none |
 | playwright-browser | browser | ✓ | ✓ | ✓ | in-process | usable (M1b; every request fulfilled through direct-http) | WebSocket (disabled), service workers (disabled), browser-internal traffic (disabled by launch flags, not by ScopeGate) |
-| curl-cli | cli-http | – | – | ✓ | vetted executable | probe (M3) | — |
-| powershell-http | cli-http | – | – | ✓ | vetted executable | probe (M3) | — |
+| curl-cli | cli-http | – | – | ✓ | vetted executable | usable with `--transport` (M3; observe; `--resolve` pin) | none |
+| powershell-http | cli-http | – | – | ✓ | vetted executable | usable with `--transport` (M3; observe; http only, IP + Host pin) | https (refused: cannot pin without breaking certificate checks) |
 | visual-computer-use | visual | ✓ | ✓ | ✓ | in-process (NavSentry-owned browser) | usable in development (`navsentry browse`, observe-only) | same as playwright-browser; screenshots reach the agent's model provider (owner consent) |
 | zap-passive | proxy | – | – | – | vetted executable | unavailable | — |
 
