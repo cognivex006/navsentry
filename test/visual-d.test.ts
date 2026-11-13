@@ -22,11 +22,15 @@ const PW = "visual-test-password-77";
 
 type Snap = { ok: boolean; url: string; elements: { ref: string; role: string; name: string; tag: string; password: boolean; href?: string; inScope?: boolean }[] };
 
-test("--headed is refused until governance approves the full Chromium build", async () => {
+test("--headed without the full Chromium build is refused before any browser starts", async () => {
+  // A stub probe: the test never opens a visible window on the developer's desktop.
   const site = await startDemoSite("vulnerable");
   const dir = mkdtempSync(join(tmpdir(), "navsentry-vd-"));
   try {
-    await assert.rejects(startSession({ manifest: localManifest(site.origin, { transports: VISUAL }), projectDir: dir, url: `${site.origin}/`, headed: true }), (e: Error) => e instanceof SessionRefused && /governance/.test(e.message));
+    let asked: boolean | undefined;
+    const probe = (o: { headed?: boolean } = {}) => { asked = o.headed; return { available: true, usable: false, reason: "full Chromium build not installed: npx playwright-core install chromium" }; };
+    await assert.rejects(startSession({ manifest: localManifest(site.origin, { transports: VISUAL }), projectDir: dir, url: `${site.origin}/`, headed: true, probe: probe as never }), (e: Error) => e instanceof SessionRefused && /install chromium/.test(e.message));
+    assert.equal(asked, true, "the probe is asked for the headed build");
   } finally {
     rmSync(dir, { recursive: true, force: true });
     await site.close();

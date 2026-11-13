@@ -1,5 +1,5 @@
 /**
- * Headed visual driver (SPEC-0.3.0 §5; still PENDING_REVIEW in governance): human-event capture and the full-build probe.
+ * Headed visual driver (SPEC-0.3.0 §5; APPROVED_WITH_CONDITIONS 2026-11-13, SPEC-0.4.0 D1): human-event capture and the full-build probe.
  * The capture is the same in headless and headed Chromium, so it is tested headless with synthetic
  * responses: no socket is opened. A real headed window can only be verified once governance approves the full build.
  */
@@ -29,8 +29,8 @@ function fake(url: string): Exchange {
   };
 }
 
-test("headed stays refused in code; its probe asks for the full build, not the shell", () => {
-  assert.equal(HEADED_BROWSER_APPROVED, false, "flip only with a dated APPROVED governance entry");
+test("headed is approved in code; its probe asks for the full build, not the shell", () => {
+  assert.equal(HEADED_BROWSER_APPROVED, true, "owner approval 2026-11-13 (SPEC-0.4.0 D1)");
   const p = probePlaywright({ headed: true });
   if (p.available && p.version === "1.64.1" && !p.usable) assert.match(p.reason, /install chromium/);
   if (p.usable) assert.match(p.reason, /full Chromium build/);

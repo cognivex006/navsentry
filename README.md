@@ -177,7 +177,7 @@ The manifest needs `transports.visual_computer_use: true` **and** `visual-comput
 navsentry browse start --url http://127.0.0.1:4173/
 ```
 
-It prints `SESSION: <id>`. Then, from the agent (MCP tools `navsentry_browse_*`) or another terminal, loop `browse snapshot` (elements with refs) and `browse screenshot`, act with `browse click --ref <e12>`, `browse type --ref <e12> --text <t>` (or `--env NAVSENTRY_<NAME>` for secrets; other variable names are refused), `browse key --key Enter` or `browse scroll`, and finish with `browse end --session <id> --save-flow navsentry/flows/drafts` to keep the session as a draft flow. The report is `VISUAL-SESSION.md`. A POST submit is refused, and `--headed` waits for governance approval of the full Chromium build. See [docs/TOUR.md](docs/TOUR.md).
+It prints `SESSION: <id>`. Then, from the agent (MCP tools `navsentry_browse_*`) or another terminal, loop `browse snapshot` (elements with refs) and `browse screenshot`, act with `browse click --ref <e12>`, `browse type --ref <e12> --text <t>` (or `--env NAVSENTRY_<NAME>` for secrets; other variable names are refused), `browse key --key Enter` or `browse scroll`, and finish with `browse end --session <id> --save-flow navsentry/flows/drafts` to keep the session as a draft flow. The report is `VISUAL-SESSION.md`. A POST submit is refused, and `--headed` opens a visible window with Playwright's full Chromium build (install it yourself with `npx playwright-core install chromium`); your own clicks there are logged as `click (human)`. See [docs/TOUR.md](docs/TOUR.md).
 
 ### Try it locally
 

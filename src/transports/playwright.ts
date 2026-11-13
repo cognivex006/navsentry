@@ -170,11 +170,10 @@ export const ALLOWED_KEYS: ReadonlySet<string> = new Set(["Enter", "Tab", "Escap
 export const REF = /^e[0-9]{1,5}$/;
 const MAX_SNAPSHOT = 200;
 /**
- * Headed mode needs Playwright's full Chromium build, which governance has not approved (PENDING_REVIEW,
- * governance/third-party.json). The code path (launch, probe, human-action logging) is ready and tested; flip
- * only with a dated APPROVED governance entry.
+ * Headed mode needs Playwright's full Chromium build: APPROVED_WITH_CONDITIONS by the owner on 2026-11-13
+ * (SPEC-0.4.0 D1, governance/third-party.json). Set back to false if that entry lapses or is withdrawn.
  */
-export const HEADED_BROWSER_APPROVED = false;
+export const HEADED_BROWSER_APPROVED = true;
 
 export class BrowserEngine {
   private contexts = new Map<string, { ctx: PwContext; page: PwPage }>();

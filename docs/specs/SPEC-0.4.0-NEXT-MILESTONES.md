@@ -1,6 +1,6 @@
 # SPEC 0.4.0 — What can be built now, and what moves to the next phase
 
-- Status: **DRAFT** · Drafted: 2026-11-12 · Owner instruction 2026-11-12: build everything that is not blocked now; move every blocked item, and every item that must come before or after a blocked item, to the next phase.
+- Status: **ACCEPTED** · Drafted: 2026-11-12 · Owner decisions D1–D6 recorded 2026-11-13 (§2.1) · Owner instruction 2026-11-12: build everything that is not blocked now; move every blocked item, and every item that must come before or after a blocked item, to the next phase.
 - Covers DEV-PLAN milestones M1b+, M3, M4 and M5. Related: [DEV-PLAN](../DEV-PLAN.md) · [governance/third-party.json](../../governance/third-party.json) · AGENTS.md hard rules 2, 4, 5, 6.
 - §3 is implemented under that instruction. Every other section is a plan, not an accepted design.
 
@@ -30,6 +30,16 @@ An item moves to the next phase when it needs something not yet allowed: a depen
 | D4 | Resume semantics: does a resumed run share the original Budget, deadline and approval hashes, or start a new run that references the old one? | M4 resumable runs |
 | D5 | A YAML parser dependency, or no YAML | M1b+ YAML manifests |
 | D6 | Terms review for Newman and ZAP, and whether `active-approved` is designed at all | M5 |
+
+### 2.1 Owner decisions (2026-11-13)
+| ID | Decision |
+|---|---|
+| D1 | **Approved.** The owner accepts the Chrome for Testing terms as they stand. The headless shell is re-confirmed and the full build is APPROVED_WITH_CONDITIONS; `HEADED_BROWSER_APPROVED` is true. |
+| D2 | **Approved.** curl, PowerShell 7 and Windows PowerShell 5.1 may run as transports under the conditions in governance: fixed paths only, no shell, connection pinned to the ScopeGate address. |
+| D3 | **Read files only.** The adapter parses DevSift report files a user hands it. It never runs DevSift or contacts a service, so it is not a governed dependency. An unknown report version is refused. |
+| D4 | **New run, budget carried over.** A resume is a new run with its own runId that references the old run. It may use only the request budget the old run had left, must stay inside the original authorization window, re-checks flow approval hashes, and never resends a request that already completed. The old run folder must pass `verify` first. |
+| D5 | **Skipped.** The owner left the choice open. No YAML: ADR-0003 keeps zero runtime dependencies, YAML parsers carry their own parsing risks (aliases, tags), and JSON manifests already work. |
+| D6 | **Approved.** Review the Newman and ZAP terms; write the `active-approved` design document (design only, no active payloads). |
 
 ## 3. Integrity manifest and `navsentry verify` (implemented)
 - After `scan` or `test` writes its reports, it writes `MANIFEST.json` in the run folder: `kind: navsentry-run-manifest`, `schemaVersion: "1"`, `runId`, `toolVersion`, `algorithm: sha256`, and one entry (`path`, `bytes`, `sha256`) per file **this run wrote**. Files the owner already had in `--out` are not listed.

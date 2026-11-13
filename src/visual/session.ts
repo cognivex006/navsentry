@@ -66,7 +66,7 @@ export function pipePath(work: string, id: string): string {
 /** Refuses before any browser or request unless every precondition holds (S1, S2, S6). */
 function preflight(o: SessionOptions, gate: ScopeGate): void {
   const m = o.manifest;
-  if (o.headed && !HEADED_BROWSER_APPROVED) throw new SessionRefused("--headed needs the full Chromium build, which is pending the owner's governance review (governance/third-party.json); only the Chromium headless shell is approved. Run without --headed");
+  if (o.headed && !HEADED_BROWSER_APPROVED) throw new SessionRefused("--headed needs the full Chromium build, whose governance approval is not in force (governance/third-party.json). Run without --headed");
   if (m.profile !== "development") throw new SessionRefused("the visual driver is development only (environment local or dev)");
   if (!m.transports.visual_computer_use) throw new SessionRefused("transports.visual_computer_use must be true: the owner's consent that screenshots of the target are handed to the host agent (and its model provider)");
   for (const t of ["visual-computer-use", "playwright-browser"]) if (!m.transports.order.includes(t)) throw new SessionRefused(`transports.order must include ${t}; a flag never overrides manifest policy`);

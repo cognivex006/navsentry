@@ -4,6 +4,11 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 
 ## [Unreleased]
 
+### Changed
+- `browse start --headed` is enabled. The owner approved Playwright's full Chromium build with conditions on 2026-11-13 (SPEC-0.4.0 D1). It needs `npx playwright-core install chromium`, which NavSentry never runs for you. The headless shell entry is re-confirmed.
+- Governance: curl, PowerShell 7 and Windows PowerShell 5.1 are approved with conditions as M3 transports (D2). The adapters are not built yet.
+- SPEC-0.4.0 is ACCEPTED, and the owner decisions D1–D6 are recorded.
+
 ## [0.4.0] - 2026-11-12
 
 ### Added
