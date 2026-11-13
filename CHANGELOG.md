@@ -4,6 +4,9 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 
 ## [Unreleased]
 
+### Added
+- In-browser DOM checks on `--engine playwright` flow runs (M1b+). After the flows, NavSentry checks which session-like cookies page scripts can read through `document.cookie` (NSC-SESS-002, names only, values never read out). It also tries to frame up to 5 HTML documents from a cross-origin parent page (NSC-CONF-003). That parent page is served from memory on a reserved `.invalid` origin and never sent; the framed load goes through ScopeGate and the Budget. Finally it records CSP violations the browser enforced as evidence that the policy works (NSC-CONF-002; report-only violations are ignored). Browser-confirmed failures are VALIDATED. Fixtures: `/dom/vuln` and `/dom/secure`.
+
 ### Changed
 - `browse start --headed` is enabled. The owner approved Playwright's full Chromium build with conditions on 2026-11-13 (SPEC-0.4.0 D1). It needs `npx playwright-core install chromium`, which NavSentry never runs for you. The headless shell entry is re-confirmed.
 - Governance: curl, PowerShell 7 and Windows PowerShell 5.1 are approved with conditions as M3 transports (D2). The adapters are not built yet.

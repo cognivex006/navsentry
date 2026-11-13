@@ -57,6 +57,18 @@ export async function startBrowserFixture(): Promise<BrowserFixture> {
         return html(res, `<title>Second</title><h2>Second</h2><p>${req.headers.cookie?.includes("fixture_session=s1") ? "Signed cookie seen" : "No cookie"}</p>`);
       case "/ui/leak":
         return html(res, `<title>Leak</title><h1>Leak</h1><script>console.log("debug token ${CONSOLE_TEST_TOKEN}")</script>`);
+      case "/dom/vuln":
+      case "/dom/secure": {
+        // M1b+ DOM checks. Same page and contract in both variants; only cookie flags and security headers differ.
+        const secure = path === "/dom/secure";
+        res.setHeader("set-cookie", `dom_session=d1; Path=/${secure ? "; HttpOnly" : ""}; SameSite=Lax`);
+        if (secure) {
+          res.setHeader("content-security-policy", "default-src 'self'; script-src 'self'; object-src 'none'; frame-ancestors 'none'");
+          res.setHeader("x-frame-options", "DENY");
+        }
+        // The inline script is blocked under the secure CSP, which the browser reports as a violation.
+        return html(res, `<title>Account</title><h1>Account</h1><p>Profile</p><script>document.title = "Account";</script>`);
+      }
       case "/ui/quiet":
         return html(res, "<title>Quiet</title><h1>Quiet</h1>");
       case "/ui/visual": {

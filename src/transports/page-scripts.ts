@@ -94,3 +94,29 @@ export function humanWatchScript(binding: string): string {
   }, true);
 })();`;
 }
+
+/** Runs in the page: names of cookies readable through document.cookie. Values are cut off here and never returned. */
+export function cookieNamesInPage(max: number): string[] {
+  const raw = String(document.cookie ?? "");
+  if (!raw) return [];
+  return raw.split(";").map((p: string) => p.split("=")[0]!.trim().slice(0, 80)).filter((n: string) => n).slice(0, max);
+}
+
+/**
+ * Init script: reports CSP violations (directive, blocked origin, disposition) through a binding it keeps in its
+ * closure and removes from `window`, like humanWatchScript. Only the origin of a blocked URL is sent.
+ */
+export function cspWatchScript(binding: string): string {
+  return `(() => {
+  const b = window[${JSON.stringify(binding)}];
+  try { delete window[${JSON.stringify(binding)}]; } catch (e) {}
+  if (typeof b !== "function") return;
+  let n = 0;
+  addEventListener("securitypolicyviolation", (ev) => {
+    if (++n > 50) return;
+    let blocked = String(ev.blockedURI || "");
+    try { if (/^https?:/.test(blocked)) blocked = new URL(blocked).origin; } catch (e) { blocked = ""; }
+    b({ directive: String(ev.effectiveDirective || ev.violatedDirective || ""), blocked, disposition: String(ev.disposition || "") });
+  }, true);
+})();`;
+}

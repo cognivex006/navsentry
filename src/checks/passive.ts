@@ -273,7 +273,7 @@ export function parseSetCookie(v: string): ParsedCookie {
   return { name, attrs };
 }
 
-const SESSIONISH = /(sess|sid|auth|token|jwt|login|identity|asp\.net|aspxauth|connect\.sid|remember)/i;
+export const SESSIONISH_COOKIE = /(sess|sid|auth|token|jwt|login|identity|asp\.net|aspxauth|connect\.sid|remember)/i;
 
 export function checkCookies(ex: Exchange): CheckResult[] {
   const cookies = hAll(ex, "set-cookie").map(parseSetCookie).filter((c) => c.name);
@@ -285,7 +285,7 @@ export function checkCookies(ex: Exchange): CheckResult[] {
     if (deleting) continue;
     if (isHttps(ex) && !c.attrs.has("secure")) secure.push(`${c.name}: Secure missing`);
     if (c.name.startsWith("__Host-") && (!c.attrs.has("secure") || c.attrs.has("domain") || c.attrs.get("path") !== "/")) secure.push(`${c.name}: __Host- prefix rules violated`);
-    if (SESSIONISH.test(c.name) && !c.attrs.has("httponly")) httpOnly.push(`${c.name}: HttpOnly missing on session-like cookie`);
+    if (SESSIONISH_COOKIE.test(c.name) && !c.attrs.has("httponly")) httpOnly.push(`${c.name}: HttpOnly missing on session-like cookie`);
     const ss = c.attrs.get("samesite")?.toLowerCase();
     if (!ss) sameSite.push(`${c.name}: SameSite missing`);
     else if (!["lax", "strict", "none"].includes(ss)) sameSite.push(`${c.name}: invalid SameSite=${ss}`);
