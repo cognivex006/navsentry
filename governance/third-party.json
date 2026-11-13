@@ -138,35 +138,35 @@
         "https://chromium.googlesource.com/chromium/src/+/main/LICENSE",
         "https://github.com/microsoft/playwright/blob/main/NOTICE"
       ],
-      "findings": "Owner approved 2026-11-03. Default browsers are open-source Chromium builds downloaded from Microsoft's CDN (host overridable with PLAYWRIGHT_DOWNLOAD_HOST); Chromium is BSD-3-Clause-style licensed. The browsers page states no separate EULA or CDN terms for these downloads. Branded `chrome`/`msedge` channels fall under Google/Microsoft terms and are NOT approved; Firefox and WebKit builds are not reviewed and NOT approved. NavSentry does not redistribute browser binaries; NOTICE attribution applies only if NavSentry ever bundles Playwright code. The install command also fetched Playwright's helper builds ffmpeg (shipped with COPYING.LGPLv2.1; used by Playwright only for video recording, which NavSentry never enables) and winldd (Windows dependency check). They are not redistributed by NavSentry.",
-      "reviewed": "2026-11-03",
-      "review_due": "2027-05-03",
+      "findings": "Owner approved 2026-11-03. Default browsers are open-source Chromium builds downloaded from Microsoft's CDN (host overridable with PLAYWRIGHT_DOWNLOAD_HOST); Chromium is BSD-3-Clause-style licensed. The browsers page states no separate EULA or CDN terms for these downloads. Branded `chrome`/`msedge` channels fall under Google/Microsoft terms and are NOT approved; Firefox and WebKit builds are not reviewed and NOT approved. NavSentry does not redistribute browser binaries; NOTICE attribution applies only if NavSentry ever bundles Playwright code. The install command also fetched Playwright's helper builds ffmpeg (shipped with COPYING.LGPLv2.1; used by Playwright only for video recording, which NavSentry never enables) and winldd (Windows dependency check). They are not redistributed by NavSentry. Re-confirmed by the owner 2026-11-13 (SPEC-0.4.0 D1) after the 2026-11-11 finding that the shell is a Chrome for Testing build whose ABOUT file points to Google's Terms of Service; the owner accepts that no primary source states separate terms for Chrome for Testing. Conditions unchanged.",
+      "reviewed": "2026-11-13",
+      "review_due": "2027-05-13",
       "decision": "APPROVED_WITH_CONDITIONS"
     },
     {
       "name": "Playwright Chromium full build (headed visual driver)",
-      "usage": "SPEC-0.3.0 §5 / owner decision D6: `navsentry browse start --headed` would show NavSentry's own browser in a visible window. The user would install it explicitly with `npx playwright-core install chromium`; NavSentry would never download it. The network path is the same as the headless shell (every request fulfilled through direct-http, ScopeGate and the Budget).",
+      "usage": "SPEC-0.3.0 §5 / owner decision D6: `navsentry browse start --headed` shows NavSentry's own browser in a visible window. The user installs it explicitly with `npx playwright-core install chromium`; NavSentry never download it. The network path is the same as the headless shell (every request fulfilled through direct-http, ScopeGate and the Budget).",
       "terms": [
         "https://playwright.dev/docs/browsers",
         "https://chromium.googlesource.com/chromium/src/+/main/LICENSE",
         "https://github.com/microsoft/playwright/blob/main/NOTICE"
       ],
-      "findings": "Review started 2026-11-11, not concluded. The code path is ready (launch with headless:false, probe for the full build, human clicks and navigations logged as actor human) and was exercised once against the local fixture; HEADED_BROWSER_APPROVED stays false. Open question that blocks approval: Playwright 1.64.1's browsers.json titles this build 'Chrome for Testing', and the installed binary's ABOUT file reads 'Google Chrome ... See the Terms of Service at chrome://terms'. playwright.dev/docs/browsers still says Playwright uses 'open source Chromium builds' from Microsoft's CDN. No primary source read on 2026-11-11 (Chrome for Testing site and README, the Chrome for Testing blog post, the Chrome terms page, the Playwright browsers page) states which terms govern Chrome for Testing binaries; the Chrome terms page binds 'Chrome' to the Google Terms of Service and does not name Chrome for Testing. The same finding applies to the approved headless shell (title 'Chrome Headless Shell', same ABOUT text, plus a Chromium BSD LICENSE.headless_shell), whose 2026-11-03 approval assumed open-source Chromium builds; the owner should re-confirm that entry. Branded chrome/msedge channels stay NOT approved.",
-      "reviewed": "2026-11-11",
-      "review_due": "2026-12-11",
-      "decision": "PENDING_REVIEW"
+      "findings": "Review started 2026-11-11, not concluded. The code path is ready (launch with headless:false, probe for the full build, human clicks and navigations logged as actor human) and was exercised once against the local fixture; HEADED_BROWSER_APPROVED stays false. Open question that blocks approval: Playwright 1.64.1's browsers.json titles this build 'Chrome for Testing', and the installed binary's ABOUT file reads 'Google Chrome ... See the Terms of Service at chrome://terms'. playwright.dev/docs/browsers still says Playwright uses 'open source Chromium builds' from Microsoft's CDN. No primary source read on 2026-11-11 (Chrome for Testing site and README, the Chrome for Testing blog post, the Chrome terms page, the Playwright browsers page) states which terms govern Chrome for Testing binaries; the Chrome terms page binds 'Chrome' to the Google Terms of Service and does not name Chrome for Testing. The same finding applies to the approved headless shell (title 'Chrome Headless Shell', same ABOUT text, plus a Chromium BSD LICENSE.headless_shell), whose 2026-11-03 approval assumed open-source Chromium builds; the owner should re-confirm that entry. Branded chrome/msedge channels stay NOT approved. Owner decision 2026-11-13 (SPEC-0.4.0 D1): approved with the same conditions as the headless shell, accepting that the Chrome for Testing terms are not stated by a primary source. Conditions: the user installs the build; NavSentry never downloads or redistributes it; every request goes through direct-http, ScopeGate and the Budget; development profiles only; branded chrome/msedge channels stay NOT approved. HEADED_BROWSER_APPROVED is true from this date.",
+      "reviewed": "2026-11-13",
+      "review_due": "2027-05-13",
+      "decision": "APPROVED_WITH_CONDITIONS"
     },
     {
       "name": "curl / PowerShell (optional OS executables)",
-      "usage": "Detected from fixed system paths only; execution adapters scheduled for M3.",
+      "usage": "M3 CLI transports (SPEC-0.4.0 D2): optional execution adapters for curl, PowerShell 7 and Windows PowerShell 5.1, found only at fixed system paths, never through PATH or a shell. Every request is checked by ScopeGate and charged to the Budget before the process starts; the connection is pinned to the address ScopeGate approved.",
       "terms": [
         "https://curl.se/docs/copyright.html",
         "https://github.com/PowerShell/PowerShell/blob/master/LICENSE.txt"
       ],
-      "findings": "curl license (MIT-like); PowerShell 7 MIT; Windows PowerShell 5.1 is part of Windows (OS license). Not redistributed.",
-      "reviewed": "2026-10-31",
-      "review_due": "before M3",
-      "decision": "APPROVED_FOR_DETECTION_ONLY"
+      "findings": "curl license (MIT-like); PowerShell 7 MIT; Windows PowerShell 5.1 is part of Windows (OS license). Not redistributed. Owner approved execution 2026-11-13 (SPEC-0.4.0 D2). Conditions: fixed paths only; argument arrays, no shell; no proxy, no redirects followed by the tool, http/https only; connection pinned to the ScopeGate-approved address; a transport that cannot pin the address is refused for that request.",
+      "reviewed": "2026-11-13",
+      "review_due": "2027-05-13",
+      "decision": "APPROVED_WITH_CONDITIONS"
     },
     {
       "name": "OWASP Top 10 / WSTG / ASVS (reference content)",
