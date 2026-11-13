@@ -15,6 +15,7 @@ import type { Exchange, HttpRequestSpec } from "./transports/types.js";
 import { applyConsoleSilent, functionalResult, runFlows, type FlowBrowser } from "./flow/execute.js";
 import { ConsoleInspector } from "./console/detect.js";
 import { CliHttpAdapter, type CliKind } from "./transports/cli-http.js";
+import { planResume } from "./resume.js";
 import { BrowserEngine, firstLine, probePlaywright, type BrowserRequest, type ConsoleEvent, type CspViolation, type PlaywrightProbe } from "./transports/playwright.js";
 import { bindManifest, classify, flowSetHash } from "./flow/classify.js";
 import { fillPath, flowOrigin, VAR_SENTINEL } from "./flow/lint.js";
@@ -210,6 +211,8 @@ export interface ExecuteOptions {
   cacheDir?: string;
   /** `--transport` (M3): send every request through curl or PowerShell instead of direct-http. Checked by the caller. */
   httpTransport?: { kind: CliKind; file: string };
+  /** `--resume <dir>` (M4, SPEC-0.4.0 D4): a new run that continues an earlier PARTIAL one. */
+  resume?: { dir: string };
   /** `--engine playwright` (M1b): UI steps run in the browser engine; never a silent fallback (S6). */
   browser?: { probe?: () => PlaywrightProbe; shotsDir?: string };
   /** safe-validate: directory for `fixtures.pending.json` (the run work dir); creates are refused without it. */
@@ -234,9 +237,10 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
   assertAuthorizationWindow(m, opts.now?.() ?? new Date());
   const startedAt = new Date().toISOString();
   const gate = new ScopeGate(m);
-  const budget = new Budget(m.safety.max_requests, m.safety.max_requests_per_second, m.safety.max_duration_seconds * 1000, m.authorization.expires_at ? new Date(m.authorization.expires_at) : undefined);
-  const bytes = new ByteBudget(m.capture.max_run_bytes, m.capture.max_wire_bytes);
   const { usable, skipped, secrets, logins } = resolveActors(m, env);
+  const resume = opts.resume ? planResume(opts.resume.dir, m, { ...(opts.flows ? { flowSetSha256: flowSetHash(opts.flows) } : {}), ...(opts.spider ? { spider: true } : {}), logins: logins.length }) : undefined;
+  const budget = new Budget(resume ? resume.budgetLeft : m.safety.max_requests, m.safety.max_requests_per_second, m.safety.max_duration_seconds * 1000, m.authorization.expires_at ? new Date(m.authorization.expires_at) : undefined);
+  const bytes = new ByteBudget(m.capture.max_run_bytes, m.capture.max_wire_bytes);
   /** Shared by the fixture lifecycle, the browser engine and the flows, so a login updates every one of them. */
   const actorMap = new Map(usable.map((a) => [a.name, a.headers]));
   assertNoLiveTokens(m, secrets);
@@ -361,12 +365,15 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
 
   try {
     for (const origin of m.targets.origins) {
-      if (origin.startsWith("https:") && !disabled.has("NSC-CRYPT-001")) {
+      if (resume && origin.startsWith("https:")) incomplete.push(`resume: TLS probe of ${origin} ran in run ${resume.runId}; not repeated`);
+      else if (origin.startsWith("https:") && !disabled.has("NSC-CRYPT-001")) {
         const tlsOut = await probeTls(gate, budget, origin);
         checks.push(...tlsOut.checks.filter((c) => !disabled.has(c.ruleId)));
       }
       const targets = opts.flowsOnly || opts.spider ? [] : opts.urls ? opts.urls.filter((u) => new URL(u).origin === origin) : m.targets.seed_paths.map((p) => new URL(p, origin).toString());
       for (const seed of targets) {
+        // Resume: a seed that sent any request in the earlier run is never sent again (D4).
+        if (resume?.doneSeeds.has(redactor.url(seed))) { incomplete.push(`resume: ${redactor.url(seed)} was sent in run ${resume.runId}; not sent again`); continue; }
         for (const actor of usable) await fetchChain(seed, actor);
         const anon = usable[0]!;
         if (!disabled.has("NSC-AC-004")) {
@@ -550,7 +557,10 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
   if (opts.flows) {
     const actorSkipReasons = new Map(skipped.map((x) => [x.actor, x.reason]));
     try {
-      flowOutcome = await runFlows(opts.flows.filter((d) => !loginDocs.has(d.header.id)), {
+      // Resume: a flow that sent any request in the earlier run is never run again (D4).
+      const resumeSkipped = resume ? opts.flows.filter((d) => resume.doneFlows.has(d.header.id)) : [];
+      for (const d of resumeSkipped) incomplete.push(`resume: flow ${d.header.id} sent requests in run ${resume!.runId}; not run again`);
+      flowOutcome = await runFlows(opts.flows.filter((d) => !loginDocs.has(d.header.id) && !resumeSkipped.includes(d)), {
         manifest: m,
         gate,
         env,
@@ -670,7 +680,8 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
 
   const coverage = buildCoverage(checks, disabled);
   const findings = buildFindings(checks);
-  const hardFail = exchanges.length === 0 && (opts.flowsOnly ? (opts.flows ?? []).some((d) => d.steps.some((s) => !UI_ACTIONS.has(s.action))) : m.targets.seed_paths.length > 0);
+  // A resume whose work was all done earlier sends nothing; that is not a failure.
+  const hardFail = exchanges.length === 0 && !resume && (opts.flowsOnly ? (opts.flows ?? []).some((d) => d.steps.some((s) => !UI_ACTIONS.has(s.action))) : m.targets.seed_paths.length > 0);
   const run: RunResult = {
     schemaVersion: REPORT_SCHEMA_VERSION,
     tool: { name: TOOL_NAME, version: TOOL_VERSION, node: process.versions.node, platform: `${process.platform}-${process.arch}` },
@@ -688,7 +699,8 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
     checks,
     findings,
     coverage,
-    budget: { requestsUsed: budget.requestsUsed, requestsMax: m.safety.max_requests, deniedBeforeExecution: denials.length },
+    budget: { requestsUsed: budget.requestsUsed, requestsMax: resume ? resume.budgetLeft : m.safety.max_requests, deniedBeforeExecution: denials.length },
+    ...(resume ? { resumedFrom: { runId: resume.runId, manifestSha256: resume.manifestSha256, seedsSkipped: resume.doneSeeds.size, flowsSkipped: resume.doneFlows.size } } : {}),
     denials,
     profile: m.profile,
     ...(opts.scanMode ? { scanMode: opts.scanMode } : {}),

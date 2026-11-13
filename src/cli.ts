@@ -50,6 +50,7 @@ import { renderHtml } from "./report/html.js";
 import { paint } from "./report/color.js";
 import { nextSteps, renderNext } from "./next.js";
 import { runMcpServer } from "./mcp.js";
+import { ResumeRefused } from "./resume.js";
 import { cliTransportCheck, type CliKind } from "./transports/cli-http.js";
 import { MANIFEST_FILE, buildManifest, renderVerify, verifyRun } from "./integrity.js";
 import { fileURLToPath } from "node:url";
@@ -69,9 +70,9 @@ Usage:
   navsentry validate --config <manifest.json>
   navsentry plan --config <manifest.json> [--flows <path>] [--flows-only] [--include-drafts]   (zero network)
   navsentry discover --config <manifest.json> --dry-run
-  navsentry test --config <manifest.json> [--transport direct-http|curl-cli|powershell-http] [--out <dir>] [--profile safe] [--env development|production] [--project <dir>]
+  navsentry test --config <manifest.json> [--transport direct-http|curl-cli|powershell-http] [--resume <earlier run dir>] [--out <dir>] [--profile safe] [--env development|production] [--project <dir>]
                  [--flows <path>] [--flows-only] [--include-drafts] [--only <id,...>] [--level integration|e2e] [--junit]
-  navsentry scan [--config <manifest.json>] [--mode page|spider|flow] [--deep] [--engine http|playwright|analyzer] [--transport direct-http|curl-cli|powershell-http] [--analyze [--extractors <dir>]]
+  navsentry scan [--config <manifest.json>] [--mode page|spider|flow] [--deep] [--engine http|playwright|analyzer] [--transport direct-http|curl-cli|powershell-http] [--resume <earlier run dir>] [--analyze [--extractors <dir>]]
                  [--env development|production] [--url <in-scope URL>] [--flows <path>] [--out <dir>] [--project <dir>]
                  no --mode means page; --deep means spider with --analyze. page without --url scans the seed paths, like test; flow equals test --flows <path> --flows-only.
                  spider crawls from the seed paths, grouping pages by template; scan --engine computer-use exits 3: use browse.
@@ -267,7 +268,7 @@ export async function main(argv: string[]): Promise<number> {
         throw new UsageError(`unknown command ${cmd}`);
     }
   } catch (e) {
-    if (e instanceof ConfigError || e instanceof UsageError || e instanceof DoctorError || e instanceof FlowError || e instanceof WorkspaceError || e instanceof ProposalError || e instanceof OpenApiError || e instanceof RecordingError) {
+    if (e instanceof ConfigError || e instanceof UsageError || e instanceof DoctorError || e instanceof FlowError || e instanceof WorkspaceError || e instanceof ProposalError || e instanceof OpenApiError || e instanceof RecordingError || e instanceof ResumeRefused) {
       process.stderr.write(`${e.message}\n`);
       return 3;
     }
@@ -311,6 +312,9 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
     if ("refused" in c) throw new UsageError(c.refused);
     httpTransport = { kind: tArg as CliKind, file: c.file };
   }
+  // M4 resume (SPEC-0.4.0 D4): a new run that continues an earlier PARTIAL one; refused unless every rule holds.
+  const rArg = arg(argv, "--resume");
+  const resumeDir = rArg ? (statSync(rArg).isDirectory() ? resolve(rArg) : dirname(resolve(rArg))) : undefined;
   const runId = randomUUID();
   // safe-validate: signals go through the coordinator so cleanup runs before the exit (SPEC-0.2.0 §6.2).
   const sv = m.safety.mode === "safe-validate";
@@ -324,7 +328,7 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
   let specs: ExtractorSpec[] = [];
   if (o.analyze && analyzer) specs = loadExtractors(ws.root, ws.work.path, o.analyze.draftsDir, analyzer);
   try {
-    res = await executeTest(m, { ...(sv ? { fixtureWorkDir: ws.work.path, onFixtures: (l: FixtureLifecycle) => coord!.attach(l), pendingFromPreviousRuns: ws.sweep.pendingFixtures } : {}), ...(o.analyze ? { analyze: { extractors: specs } } : {}), runId, ...(o.flows ? { flows: o.flows, flowsOnly: !!o.flowsOnly } : {}), ...(o.scanMode ? { scanMode: o.scanMode } : {}), ...(o.engine ? { engine: o.engine } : {}), ...(o.urls ? { urls: o.urls } : {}), ...(o.spider ? { spider: true } : {}), ...(o.browser ? { browser: { shotsDir: shotsWork } } : {}), ...(httpTransport ? { httpTransport } : {}),
+    res = await executeTest(m, { ...(sv ? { fixtureWorkDir: ws.work.path, onFixtures: (l: FixtureLifecycle) => coord!.attach(l), pendingFromPreviousRuns: ws.sweep.pendingFixtures } : {}), ...(o.analyze ? { analyze: { extractors: specs } } : {}), runId, ...(o.flows ? { flows: o.flows, flowsOnly: !!o.flowsOnly } : {}), ...(o.scanMode ? { scanMode: o.scanMode } : {}), ...(o.engine ? { engine: o.engine } : {}), ...(o.urls ? { urls: o.urls } : {}), ...(o.spider ? { spider: true } : {}), ...(o.browser ? { browser: { shotsDir: shotsWork } } : {}), ...(httpTransport ? { httpTransport } : {}), ...(resumeDir ? { resume: { dir: resumeDir } } : {}),
       ...(o.assets ? { assets: true, workDir: ws.work.path, cacheDir: join(ws.root, ".navsentry", "cache", "assets") } : {}) });
   } catch (e) {
     coord?.dispose();

@@ -9,7 +9,7 @@
 | งาน | phase นี้ | phase หน้า | เหตุผล |
 |---|---|---|---|
 | M4 integrity manifest + `navsentry verify` | ✅ ทำแล้ว (§3) | | ไม่ต้องใช้ของภายนอก ไม่มี network ไม่ติดอะไร |
-| M4 resumable runs | | ✅ | ต้องตัดสินว่า Budget และ approval ข้ามการ resume อย่างไร (กฎข้อ 4) และต่อยอดจาก manifest (§4) |
+| M4 resumable runs | ✅ ทำแล้วหลัง D4 (§4) | | ต้องตัดสินว่า Budget และ approval ข้ามการ resume อย่างไร (กฎข้อ 4) และต่อยอดจาก manifest (§4) |
 | M4 ASVS 5.0 IDs | ✅ จับคู่แล้ว รอรีวิวแยก (§5) | การ promote เข้า run.json และรายงาน | จับคู่จากต้นฉบับ OWASP แล้ว แต่ยังต้องมีคนอื่นรีวิวก่อนนับว่า verified |
 | M4 DevSift adapter | | ✅ | ต้องรู้ก่อนว่า DevSift ต้องมี entry ใน governance หรือไม่ (D3) |
 | M1b+ DOM checks (CSP, cookie, framing) | ✅ ทำแล้วหลัง D1 | | ใช้ Chromium headless shell ซึ่งเป็น Chrome for Testing ที่รอเจ้าของยืนยัน terms ใหม่ (D1) |
@@ -48,8 +48,13 @@ An item moves to the next phase when it needs something not yet allowed: a depen
 - **Limitation, stated in every result:** the manifest is not signed. It catches accidental or partial changes, not a deliberate edit that also rewrites the manifest. Signing would need key management, which is a separate decision.
 - No network, no new dependency. Tests: `test/integrity.test.ts`.
 
-## 4. Resumable runs (next phase)
-Needs D4. A resume must never send more requests than the original Budget allowed, never outlive the authorization window, and never reuse an approval hash for flows that changed. A resumed run would check the earlier run folder with `verify` before it trusts anything in it.
+## 4. Resumable runs (implemented, D4)
+`navsentry scan|test --resume <earlier run dir>` (`src/resume.ts`) starts a new run with its own runId; `run.json` records `resumedFrom` (earlier runId, SHA-256 of its MANIFEST.json, seeds and flows skipped).
+- Refused (exit 3) unless the earlier folder passes `verify`, the earlier run is PARTIAL, and the project, environment, safety mode, scope and flow set hash are unchanged. Spider runs and runs with logins are refused, because their state cannot be rebuilt without resending.
+- Budget: `budget.requestsMax` of the new run is what the earlier run had left, `min(max_requests, earlier requestsMax) - earlier requestsUsed`. Raising `max_requests` adds nothing. An exhausted budget cannot be resumed.
+- A seed URL or flow that sent any request in the earlier run is not sent again; each one is listed in `incompleteReasons`. The TLS probe is not repeated.
+- The authorization window is checked again against the same manifest. Flows are linted and approval-checked again as on any run.
+- The new run's report covers only what it sent; the earlier report remains the record of the rest. Tests: `test/resume.test.ts`.
 
 ## 5. ASVS 5.0 requirement IDs (mapped, pending independent review)
 - `src/asvs5.ts` maps 49 cases to requirement IDs, matched by hand on 2026-11-12 against the requirement text in OWASP/ASVS `5.0/en/` at tag `v5.0.0_release` (commit `5cf9b032440be53ce345ab3c130fda46ba1ce7a2`). Only IDs are stored, never requirement text.
