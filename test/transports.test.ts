@@ -1,25 +1,49 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { CASES, CATEGORIES } from "../src/catalog.js";
-import { buildCurlArgv, buildPwshArgv, PlaywrightBrowserAdapter, scrubbedEnv, VisualComputerUseAdapter } from "../src/transports/optional.js";
+import { PlaywrightBrowserAdapter, scrubbedEnv, VisualComputerUseAdapter } from "../src/transports/optional.js";
+import { buildPinnedCurlArgv, cliTransportCheck, parseCurlOutput, parsePwshOutput, pwshArgv, PWSH_PINNED_SCRIPT } from "../src/transports/cli-http.js";
 import { allAdapters, route } from "../src/transports/registry.js";
 import { probePlaywright } from "../src/transports/playwright.js";
 
-test("curl argv: -q first, no redirects, no shell metacharacter interpretation", () => {
-  const argv = buildCurlArgv("GET", "https://a.test/x?y=1;rm -rf /", { accept: "*/*" });
+test("curl argv: -q first, pinned with --resolve, no redirects, values stay argv entries", () => {
+  const argv = buildPinnedCurlArgv("GET", "https://a.test/x?y=1;rm -rf /", "192.0.2.7", { accept: "*/*" }, 1024);
   assert.equal(argv[0], "-q", "-q must be first so ~/.curlrc is ignored");
   assert.deepEqual(argv.slice(argv.indexOf("--max-redirs"), argv.indexOf("--max-redirs") + 2), ["--max-redirs", "0"]);
+  assert.deepEqual(argv.slice(argv.indexOf("--resolve"), argv.indexOf("--resolve") + 2), ["--resolve", "a.test:443:192.0.2.7"]);
+  assert.deepEqual(argv.slice(argv.indexOf("--noproxy"), argv.indexOf("--noproxy") + 2), ["--noproxy", "*"]);
   assert.equal(argv.at(-2), "--");
-  assert.throws(() => buildCurlArgv("GET", "https://a.test/", { "x-a": "v\r\nInjected: 1" }));
-  assert.throws(() => buildCurlArgv("GET", "file:///etc/passwd", {}));
+  assert.ok(buildPinnedCurlArgv("GET", "http://[::1]:8080/", "::1", {}, 1).includes("::1:8080:[::1]"));
+  assert.ok(buildPinnedCurlArgv("HEAD", "http://a.test/", "192.0.2.7", {}, 1).includes("--head"));
+  assert.throws(() => buildPinnedCurlArgv("GET", "https://a.test/", "192.0.2.7", { "x-a": "v\r\nInjected: 1" }, 1));
+  assert.throws(() => buildPinnedCurlArgv("GET", "file:///etc/passwd", "192.0.2.7", {}, 1));
 });
 
-test("PowerShell argv passes values as parameters, never as script text", () => {
-  const argv = buildPwshArgv("GET", "https://a.test/$(whoami)", { "x-a": "'; Remove-Item" });
-  const script = argv[argv.indexOf("-Command") + 1]!;
-  assert.ok(!script.includes("whoami") && !script.includes("Remove-Item"));
-  assert.ok(script.includes("-MaximumRedirection 0"));
-  assert.ok(argv.includes("-NoProfile"));
+test("PowerShell gets a fixed encoded script; request values travel as JSON on stdin", () => {
+  const argv = pwshArgv();
+  assert.ok(argv.includes("-NoProfile") && argv.includes("-NonInteractive"));
+  const script = Buffer.from(argv[argv.indexOf("-EncodedCommand") + 1]!, "base64").toString("utf16le");
+  assert.equal(script, PWSH_PINNED_SCRIPT, "the script is constant: no request value is ever script text");
+  assert.match(script, /AllowAutoRedirect = \$false/);
+  assert.match(script, /UseProxy = \$false/);
+  assert.match(script, /Headers\.Host = \$u\.Authority/, "connects to the checked IP and sends the original Host");
+});
+
+test("curl and PowerShell output parsers", () => {
+  const raw = Buffer.from("HTTP/1.1 100 Continue\r\n\r\nHTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\nSet-Cookie: a=1\r\nSet-Cookie: b=2\r\n\r\nbody\r\n\r\nmore");
+  const c = parseCurlOutput(raw, false);
+  assert.equal(c.status, 404);
+  assert.deepEqual(c.headers["set-cookie"], ["a=1", "b=2"]);
+  assert.equal(c.body.toString(), "body\r\n\r\nmore");
+  const one = parsePwshOutput(Buffer.from(JSON.stringify({ status: 200, headers: { k: "Server", v: "x" }, body: Buffer.from("hi").toString("base64"), truncated: false })));
+  assert.deepEqual(one.headers, { server: ["x"] }, "PowerShell 5.1 unwraps a one-element array");
+  assert.equal(one.body.toString(), "hi");
+});
+
+test("--transport preconditions refuse instead of substituting", () => {
+  assert.match((cliTransportCheck("wget", ["wget"], "observe") as { refused: string }).refused, /must be curl-cli or powershell-http/);
+  assert.match((cliTransportCheck("curl-cli", ["direct-http"], "observe") as { refused: string }).refused, /not in the manifest/);
+  assert.match((cliTransportCheck("curl-cli", ["curl-cli"], "safe-validate") as { refused: string }).refused, /observe mode only/);
 });
 
 test("child environment is scrubbed", () => {

@@ -11,9 +11,10 @@ import { Redactor } from "./redact.js";
 import { ScopeGate } from "./scope.js";
 import { DirectHttpAdapter, ScopeDenied } from "./transports/direct-http.js";
 import { allAdapters } from "./transports/registry.js";
-import type { Exchange } from "./transports/types.js";
+import type { Exchange, HttpRequestSpec } from "./transports/types.js";
 import { applyConsoleSilent, functionalResult, runFlows, type FlowBrowser } from "./flow/execute.js";
 import { ConsoleInspector } from "./console/detect.js";
+import { CliHttpAdapter, type CliKind } from "./transports/cli-http.js";
 import { BrowserEngine, firstLine, probePlaywright, type BrowserRequest, type ConsoleEvent, type CspViolation, type PlaywrightProbe } from "./transports/playwright.js";
 import { bindManifest, classify, flowSetHash } from "./flow/classify.js";
 import { fillPath, flowOrigin, VAR_SENTINEL } from "./flow/lint.js";
@@ -207,6 +208,8 @@ export interface ExecuteOptions {
   /** Run work directory (spool) and facts-cache directory, both under `.navsentry/`. */
   workDir?: string;
   cacheDir?: string;
+  /** `--transport` (M3): send every request through curl or PowerShell instead of direct-http. Checked by the caller. */
+  httpTransport?: { kind: CliKind; file: string };
   /** `--engine playwright` (M1b): UI steps run in the browser engine; never a silent fallback (S6). */
   browser?: { probe?: () => PlaywrightProbe; shotsDir?: string };
   /** safe-validate: directory for `fixtures.pending.json` (the run work dir); creates are refused without it. */
@@ -240,7 +243,12 @@ export async function executeTest(m: Manifest, opts: ExecuteOptions = {}): Promi
   for (const d of opts.flows ?? []) for (const v of Object.values(d.header.vars)) if ("env" in v && env[v.env]) secrets.push(env[v.env] as string);
   const redactor = new Redactor(secrets, m.targets.origins.map((o) => new URL(o).hostname.replace(/^\[|\]$/g, "")));
   const denials: RunResult["denials"] = [];
-  const http = new DirectHttpAdapter(gate, budget, redactor, (url, method, reason) => denials.push({ url, method, reason }), { maxResponseBytes: m.capture.max_response_bytes, memoryBufferBytes: m.capture.memory_buffer_bytes, bytes });
+  const onDeniedHttp = (url: string, method: string, reason: string) => denials.push({ url, method, reason });
+  const captureOpts = { maxResponseBytes: m.capture.max_response_bytes, memoryBufferBytes: m.capture.memory_buffer_bytes, bytes };
+  // M3: one HTTP transport for the whole run, so findings can be compared across transports.
+  const http: { send(spec: HttpRequestSpec): Promise<Exchange> } = opts.httpTransport
+    ? new CliHttpAdapter(opts.httpTransport.kind, opts.httpTransport.file, gate, budget, redactor, onDeniedHttp, captureOpts)
+    : new DirectHttpAdapter(gate, budget, redactor, onDeniedHttp, captureOpts);
   const transports = await Promise.all(allAdapters().map((a) => a.probe()));
   const exchanges: Exchange[] = [];
   const checks: CheckResult[] = [];

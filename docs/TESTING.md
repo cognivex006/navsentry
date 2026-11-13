@@ -25,7 +25,8 @@
 | `test/safe-validate-d.test.ts` | SPEC-0.2.0 tests 11, 14: NSC-BIZ-001 invariants and forbidden transitions, NSC-INJ-004 marker observations |
 | `test/doctor.test.ts` | version doctor: packaging versions, statuses, installation discovery, skill update with backup |
 | `test/skill-discovery.test.ts` | Codex entrypoint resolves the canonical skill; skill front matter shape |
-| `test/transports.test.ts` | curl/PowerShell argv safety; scrubbed env; honest optional adapters; router never substitutes; catalog integrity and anonymization |
+| `test/transports.test.ts` | Pinned curl argv and the fixed PowerShell script; output parsers; `--transport` refusals; scrubbed env; honest optional adapters; router never substitutes; catalog integrity and anonymization |
+| `test/cli-transports.test.ts` | M3 parity: the same observe run through direct-http, curl and PowerShell gives identical findings and check statuses on the vulnerable and secure demo |
 
 Fixture app: `test/fixtures/demo-server.ts` — binds 127.0.0.1, synthetic data, `vulnerable` and `secure` variants with identical response contracts for legitimate callers. Flow routes: `/api/me` (AC-002), `/api/orders` and `/api/orders/:id` (AC-003), `/api/admin/stats` (AC-007), `/app/profile` and `/login` (E2E), `/api/hostile-ids` (NavSentry extraction-safety fixture). Fixture flows: `test/fixtures/flows/`, `test/fixtures/flows-hostile/`.
 

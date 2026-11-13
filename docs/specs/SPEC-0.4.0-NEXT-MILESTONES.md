@@ -14,7 +14,7 @@
 | M4 DevSift adapter | | ✅ | ต้องรู้ก่อนว่า DevSift ต้องมี entry ใน governance หรือไม่ (D3) |
 | M1b+ DOM checks (CSP, cookie, framing) | ✅ ทำแล้วหลัง D1 | | ใช้ Chromium headless shell ซึ่งเป็น Chrome for Testing ที่รอเจ้าของยืนยัน terms ใหม่ (D1) |
 | M1b+ YAML manifests | | ✅ | ต้องเพิ่ม dependency (กฎข้อ 2) |
-| M3 CLI transports (curl, PowerShell) | | ✅ ทั้งชุด | curl และ PowerShell เป็น binary ภายนอก ต้องอนุมัติก่อน (D2); interface และ parity test มีไว้เพื่อ transport เหล่านี้เท่านั้น จึงย้ายไปด้วยกัน; การรันบน Linux ทำในเครื่องนี้ไม่ได้ |
+| M3 CLI transports (curl, PowerShell) | ✅ ทำแล้วหลัง D2 (Windows; Linux ยังไม่ได้รัน) | | curl และ PowerShell เป็น binary ภายนอก ต้องอนุมัติก่อน (D2); interface และ parity test มีไว้เพื่อ transport เหล่านี้เท่านั้น จึงย้ายไปด้วยกัน; การรันบน Linux ทำในเครื่องนี้ไม่ได้ |
 | M5 Postman/Newman, ZAP | | ✅ | ต้องรีวิว terms ก่อน |
 | M5 `active-approved` | | ✅ | ต้องมีการออกแบบและอนุมัติแยก (กฎข้อ 6) |
 
