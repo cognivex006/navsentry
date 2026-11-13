@@ -182,7 +182,7 @@
       "decision": "APPROVED"
     },
     {
-      "name": "SaaS advisory APIs (OSV, NVD, GitHub Advisory API), Postman cloud, OWASP ZAP",
+      "name": "SaaS advisory APIs (OSV, NVD, GitHub Advisory API), Postman cloud",
       "usage": "NOT USED in v0.1.",
       "terms": [
         "https://google.github.io/osv.dev/faq/",
@@ -190,10 +190,34 @@
         "https://www.postman.com/legal/terms/",
         "https://www.zaproxy.org/"
       ],
-      "findings": "Each requires its own terms review (rate limits, API keys, data sharing of target information, acceptable use) before any integration. Target data must never be sent to a SaaS without the target owner's approval.",
+      "findings": "Each requires its own terms review (rate limits, API keys, data sharing of target information, acceptable use) before any integration. Target data must never be sent to a SaaS without the target owner's approval. 2026-11-13: Newman and OWASP ZAP moved to their own entries (SPEC-0.4.0 D6).",
       "reviewed": "2026-10-31",
       "review_due": "before any integration",
       "decision": "NOT_ADOPTED"
+    },
+    {
+      "name": "Newman (Postman collection runner)",
+      "usage": "Not used. Reviewed for M5 Postman import (SPEC-0.4.0 D6).",
+      "terms": [
+        "https://github.com/postmanlabs/newman/blob/develop/LICENSE.md",
+        "https://www.npmjs.com/package/newman"
+      ],
+      "findings": "Reviewed 2026-11-13 from the GitHub repository metadata and package.json: Apache-2.0, version 6.2.3, 21 direct runtime dependencies, repository not archived. Not adopted: Newman runs a collection's pre-request and test scripts, which breaks NavSentry's no-script-execution rule for imports, and its dependency tree conflicts with ADR-0003 (zero runtime dependencies). A Postman collection import, if built, would parse collection JSON natively and drop every script, like `flow import --openapi`.",
+      "reviewed": "2026-11-13",
+      "review_due": "before any integration",
+      "decision": "NOT_ADOPTED"
+    },
+    {
+      "name": "OWASP ZAP (self-hosted, passive)",
+      "usage": "Not used. Reviewed for M5 optional passive proxy (SPEC-0.4.0 D6); `zap-passive` stays unavailable.",
+      "terms": [
+        "https://github.com/zaproxy/zaproxy/blob/main/LICENSE",
+        "https://www.zaproxy.org/"
+      ],
+      "findings": "Reviewed 2026-11-13 from the GitHub repository metadata: Apache-2.0, latest release v2.17.0 (2025-12-15), repository active. The license allows local use without redistribution. Conditions before any integration, each to be checked against ZAP's own documentation at that time: user-installed and self-hosted only (NavSentry never downloads it); the daemon bound to 127.0.0.1 with an API key; passive scanning only, with no spider or active scan; update checks and add-on downloads turned off; NavSentry's requests still pass ScopeGate and the Budget before they reach the proxy; ZAP must never send its own requests to the target.",
+      "reviewed": "2026-11-13",
+      "review_due": "before any integration",
+      "decision": "APPROVED_WITH_CONDITIONS"
     },
     {
       "name": "GitHub Advisory Database (advisory source for the knowledge base)",

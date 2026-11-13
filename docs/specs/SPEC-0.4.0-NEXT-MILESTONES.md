@@ -15,8 +15,8 @@
 | M1b+ DOM checks (CSP, cookie, framing) | ✅ ทำแล้วหลัง D1 | | ใช้ Chromium headless shell ซึ่งเป็น Chrome for Testing ที่รอเจ้าของยืนยัน terms ใหม่ (D1) |
 | M1b+ YAML manifests | | ✅ | ต้องเพิ่ม dependency (กฎข้อ 2) |
 | M3 CLI transports (curl, PowerShell) | ✅ ทำแล้วหลัง D2 (Windows; Linux ยังไม่ได้รัน) | | curl และ PowerShell เป็น binary ภายนอก ต้องอนุมัติก่อน (D2); interface และ parity test มีไว้เพื่อ transport เหล่านี้เท่านั้น จึงย้ายไปด้วยกัน; การรันบน Linux ทำในเครื่องนี้ไม่ได้ |
-| M5 Postman/Newman, ZAP | | ✅ | ต้องรีวิว terms ก่อน |
-| M5 `active-approved` | | ✅ | ต้องมีการออกแบบและอนุมัติแยก (กฎข้อ 6) |
+| M5 Postman/Newman, ZAP | ✅ รีวิว terms แล้ว (D6) | Postman import แบบไม่รัน script; ZAP integration | Newman ไม่ใช้ เพราะรัน script ใน collection และมี dependency 21 ตัว; ZAP (Apache-2.0) อนุมัติแบบมีเงื่อนไข แต่ยังไม่มีโค้ด |
+| M5 `active-approved` | ✅ เอกสารออกแบบ ([DESIGN-ACTIVE-APPROVED](DESIGN-ACTIVE-APPROVED.md)) | การ implement รอ owner decisions A1–A5 | ไม่มี payload และไม่มีโค้ด (กฎข้อ 6) |
 
 ## 1. Rule used to split the work
 An item moves to the next phase when it needs something not yet allowed: a dependency, binary or service without a dated APPROVED entry, an owner decision on safety, a primary-source review, or a platform this machine does not have. An item that only exists to serve a moved item moves with it, and so does an item that has to wait for one.
