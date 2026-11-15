@@ -4,6 +4,8 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-15
+
 ### Added
 - M5 (SPEC-0.4.0 D6): a governance review of Newman (Apache-2.0, not adopted because it runs collection scripts and has 21 dependencies) and OWASP ZAP (Apache-2.0, approved with conditions for a future self-hosted passive integration, no code yet). Also a draft [`active-approved` design](docs/specs/DESIGN-ACTIVE-APPROVED.md): design only, no payloads, implementation waits on owner decisions A1–A5.
 - DevSift correlation (M4, SPEC-0.4.0 D3): `navsentry correlate --run <dir> --devsift <report.json>` lists leads between DevSift v1 source-code cases and NavSentry findings through a fixed rule table (for example SEC003 dynamic SQL → NSC-INJ-001). It reads the files only, never runs DevSift, ignores code excerpts and prompts, and refuses other report versions. A lead is not proof.
@@ -13,7 +15,7 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 
 ### Changed
 - `browse start --headed` is enabled. The owner approved Playwright's full Chromium build with conditions on 2026-11-13 (SPEC-0.4.0 D1). It needs `npx playwright-core install chromium`, which NavSentry never runs for you. The headless shell entry is re-confirmed.
-- Governance: curl, PowerShell 7 and Windows PowerShell 5.1 are approved with conditions as M3 transports (D2). The adapters are not built yet.
+- Governance: curl, PowerShell 7 and Windows PowerShell 5.1 are approved with conditions as M3 transports (D2).
 - SPEC-0.4.0 is ACCEPTED, and the owner decisions D1–D6 are recorded.
 
 ## [0.4.0] - 2026-11-12
