@@ -5,7 +5,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { probePlaywright } from "../src/transports/playwright.js";
@@ -57,7 +57,7 @@ test("clicks drive the page, but every request still goes through ScopeGate and 
       assert.equal(shot.ok, true);
       const png = readFileSync(String(shot.path));
       assert.equal(png.subarray(1, 4).toString(), "PNG");
-      assert.ok(String(shot.path).startsWith(work), "screenshots stay in the run's work directory");
+      assert.ok(String(shot.path).startsWith(realpathSync(work)), "screenshots stay in the run's work directory");
 
       const inn = await sendCommand(work, { cmd: "click", x: 50, y: 40 });
       assert.match(String(inn.url), /\/ui\/next$/);

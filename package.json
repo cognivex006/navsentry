@@ -28,7 +28,7 @@
   },
   "scripts": {
     "build": "npm run clean && tsc -p tsconfig.json",
-    "test": "npm run build && node --test --test-concurrency=1 dist/test/",
+    "test": "npm run build && node --test --test-concurrency=1 \"dist/test/*.test.js\"",
     "docs:catalog": "npm run build && node dist/scripts/gen-catalog-docs.js",
     "gate": "npm run build && node dist/scripts/local-gate.js",
     "release:pack": "npm run build && npm pack --pack-destination .navsentry/release",
