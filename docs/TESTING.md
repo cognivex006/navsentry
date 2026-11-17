@@ -44,7 +44,12 @@ GATE-01 no workflows · GATE-02 tests · GATE-03 generated docs · GATE-04 npm a
 |---|---|---|---|
 | Windows 11 Pro 10.0.26300 x64 | 26.13.0 | ✅ 2026-11-05 | 156/156 tests, gate PASS |
 | Windows | 22.x / 24.x | ❌ not executed | — |
-| Linux (container/WSL) | 22/24/26 | ❌ not executed | — |
-| macOS | any | ❌ not executed | — |
+| Linux, Docker `node:22-bookworm` x64 (kernel 6.12 linuxkit) | 22.23.5 | ✅ 2026-11-16 | 228/228 tests; curl 7.88.1 and PowerShell 7.6.10 parity ran, Chromium headless shell installed |
+| Linux, Docker `node:24-bookworm` x64 | 24.22.3 | ✅ 2026-11-16 | 228/228 tests (same toolset) |
+| Linux, Docker `node:26-bookworm` x64 | 26.13.1 | ✅ 2026-11-16 | 228/228 tests (same toolset) |
+| macOS 26.7.3 x86_64 | 24.18.1 | ✅ 2026-11-16 | 226/228 tests, 2 skipped (powershell-http parity: PowerShell 7 not installed); curl parity and browser tests ran; gate PASS except GATE-08 INCOMPLETE (owner terms file not on that machine) |
+| macOS arm64 | any | ❌ not executed | — |
+
+Linux runs use a throwaway container (Debian 12, curl from apt, PowerShell 7 from the Microsoft Debian repository at `/opt/microsoft/powershell/7/pwsh`); the repository is mounted read-only and copied in. On macOS, `powershell-http` only trusts the official `.pkg` location `/usr/local/microsoft/powershell/7/pwsh`; Homebrew prefixes are user-writable and are not trusted.
 
 Unexecuted rows are not claims of support. Run `npm test` there and update this table with the real result.

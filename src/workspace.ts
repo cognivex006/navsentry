@@ -11,7 +11,7 @@
 import { randomBytes } from "node:crypto";
 import { closeSync, existsSync, lstatSync, mkdirSync, openSync, readFileSync, readdirSync, realpathSync, rmdirSync, statSync, unlinkSync, writeFileSync, writeSync } from "node:fs";
 import { hostname } from "node:os";
-import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { readPending } from "./fixtures/lifecycle.js";
 import type { PendingFixture, WorkspaceResult } from "./types.js";
 
@@ -41,6 +41,22 @@ export function projectRoot(dir: string): string {
   const st = lstatSync(abs, { throwIfNoEntry: false });
   if (!st || !st.isDirectory() || st.isSymbolicLink()) throw new WorkspaceError(`project root is not a plain directory: ${abs}`);
   return realpathSync(abs);
+}
+
+/**
+ * Resolves links in the longest existing prefix of `p` (the file itself may not exist yet), so a path
+ * through a linked system directory (macOS /var -> /private/var) compares equal to the realpath'd root.
+ */
+export function canonical(p: string): string {
+  const tail: string[] = [];
+  let cur = p;
+  for (;;) {
+    try { return join(realpathSync(cur), ...tail.reverse()); } catch { /* not there yet */ }
+    const parent = dirname(cur);
+    if (parent === cur) return p;
+    tail.push(basename(cur));
+    cur = parent;
+  }
 }
 
 /** True when `p` is strictly inside `root` (both absolute, already resolved). */
@@ -301,7 +317,7 @@ export function beginRun(projectDir: string, runId: string, ignore: string[], op
 
 /** Marks an explicit output file as an authorized write (excluded one by one, never by parent tree). */
 export function authorize(ws: RunWorkspace, file: string): void {
-  const abs = resolve(file);
+  const abs = canonical(resolve(file));
   if (inside(ws.root, abs)) {
     const rel = relative(ws.root, abs).split(sep).join("/");
     ws.authorized.add(rel);

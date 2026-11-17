@@ -14,7 +14,7 @@
 | M4 DevSift adapter | ✅ ทำแล้วหลัง D3 (§4.1) | | ต้องรู้ก่อนว่า DevSift ต้องมี entry ใน governance หรือไม่ (D3) |
 | M1b+ DOM checks (CSP, cookie, framing) | ✅ ทำแล้วหลัง D1 | | ใช้ Chromium headless shell ซึ่งเป็น Chrome for Testing ที่รอเจ้าของยืนยัน terms ใหม่ (D1) |
 | M1b+ YAML manifests | | ✅ | ต้องเพิ่ม dependency (กฎข้อ 2) |
-| M3 CLI transports (curl, PowerShell) | ✅ ทำแล้วหลัง D2 (Windows; Linux ยังไม่ได้รัน) | | curl และ PowerShell เป็น binary ภายนอก ต้องอนุมัติก่อน (D2); interface และ parity test มีไว้เพื่อ transport เหล่านี้เท่านั้น จึงย้ายไปด้วยกัน; การรันบน Linux ทำในเครื่องนี้ไม่ได้ |
+| M3 CLI transports (curl, PowerShell) | ✅ ทำแล้วหลัง D2 (Windows; Linux รันใน Docker แล้ว 2026-11-16; macOS x64 รัน curl แล้ว) | | curl และ PowerShell เป็น binary ภายนอก ต้องอนุมัติก่อน (D2); interface และ parity test มีไว้เพื่อ transport เหล่านี้เท่านั้น จึงย้ายไปด้วยกัน |
 | M5 Postman/Newman, ZAP | ✅ รีวิว terms แล้ว (D6) | Postman import แบบไม่รัน script; ZAP integration | Newman ไม่ใช้ เพราะรัน script ใน collection และมี dependency 21 ตัว; ZAP (Apache-2.0) อนุมัติแบบมีเงื่อนไข แต่ยังไม่มีโค้ด |
 | M5 `active-approved` | ✅ เอกสารออกแบบ ([DESIGN-ACTIVE-APPROVED](DESIGN-ACTIVE-APPROVED.md)) | การ implement รอ owner decisions A1–A5 | ไม่มี payload และไม่มีโค้ด (กฎข้อ 6) |
 

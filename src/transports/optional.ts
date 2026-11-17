@@ -49,7 +49,10 @@ function runVersion(file: string, args: string[]): Promise<string | undefined> {
 export const TRUSTED_CURL = process.platform === "win32" ? [`${process.env.SystemRoot ?? "C:\\Windows"}\\System32\\curl.exe`] : ["/usr/bin/curl", "/bin/curl"];
 export const TRUSTED_PWSH = process.platform === "win32"
   ? ["C:\\Program Files\\PowerShell\\7\\pwsh.exe", `${process.env.SystemRoot ?? "C:\\Windows"}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`]
-  : ["/usr/bin/pwsh", "/opt/microsoft/powershell/7/pwsh"];
+  : process.platform === "darwin"
+    // The official macOS .pkg installs here (root-owned). Homebrew prefixes are user-writable and not trusted.
+    ? ["/usr/local/microsoft/powershell/7/pwsh"]
+    : ["/usr/bin/pwsh", "/opt/microsoft/powershell/7/pwsh"];
 
 const HEADER_NAME = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
 
