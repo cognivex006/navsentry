@@ -111,7 +111,9 @@ export async function startSession(o: SessionOptions): Promise<SessionHandle> {
   let pipe: string;
   let pipeDir: string | undefined;
   try { ({ pipe, privateDir: pipeDir } = pipePath(ws.work.path, id)); } catch (e) { ws.dispose(); endRun(ws, 0); throw e; }
-  const releasePipe = () => { if (pipeDir) rmSync(pipeDir, { recursive: true, force: true }); };
+  const releasePipe = () => { process.off("exit", releasePipe); if (pipeDir) rmSync(pipeDir, { recursive: true, force: true }); };
+  // A signal ends the process through process.exit in beginRun's handler; "exit" still runs, so the socket dir goes too.
+  if (pipeDir) process.once("exit", releasePipe);
 
   const budget = new Budget(m.safety.max_requests, m.safety.max_requests_per_second, m.safety.max_duration_seconds * 1000, m.authorization.expires_at ? new Date(m.authorization.expires_at) : undefined);
   const bytes = new ByteBudget(m.capture.max_run_bytes, m.capture.max_wire_bytes);
@@ -303,7 +305,7 @@ export async function startSession(o: SessionOptions): Promise<SessionHandle> {
     resolveDone({ result, workspace: ws, ...(saveFlow ? { saveFlow } : {}) });
   };
 
-  await new Promise<void>((resolve, reject) => { server.once("error", (e) => { releasePipe(); reject(e); }); server.listen(pipe, () => resolve()); });
+  await new Promise<void>((resolve, reject) => { server.once("error", (e) => { releasePipe(); void engine.close().catch(() => undefined).finally(() => { budget.close(); ws.dispose(); endRun(ws, 0); reject(e); }); }); server.listen(pipe, () => resolve()); });
   // Published only once the pipe accepts connections, so a client never finds an unreachable session.
   writeFileSync(join(ws.work.path, "session.json"), JSON.stringify({ pipe, token, pid: process.pid }), { mode: 0o600 });
   touch();
