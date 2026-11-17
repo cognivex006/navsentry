@@ -50,6 +50,6 @@ GATE-01 no workflows · GATE-02 tests · GATE-03 generated docs · GATE-04 npm a
 | macOS 26.7.3 x86_64 | 24.18.1 | ✅ 2026-11-16 | 226/228 tests, 2 skipped (powershell-http parity: PowerShell 7 not installed); curl parity and browser tests ran; gate PASS except GATE-08 INCOMPLETE (owner terms file not on that machine) |
 | macOS arm64 | any | ❌ not executed | — |
 
-Linux runs use a throwaway container (Debian 12, curl from apt, PowerShell 7 from the Microsoft Debian repository at `/opt/microsoft/powershell/7/pwsh`); the repository is mounted read-only and copied in. On macOS, `powershell-http` only trusts the official `.pkg` location `/usr/local/microsoft/powershell/7/pwsh`; Homebrew prefixes are user-writable and are not trusted.
+Linux runs use a throwaway container (Debian 12, curl from apt, PowerShell 7 from the Microsoft Debian repository at `/opt/microsoft/powershell/7/pwsh`); the repository is mounted read-only and copied in. On macOS the CLI transport is `curl-cli` (system `/usr/bin/curl`); PowerShell is optional and `doctor` says so when it is missing. If installed, `powershell-http` only trusts the official `.pkg` location `/usr/local/microsoft/powershell/7/pwsh`; Homebrew prefixes are user-writable and are not trusted.
 
 Unexecuted rows are not claims of support. Run `npm test` there and update this table with the real result.
