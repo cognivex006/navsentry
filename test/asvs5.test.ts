@@ -5,7 +5,7 @@ import { CASES } from "../src/catalog.js";
 import { ASVS5_IDS, ASVS5_NO_REQUIREMENT, ASVS5_REQUIREMENTS, ASVS5_SOURCE } from "../src/asvs5.js";
 
 test("every mapped ID exists in ASVS 5.0.0 and belongs to a chapter the case already maps", () => {
-  assert.equal(ASVS5_IDS.size, 297);
+  assert.equal(ASVS5_IDS.size, 345);
   const byId = new Map(CASES.map((c) => [c.id, c]));
   for (const [id, reqs] of Object.entries(ASVS5_REQUIREMENTS)) {
     const c = byId.get(id);
@@ -25,7 +25,8 @@ test("an empty mapping always says why, and every case with an ASVS chapter is m
   for (const c of CASES) if (c.asvs5Chapter.length) assert.ok(c.id in ASVS5_REQUIREMENTS, `${c.id} has a requirement-level entry`);
 });
 
-test("the source is pinned and the review status is not claimed", () => {
+test("the source is pinned and the review is dated", () => {
   assert.match(ASVS5_SOURCE.commit, /^[0-9a-f]{40}$/);
-  assert.equal(ASVS5_SOURCE.status, "pending-independent-review", "only an independent reviewer may flip this");
+  assert.equal(ASVS5_SOURCE.status, "reviewed");
+  assert.match(ASVS5_SOURCE.reviewed, /^\d{4}-\d{2}-\d{2}$/);
 });

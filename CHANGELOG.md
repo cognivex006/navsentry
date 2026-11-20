@@ -4,6 +4,9 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 
 ## [Unreleased]
 
+### Changed
+- ASVS 5.0 requirement IDs are independently reviewed (2026-11-20). The known-ID list now covers all 345 IDs, including V10 and V17. NSC-AUTH-001 drops 13.2.3 (default credentials, not hardcoded ones). NSC-CRYPT-003 adds 12.2.2 (publicly trusted certificates). NSC-INJ-005 adds 1.2.1 (encoding for HTTP header fields). IDs still appear only in the generated catalog docs.
+
 ## [0.5.0] - 2026-11-15
 
 ### Added

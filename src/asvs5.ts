@@ -2,7 +2,7 @@
  * OWASP ASVS 5.0 requirement IDs per case (M4, SPEC-0.4.0 §5).
  *
  * Every ID below was matched by hand against the requirement text in the OWASP source at the pinned
- * commit, on the date given. Status stays `pending-independent-review` until someone other than the
+ * commit, on the date given. Status was `pending-independent-review` until someone other than the
  * author checks each mapping; until then the IDs appear only in the generated catalog docs, never in
  * run.json, reports or SARIF. The chapter-level `asvs5Chapter` mapping in catalog.ts is unchanged.
  * Only IDs are stored here, not requirement text.
@@ -15,10 +15,11 @@ export const ASVS5_SOURCE = {
   commit: "5cf9b032440be53ce345ab3c130fda46ba1ce7a2",
   path: "5.0/en/",
   checked: "2026-11-12",
-  status: "pending-independent-review" as "pending-independent-review" | "reviewed",
+  reviewed: "2026-11-20",
+  status: "reviewed" as "pending-independent-review" | "reviewed",
 };
 
-/** Every requirement ID in the pinned source (297), used to reject typos. */
+/** Every requirement ID in the pinned source (345, including V10 and V17), used to reject typos. */
 export const ASVS5_IDS: ReadonlySet<string> = new Set([
   "1.1.1", "1.1.2", "1.2.1", "1.2.2", "1.2.3", "1.2.4", "1.2.5", "1.2.6", "1.2.7", "1.2.8", "1.2.9", "1.2.10",
   "1.3.1", "1.3.2", "1.3.3", "1.3.4", "1.3.5", "1.3.6", "1.3.7", "1.3.8", "1.3.9", "1.3.10", "1.3.11", "1.3.12",
@@ -44,6 +45,9 @@ export const ASVS5_IDS: ReadonlySet<string> = new Set([
   "14.2.5", "14.2.6", "14.2.7", "14.2.8", "14.3.1", "14.3.2", "14.3.3", "15.1.1", "15.1.2", "15.1.3", "15.1.4", "15.1.5",
   "15.2.1", "15.2.2", "15.2.3", "15.2.4", "15.2.5", "15.3.1", "15.3.2", "15.3.3", "15.3.4", "15.3.5", "15.3.6", "15.3.7",
   "15.4.1", "15.4.2", "15.4.3", "15.4.4", "16.1.1", "16.2.1", "16.2.2", "16.2.3", "16.2.4", "16.2.5", "16.3.1", "16.3.2",
+  "10.1.1", "10.1.2", "10.2.1", "10.2.2", "10.2.3", "10.3.1", "10.3.2", "10.3.3", "10.3.4", "10.3.5", "10.4.1", "10.4.2", "10.4.3", "10.4.4", "10.4.5", "10.4.6", "10.4.7", "10.4.8", "10.4.9", "10.4.10", "10.4.11", "10.4.12",
+  "10.4.13", "10.4.14", "10.4.15", "10.4.16", "10.5.1", "10.5.2", "10.5.3", "10.5.4", "10.5.5", "10.6.1", "10.6.2", "10.7.1", "10.7.2", "10.7.3",
+  "17.1.1", "17.1.2", "17.2.1", "17.2.2", "17.2.3", "17.2.4", "17.2.5", "17.2.6", "17.2.7", "17.2.8", "17.3.1", "17.3.2",
   "16.3.3", "16.3.4", "16.4.1", "16.4.2", "16.4.3", "16.5.1", "16.5.2", "16.5.3", "16.5.4"]);
 
 /**
@@ -76,7 +80,7 @@ export const ASVS5_REQUIREMENTS: Record<string, string[]> = {
   "NSC-SESS-004": ["9.1.1", "9.1.2", "9.2.1", "9.2.3"],
   "NSC-CRYPT-001": ["12.1.1"],
   "NSC-CRYPT-002": ["12.1.2", "11.6.2"],
-  "NSC-CRYPT-003": ["11.6.1"],
+  "NSC-CRYPT-003": ["11.6.1", "12.2.2"],
   "NSC-CRYPT-004": [],
   "NSC-CRYPT-005": ["13.3.1"],
   "NSC-CRYPT-006": ["12.2.1", "4.1.2"],
@@ -88,13 +92,13 @@ export const ASVS5_REQUIREMENTS: Record<string, string[]> = {
   "NSC-AC-006": ["3.5.1", "3.5.3"],
   "NSC-AC-007": ["8.2.1"],
   "NSC-AC-008": ["3.7.2"],
-  "NSC-AUTH-001": ["13.3.1", "13.2.3"],
+  "NSC-AUTH-001": ["13.3.1"],
   "NSC-AUTH-002": ["7.4.1"],
   "NSC-INJ-001": ["1.2.4"],
   "NSC-INJ-002": ["1.3.2", "1.3.7"],
   "NSC-INJ-003": ["1.2.6"],
   "NSC-INJ-004": ["1.2.1", "1.2.3", "3.2.2"],
-  "NSC-INJ-005": ["4.1.3", "4.2.4", "4.2.5"],
+  "NSC-INJ-005": ["1.2.1", "4.1.3", "4.2.4", "4.2.5"],
   "NSC-INJ-006": ["5.3.2"],
   "NSC-SUPPLY-001": ["15.2.1"],
   "NSC-SUPPLY-002": ["15.2.1"],
