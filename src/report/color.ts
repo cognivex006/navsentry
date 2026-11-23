@@ -37,7 +37,8 @@ export function paint(text: string, on = colourEnabled()): string {
   return text
     .replace(WORDS, (w) => `${BOLD}${COLOUR[w]}${w}${RESET}`)
     .replace(HEADING, (h) => `${BOLD}${h}${RESET}`)
-    .replace(LABELS, (_m, sp: string, l: string) => `${sp}${GREY}${l}:${RESET}`);
+    .replace(LABELS, (_m, sp: string, l: string) => `${sp}${GREY}${l}:${RESET}`)
+    .replace(/^(\s*)warning:(?= )/gm, (_m, sp: string) => `${sp}${BOLD}${YELLOW}warning:${RESET}`);
 }
 
 /** A stderr line: "warning: …" yellow, "using …" dim, everything else (errors, refusals) red. */
