@@ -47,7 +47,7 @@ import { draftFlowFromSession } from "./visual/flow-draft.js";
 import { MAX_RECORDING_BYTES, RecordingError, importRecording, recordingOrigin } from "./flow/recording.js";
 import { MAX_NAVREC_BYTES, importNavrec, isZip } from "./flow/navrec.js";
 import { renderHtml } from "./report/html.js";
-import { paint } from "./report/color.js";
+import { paint, paintErr } from "./report/color.js";
 import { nextSteps, renderNext } from "./next.js";
 import { runMcpServer } from "./mcp.js";
 import { ResumeRefused } from "./resume.js";
@@ -133,13 +133,16 @@ function configPath(argv: string[]): string {
   if (argv.includes("--config")) return need(argv, "--config");
   const def = resolve(DEFAULT_MANIFEST);
   if (existsSync(def)) {
-    process.stderr.write(`using ${DEFAULT_MANIFEST} in the current directory\n`);
+    eprint(`using ${DEFAULT_MANIFEST} in the current directory`);
     return def;
   }
   throw new UsageError(`missing --config (or create ${DEFAULT_MANIFEST} here with \`navsentry init <url>\`)`);
 }
 
-const print = (s: string) => process.stdout.write(s.endsWith("\n") ? s : s + "\n");
+const raw = (s: string) => process.stdout.write(s.endsWith("\n") ? s : s + "\n");
+/** Human text: coloured on a TTY (status words, headings, labels), plain otherwise. JSON and report bodies use raw. */
+const print = (s: string) => raw(paint(s));
+const eprint = (s: string) => { for (const l of s.split("\n")) process.stderr.write(`${paintErr(l)}\n`); };
 
 export async function main(argv: string[]): Promise<number> {
   const [cmd, ...rest] = argv;
@@ -176,7 +179,7 @@ export async function main(argv: string[]): Promise<number> {
         assertEnv(m, rest);
         const sel = arg(rest, "--flows") ? selectFlows(m, rest) : undefined;
         const plan = planRun(m, process.env, sel ? { flows: sel.docs, flowsOnly: rest.includes("--flows-only"), warnings: sel.warnings } : {});
-        print(JSON.stringify(plan, null, 2));
+        raw(JSON.stringify(plan, null, 2));
         return 0;
       }
       case "test": {
@@ -202,7 +205,7 @@ export async function main(argv: string[]): Promise<number> {
         const fp = join(dirname(runFile), "flows.json");
         const fr = existsSync(fp) ? validateFlowRunResult(JSON.parse(readFileSync(fp, "utf8"))) : undefined;
         const n = nextSteps(r, fr, dirname(resolve(runFile)), securityResult(r));
-        print(rest.includes("--json") ? JSON.stringify(n, null, 2) : paint(renderNext(n)));
+        print(rest.includes("--json") ? JSON.stringify(n, null, 2) : renderNext(n));
         return 0;
       }
       case "workspace":
@@ -219,9 +222,9 @@ export async function main(argv: string[]): Promise<number> {
         const lang = (arg(rest, "--lang") ?? "en") as "en" | "th";
         if (input?.kind === "navsentry-flow-result") {
           const fr = validateFlowRunResult(input);
-          if (fmt === "markdown") print(renderTestMarkdown(fr, undefined, lang));
-          else if (fmt === "json") print(JSON.stringify(fr, null, 2));
-          else if (fmt === "junit") print(renderJunit(fr));
+          if (fmt === "markdown") raw(renderTestMarkdown(fr, undefined, lang));
+          else if (fmt === "json") raw(JSON.stringify(fr, null, 2));
+          else if (fmt === "junit") raw(renderJunit(fr));
           else throw new UsageError("flow results render as markdown|json|junit");
           return 0;
         }
@@ -240,7 +243,7 @@ export async function main(argv: string[]): Promise<number> {
           print(`Wrote ${resolve(outFile)}`);
         } else if (fmt === "html" && process.stdout.isTTY) {
           throw new UsageError("HTML is a file to open in a browser, not terminal output. Add --out <file>.html (scan already wrote REPORT.html in the run folder)");
-        } else print(body);
+        } else raw(body);
         return 0;
       }
       case "correlate": {
@@ -267,7 +270,7 @@ export async function main(argv: string[]): Promise<number> {
         const fb = join(dirname(bp), "flows.json"), fa = join(dirname(ap), "flows.json");
         const flows = existsSync(fb) && existsSync(fa) ? { before: validateFlowRunResult(JSON.parse(readFileSync(fb, "utf8"))), after: validateFlowRunResult(JSON.parse(readFileSync(fa, "utf8"))) } : undefined;
         const c = compareRuns(b, a, flows);
-        print(rest.includes("--json") ? JSON.stringify({ kind: "navsentry-compare", ...c }, null, 2) : paint(renderCompareMarkdown(c)));
+        print(rest.includes("--json") ? JSON.stringify({ kind: "navsentry-compare", ...c }, null, 2) : renderCompareMarkdown(c));
         return c.verdict === "REGRESSED" || c.verdict === "IMPROVED_WITH_DRIFT" || c.verdict === "DRIFT_ONLY" || c.verdict === "FUNCTIONAL_REGRESSION" ? 1 : 0;
       }
       case "catalog": {
@@ -281,14 +284,14 @@ export async function main(argv: string[]): Promise<number> {
     }
   } catch (e) {
     if (e instanceof ConfigError || e instanceof UsageError || e instanceof DoctorError || e instanceof FlowError || e instanceof WorkspaceError || e instanceof ProposalError || e instanceof OpenApiError || e instanceof RecordingError || e instanceof ResumeRefused || e instanceof DevsiftError) {
-      process.stderr.write(`${e.message}\n`);
+      eprint(e.message);
       return 3;
     }
     if (e instanceof SyntaxError) {
-      process.stderr.write("input is not valid JSON\n");
+      eprint("input is not valid JSON");
       return 3;
     }
-    process.stderr.write(`error: ${(e as Error).message}\n`);
+    eprint(`error: ${(e as Error).message}`);
     return 3;
   }
 }
@@ -314,7 +317,7 @@ interface RunOpts { analyze?: { extractors: string[]; draftsDir?: string }; asse
 
 /** Executes a run inside a managed workspace (SPEC-0.1.3 §7.2), writes the reports and returns the exit code. */
 async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<number> {
-  for (const w of o.warnings ?? []) process.stderr.write(`warning: ${w}\n`);
+  for (const w of o.warnings ?? []) eprint(`warning: ${w}`);
   // M3 (SPEC-0.4.0 D2): every request through curl or PowerShell instead of direct-http; refused before the run starts.
   const tArg = arg(argv, "--transport");
   let httpTransport: { kind: CliKind; file: string } | undefined;
@@ -331,7 +334,7 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
   // safe-validate: signals go through the coordinator so cleanup runs before the exit (SPEC-0.2.0 §6.2).
   const sv = m.safety.mode === "safe-validate";
   const ws = beginRun(arg(argv, "--project") ?? process.cwd(), runId, m.workspace.ignore, { coordinatedSignals: sv });
-  const coord = sv ? new SignalCoordinator((code, lines) => { for (const l of lines) process.stderr.write(`${l}\n`); process.stderr.write("second signal: cleanup skipped; fixtures.pending.json kept for the next run's sweep\n"); process.exit(code); }).install() : undefined;
+  const coord = sv ? new SignalCoordinator((code, lines) => { for (const l of lines) eprint(l); eprint("second signal: cleanup skipped; fixtures.pending.json kept for the next run's sweep"); process.exit(code); }).install() : undefined;
   let res: Awaited<ReturnType<typeof executeTest>>;
   // Replay timeline: step screenshots go to the run work dir first, then into <run>/shots/ (git-ignored).
   const shotsWork = join(ws.work.path, "shots");
@@ -430,21 +433,21 @@ async function runAndReport(m: Manifest, argv: string[], o: RunOpts): Promise<nu
   // Integrity manifest (SPEC-0.4.0 §3): sizes and SHA-256 of what this run wrote, checked by `navsentry verify`.
   writeFileSync(join(out, MANIFEST_FILE), JSON.stringify(buildManifest(out, r.runId, TOOL_VERSION, written), null, 2) + "\n");
   const sec = securityResult(r);
-  if (r.workspace.status === "FAIL") process.stderr.write(`WORKSPACE_DIRTY: created=${r.workspace.created.length} modified=${r.workspace.modified.length} deleted=${r.workspace.deleted.length} cleanup=${r.workspace.cleanup}\n`);
+  if (r.workspace.status === "FAIL") eprint(`WORKSPACE_DIRTY: created=${r.workspace.created.length} modified=${r.workspace.modified.length} deleted=${r.workspace.deleted.length} cleanup=${r.workspace.cleanup}`);
   if (argv.includes("--json")) {
     // Machine-readable summary for agents (SPEC-0.3.0 §3.2): paths, counts by level, gaps and next commands.
     const n = nextSteps(r, flowRun, out, sec);
     const vd = verdict(r, lang, flowRun?.functionalResult);
-    print(JSON.stringify({ ...n, kind: "navsentry-run-summary", verdict: { kind: vd.kind, count: vd.count, text: vd.text }, exitCode: exitCode(r, flowRun), findings: r.findings.length, requests: r.budget.requestsUsed, workspace: r.workspace.status, ...(flowRun ? { functionalResult: flowRun.functionalResult, flows: flowRun.flows.length, testReport: join(out, "TEST-REPORT.md") } : {}), runJson: join(out, "run.json") }, null, 2));
+    raw(JSON.stringify({ ...n, kind: "navsentry-run-summary", verdict: { kind: vd.kind, count: vd.count, text: vd.text }, exitCode: exitCode(r, flowRun), findings: r.findings.length, requests: r.budget.requestsUsed, workspace: r.workspace.status, ...(flowRun ? { functionalResult: flowRun.functionalResult, flows: flowRun.flows.length, testReport: join(out, "TEST-REPORT.md") } : {}), runJson: join(out, "run.json") }, null, 2));
   } else {
-    print(paint(`execution=${r.executionStatus} security=${sec} findings=${r.findings.length} requests=${r.budget.requestsUsed}${flowRun ? ` functional=${flowRun.functionalResult} flows=${flowRun.flows.length}` : ""} workspace=${r.workspace.status}`));
+    print(`execution=${r.executionStatus} security=${sec} findings=${r.findings.length} requests=${r.budget.requestsUsed}${flowRun ? ` functional=${flowRun.functionalResult} flows=${flowRun.flows.length}` : ""} workspace=${r.workspace.status}`);
     const vd = verdict(r, lang, flowRun?.functionalResult);
-    print(paint(`${VERDICT_MARK[vd.kind]} ${vd.text}`));
-    print(paint(`REPORT: ${join(out, "REPORT.md")}`));
-    if (m.report.formats.includes("markdown")) print(paint(`Open in a browser: ${join(out, "REPORT.html")}`));
+    print(`${VERDICT_MARK[vd.kind]} ${vd.text}`);
+    print(`REPORT: ${join(out, "REPORT.md")}`);
+    if (m.report.formats.includes("markdown")) print(`Open in a browser: ${join(out, "REPORT.html")}`);
     if (flowRun) print(`TEST-REPORT: ${join(out, "TEST-REPORT.md")}`);
   }
-  for (const x of r.fixtures?.leftovers ?? []) process.stderr.write(`LEFTOVER ${x.fixture} ${x.displayId}: ${x.manualAction}\n`);
+  for (const x of r.fixtures?.leftovers ?? []) eprint(`LEFTOVER ${x.fixture} ${x.displayId}: ${x.manualAction}`);
   coord?.dispose();
   if (coord?.signal) return coord.signal === "SIGINT" ? 130 : 143;
   return exitCode(r, flowRun);
@@ -577,7 +580,7 @@ async function browseCommand(argv: string[]): Promise<number> {
     if (e instanceof SessionRefused) throw new UsageError(e.message);
     throw e;
   }
-  print(JSON.stringify(res));
+  raw(JSON.stringify(res));
   return res.ok ? 0 : 2;
 }
 
@@ -624,7 +627,7 @@ function inventoryCommand(argv: string[]): number {
   const w = endRun(ws, files.length);
   print(`routes=${inv.routes.length} openapi=${inv.openapi.length} tests=${inv.tests.length} packages=${inv.dependencies.npm + inv.dependencies.composer} complete=${inv.complete} workspace=${w.status}`);
   print(`INVENTORY: ${join(out, "CODE-INVENTORY.md")}`);
-  if (w.status === "FAIL") { process.stderr.write(`WORKSPACE_DIRTY: created=${w.created.length} modified=${w.modified.length} deleted=${w.deleted.length}\n`); return 4; }
+  if (w.status === "FAIL") { eprint(`WORKSPACE_DIRTY: created=${w.created.length} modified=${w.modified.length} deleted=${w.deleted.length}`); return 4; }
   return inv.complete && w.status === "PASS" ? 0 : 2;
 }
 
@@ -666,7 +669,7 @@ function knowledgeCommand(argv: string[]): number {
   const [sub, ...rest] = argv;
   if (sub === "status") {
     const s = snapshotStatus(SNAPSHOT);
-    if (rest.includes("--json")) { print(JSON.stringify(s, null, 2)); return 0; }
+    if (rest.includes("--json")) { raw(JSON.stringify(s, null, 2)); return 0; }
     print(`snapshot ${s.version} · sha256 ${s.sha256.slice(0, 16)} · generated ${s.generatedAt}`);
     print(`records ${s.records} · reviewed ${s.reviewed} · stale ${s.stale}${s.verifiedAt ? ` · oldest verification ${s.verifiedAt}` : ""}`);
     print(s.note);
@@ -677,7 +680,7 @@ function knowledgeCommand(argv: string[]): number {
     const product = arg(rest, "--product"), version = arg(rest, "--version"), id = arg(rest, "--id");
     if (!product && !id) throw new UsageError("knowledge lookup needs --product <name> or --id <CVE, advisory ID or alias>");
     const r = lookup(SNAPSHOT, { ...(product ? { product } : {}), ...(version ? { version } : {}), ...(id ? { id } : {}) });
-    if (rest.includes("--json")) { print(JSON.stringify({ matches: r.matches.map((x) => ({ id: x.record.id, applicability: x.applicability, caveats: x.caveats })), ...(r.research ? { research: r.research } : {}) }, null, 2)); return 0; }
+    if (rest.includes("--json")) { raw(JSON.stringify({ matches: r.matches.map((x) => ({ id: x.record.id, applicability: x.applicability, caveats: x.caveats })), ...(r.research ? { research: r.research } : {}) }, null, 2)); return 0; }
     if (r.research) print(`research needed: ${r.research.reason}${r.research.candidates.length ? ` (candidates: ${r.research.candidates.join(", ")})` : ""}`);
     for (const x of r.matches) print(`${x.record.id.padEnd(24)} ${x.applicability.padEnd(14)} ${[...x.record.identifiers.cve, ...x.record.identifiers.advisory].join(",")}  ${x.caveats.join("; ")}`);
     if (!r.matches.length && !r.research) print("no records in the local snapshot (not proof of absence)");
@@ -916,7 +919,7 @@ async function flowCommand(argv: string[]): Promise<number> {
       for (const m of ld.mapped) print(`  ${m.step} fills {{${m.to}}}`);
       for (const d of ld.dropped) print(`  ${d.step} dropped: ${d.reason}`);
       print("\nAdd these entries to navsentry.json yourself (owner decision: login actors need safe-validate on the development profile). Check auth_endpoints.login against the real sign-in request:");
-      print(ld.manifestSnippet);
+      raw(ld.manifestSnippet);
       const a = JSON.parse(ld.manifestSnippet).actors as Record<string, { username_env: string; password_env: string }>;
       const env = Object.values(a)[0]!;
       const actorName = Object.keys(a)[0]!;
@@ -1016,7 +1019,7 @@ async function doctor(argv: string[]): Promise<number> {
   const r = doctorReport(hosts, undefined, project);
   const transports = await Promise.all(allAdapters().map((a) => a.probe()));
   const launch = launchCheck();
-  if (argv.includes("--json")) { print(JSON.stringify({ ...r, node: process.versions.node, platform: `${process.platform}-${process.arch}`, transports, launch }, null, 2)); return 0; }
+  if (argv.includes("--json")) { raw(JSON.stringify({ ...r, node: process.versions.node, platform: `${process.platform}-${process.arch}`, transports, launch }, null, 2)); return 0; }
   print(`navsentry ${TOOL_VERSION} · node ${process.versions.node} · ${process.platform}-${process.arch}`);
   print(`package: ${r.packageRoot}`);
   print("\nTransports");
