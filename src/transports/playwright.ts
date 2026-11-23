@@ -155,9 +155,12 @@ export function probePlaywright(o: { headed?: boolean } = {}): { available: bool
   return { available: true, usable: true, reason: "playwright-core with Chromium headless shell; every request is fulfilled through ScopeGate and Budget (S1)", version };
 }
 
-/** The approved build is the headless shell; the full and branded builds are not used. */
+/**
+ * The approved build is the headless shell; the full and branded builds are not used.
+ * On macOS the full build's executable sits inside an .app bundle, so everything after chrome-<plat>/ is replaced.
+ */
 function headlessShellPath(ch: PwChromium): string {
-  return ch.executablePath().replace(/chromium-(\d+)([\\/])chrome-(win64|win|linux64|linux|mac-arm64|mac-x64|mac)[\\/][^\\/]+$/i, (_m, n: string, sep: string, plat: string) => {
+  return ch.executablePath().replace(/chromium-(\d+)([\\/])chrome-(win64|win|linux64|linux|linux-arm64|mac-arm64|mac-x64|mac)[\\/].+$/i, (_m, n: string, sep: string, plat: string) => {
     const exe = plat.startsWith("win") ? "chrome-headless-shell.exe" : "chrome-headless-shell";
     return `chromium_headless_shell-${n}${sep}chrome-headless-shell-${plat.replace(/^win$/, "win64").replace(/^linux$/, "linux64")}${sep}${exe}`;
   });

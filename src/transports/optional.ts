@@ -49,7 +49,10 @@ function runVersion(file: string, args: string[]): Promise<string | undefined> {
 export const TRUSTED_CURL = process.platform === "win32" ? [`${process.env.SystemRoot ?? "C:\\Windows"}\\System32\\curl.exe`] : ["/usr/bin/curl", "/bin/curl"];
 export const TRUSTED_PWSH = process.platform === "win32"
   ? ["C:\\Program Files\\PowerShell\\7\\pwsh.exe", `${process.env.SystemRoot ?? "C:\\Windows"}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`]
-  : ["/usr/bin/pwsh", "/opt/microsoft/powershell/7/pwsh"];
+  : process.platform === "darwin"
+    // The official macOS .pkg installs here (root-owned). Homebrew prefixes are user-writable and not trusted.
+    ? ["/usr/local/microsoft/powershell/7/pwsh"]
+    : ["/usr/bin/pwsh", "/opt/microsoft/powershell/7/pwsh"];
 
 const HEADER_NAME = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
 
@@ -62,9 +65,10 @@ abstract class ProbedCli implements ExecutionAdapter {
   abstract readonly capabilities: TransportCapabilities;
   protected abstract candidates: string[];
   protected abstract versionArgs: string[];
+  protected missingReason(): string { return "executable not found in trusted system locations"; }
   async probe(): Promise<TransportStatus> {
     const file = this.candidates.find((c) => existsSync(c));
-    if (!file) return { id: this.capabilities.id, available: false, usable: false, reason: "executable not found in trusted system locations" };
+    if (!file) return { id: this.capabilities.id, available: false, usable: false, reason: this.missingReason() };
     const version = await runVersion(file, this.versionArgs);
     if (!version) return { id: this.capabilities.id, available: false, usable: false, reason: "executable present but version probe failed" };
     return { id: this.capabilities.id, available: true, usable: true, reason: "fixed system path; `--transport` sends observe requests pinned to the ScopeGate-checked address (M3)", version };
@@ -81,6 +85,10 @@ export class PowerShellHttpAdapter extends ProbedCli {
   readonly capabilities = base("powershell-http", "cli-http", 3, { supportsAuthentication: true, supportsCookies: true, platforms: ["win32", "linux", "darwin"] });
   protected candidates = TRUSTED_PWSH;
   protected versionArgs = ["-NoProfile", "-NonInteractive", "-Command", "$PSVersionTable.PSVersion.ToString()"];
+  // On macOS PowerShell is optional: curl-cli (the system /usr/bin/curl) is the CLI transport there.
+  protected override missingReason(): string {
+    return process.platform === "darwin" ? "not installed (optional on macOS; use --transport curl-cli, which uses the system /usr/bin/curl)" : super.missingReason();
+  }
 }
 
 export class PlaywrightBrowserAdapter implements ExecutionAdapter {

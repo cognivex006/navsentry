@@ -10,7 +10,8 @@
  * the random session token, which is stored with mode 0600 inside the run's work directory.
  */
 import { randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import net from "node:net";
 import { join } from "node:path";
 import { Budget, BudgetExceeded, ByteBudget } from "../budget.js";
@@ -59,8 +60,23 @@ type Cmd = { token: string; cmd: "status" | "screenshot" | "click" | "scroll" | 
 const ENV_NAME = /^NAVSENTRY_[A-Z0-9_]{1,54}$/;
 const MAX_TEXT = 200;
 
-export function pipePath(work: string, id: string): string {
-  return process.platform === "win32" ? `\\\\.\\pipe\\navsentry-${id}` : join(work, "s.sock");
+/** sun_path is 104 bytes on macOS and 108 on Linux, including the terminating NUL. */
+const MAX_SOCK_PATH = 103;
+
+/**
+ * The session's local pipe. On Unix the socket lives in the work directory unless that path is too long
+ * for sun_path (deep project paths, macOS temp dirs); then it goes into a fresh 0700 directory under the
+ * OS temp dir, which `releasePipe` removes. The token check is the same either way.
+ */
+export function pipePath(work: string, id: string): { pipe: string; privateDir?: string } {
+  if (process.platform === "win32") return { pipe: `\\\\.\\pipe\\navsentry-${id}` };
+  const inWork = join(work, "s.sock");
+  if (Buffer.byteLength(inWork) <= MAX_SOCK_PATH) return { pipe: inWork };
+  const privateDir = mkdtempSync(join(tmpdir(), "nsv-"));
+  chmodSync(privateDir, 0o700);
+  const pipe = join(privateDir, "s.sock");
+  if (Buffer.byteLength(pipe) > MAX_SOCK_PATH) { rmSync(privateDir, { recursive: true, force: true }); throw new SessionRefused("no local socket path fits the platform limit (the OS temp directory path is too long)"); }
+  return { pipe, privateDir };
 }
 
 /** Refuses before any browser or request unless every precondition holds (S1, S2, S6). */
@@ -92,7 +108,12 @@ export async function startSession(o: SessionOptions): Promise<SessionHandle> {
   const screens = join(ws.work.path, "screens");
   mkdirSync(screens, { recursive: true, mode: 0o700 });
   const token = randomBytes(32).toString("hex");
-  const pipe = pipePath(ws.work.path, id);
+  let pipe: string;
+  let pipeDir: string | undefined;
+  try { ({ pipe, privateDir: pipeDir } = pipePath(ws.work.path, id)); } catch (e) { ws.dispose(); endRun(ws, 0); throw e; }
+  const releasePipe = () => { process.off("exit", releasePipe); if (pipeDir) rmSync(pipeDir, { recursive: true, force: true }); };
+  // A signal ends the process through process.exit in beginRun's handler; "exit" still runs, so the socket dir goes too.
+  if (pipeDir) process.once("exit", releasePipe);
 
   const budget = new Budget(m.safety.max_requests, m.safety.max_requests_per_second, m.safety.max_duration_seconds * 1000, m.authorization.expires_at ? new Date(m.authorization.expires_at) : undefined);
   const bytes = new ByteBudget(m.capture.max_run_bytes, m.capture.max_wire_bytes);
@@ -145,6 +166,7 @@ export async function startSession(o: SessionOptions): Promise<SessionHandle> {
       ...(o.headed ? { onHuman } : {}),
     }, new Map([[actor, actorRt.headers]]), { headed: o.headed === true });
   } catch (e) {
+    releasePipe();
     ws.dispose();
     endRun(ws, 0);
     throw new SessionRefused(`playwright engine failed to start: ${firstLine(e)}`);
@@ -270,6 +292,7 @@ export async function startSession(o: SessionOptions): Promise<SessionHandle> {
     clearTimeout(deadline);
     await chain;
     server.close();
+    releasePipe();
     await engine.close();
     budget.close();
     if (budgetHit) incomplete.push(budgetHit);
@@ -282,7 +305,7 @@ export async function startSession(o: SessionOptions): Promise<SessionHandle> {
     resolveDone({ result, workspace: ws, ...(saveFlow ? { saveFlow } : {}) });
   };
 
-  await new Promise<void>((resolve, reject) => { server.once("error", reject); server.listen(pipe, () => resolve()); });
+  await new Promise<void>((resolve, reject) => { server.once("error", (e) => { releasePipe(); void engine.close().catch(() => undefined).finally(() => { budget.close(); ws.dispose(); endRun(ws, 0); reject(e); }); }); server.listen(pipe, () => resolve()); });
   // Published only once the pipe accepts connections, so a client never finds an unreachable session.
   writeFileSync(join(ws.work.path, "session.json"), JSON.stringify({ pipe, token, pid: process.pid }), { mode: 0o600 });
   touch();
