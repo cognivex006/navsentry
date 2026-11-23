@@ -40,7 +40,7 @@
 | CWE | CWE-284, CWE-489, CWE-288 |
 | OWASP WSTG | WSTG-ATHZ-02, WSTG-ATHN-04 |
 | OWASP ASVS 5.0 (chapter) | V8 Authorization, V6 Authentication, V13 Configuration |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 13.4.2, 13.4.5, 6.3.4 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 13.4.2, 13.4.5, 6.3.4 |
 | CVE | — |
 | Seen in sources | SRC-E ×1 (Access Control: Authorization Bypass (test login endpoint); critical; Fixed) |
 
@@ -165,7 +165,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-306 |
 | OWASP WSTG | WSTG-ATHZ-02 |
 | OWASP ASVS 5.0 (chapter) | V8 Authorization, V4 API and Web Service |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 8.2.1, 8.3.1 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 8.2.1, 8.3.1 |
 | CVE | — |
 | Seen in sources | SRC-E ×1 (Access Control: Missing Authentication; high; Fixed) |
 
@@ -295,7 +295,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-639, CWE-284 |
 | OWASP WSTG | WSTG-ATHZ-04 |
 | OWASP ASVS 5.0 (chapter) | V8 Authorization |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 8.2.2 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 8.2.2 |
 | CVE | — |
 | Seen in sources | — (required by NavSentry scope, no source occurrence yet) |
 
@@ -426,7 +426,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-285, CWE-862 |
 | OWASP WSTG | WSTG-ATHZ-03 |
 | OWASP ASVS 5.0 (chapter) | V8 Authorization |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 8.2.1 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 8.2.1 |
 | CVE | — |
 | Seen in sources | — (required by NavSentry scope, no source occurrence yet) |
 
@@ -558,7 +558,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-601 |
 | OWASP WSTG | WSTG-CLNT-04 |
 | OWASP ASVS 5.0 (chapter) | V3 Web Frontend Security |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 3.7.2 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 3.7.2 |
 | CVE | — |
 | Seen in sources | — (required by NavSentry scope, no source occurrence yet) |
 
@@ -690,7 +690,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-942, CWE-346 |
 | OWASP WSTG | WSTG-CLNT-07 |
 | OWASP ASVS 5.0 (chapter) | V3 Web Frontend Security, V4 API and Web Service |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 3.4.2 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 3.4.2 |
 | CVE | — |
 | Seen in sources | — (required by NavSentry scope, no source occurrence yet) |
 
@@ -815,7 +815,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-918 |
 | OWASP WSTG | WSTG-INPV-19 |
 | OWASP ASVS 5.0 (chapter) | V1 Encoding and Sanitization, V15 Secure Coding and Architecture, V13 Configuration |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 1.3.6, 13.2.5 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 1.3.6, 13.2.5 |
 | CVE | — |
 | Seen in sources | — (required by NavSentry scope, no source occurrence yet) |
 
@@ -935,7 +935,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-352 |
 | OWASP WSTG | WSTG-SESS-05 |
 | OWASP ASVS 5.0 (chapter) | V3 Web Frontend Security |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 3.5.1, 3.5.3 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 3.5.1, 3.5.3 |
 | CVE | — |
 | Seen in sources | — (required by NavSentry scope, no source occurrence yet) |
 
@@ -1071,7 +1071,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-798 |
 | OWASP WSTG | — |
 | OWASP ASVS 5.0 (chapter) | V13 Configuration, V11 Cryptography |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 13.3.1, 13.2.3 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 13.3.1 |
 | CVE | — |
 | Seen in sources | SRC-B ×1 (Credential Management: Hardcoded API Credentials; high) |
 
@@ -1195,7 +1195,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-613 |
 | OWASP WSTG | WSTG-SESS-06 |
 | OWASP ASVS 5.0 (chapter) | V7 Session Management |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 7.4.1 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 7.4.1 |
 | CVE | — |
 | Seen in sources | — (required by NavSentry scope, no source occurrence yet) |
 
@@ -1326,7 +1326,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-614 |
 | OWASP WSTG | WSTG-SESS-02 |
 | OWASP ASVS 5.0 (chapter) | V3 Web Frontend Security, V7 Session Management |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 3.3.1 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 3.3.1 |
 | CVE | — |
 | Seen in sources | SRC-A ×1 (Cookies without Secure flag set; low) |
 
@@ -1449,7 +1449,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-1004 |
 | OWASP WSTG | WSTG-SESS-02 |
 | OWASP ASVS 5.0 (chapter) | V3 Web Frontend Security, V7 Session Management |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 3.3.4 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 3.3.4 |
 | CVE | — |
 | Seen in sources | SRC-A ×1 (Cookies without HttpOnly flag set; low) |
 
@@ -1575,7 +1575,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-1275, CWE-352 |
 | OWASP WSTG | WSTG-SESS-02, WSTG-SESS-05 |
 | OWASP ASVS 5.0 (chapter) | V3 Web Frontend Security, V7 Session Management |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 3.3.2 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 3.3.2 |
 | CVE | — |
 | Seen in sources | SRC-A ×1 (Cookies with missing, inconsistent or contradictory properties; low) |
 
@@ -1698,7 +1698,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-347, CWE-613 |
 | OWASP WSTG | WSTG-SESS-10 |
 | OWASP ASVS 5.0 (chapter) | V9 Self-contained Tokens |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 9.1.1, 9.1.2, 9.2.1, 9.2.3 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 9.1.1, 9.1.2, 9.2.1, 9.2.3 |
 | CVE | — |
 | Seen in sources | SRC-E ×1 (JSON Web Token: Missing Protection Claims; medium; Fixed) |
 
@@ -1832,7 +1832,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-326, CWE-327 |
 | OWASP WSTG | WSTG-CRYP-01 |
 | OWASP ASVS 5.0 (chapter) | V12 Secure Communication |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 12.1.1 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 12.1.1 |
 | CVE | CVE-2014-3566 |
 | Seen in sources | SRC-A ×1 (SSL 3.0 deprecated protocol; high)<br>SRC-A ×1 (The POODLE attack (SSLv3 with CBC cipher suites); high)<br>SRC-A ×1 (TLS 1.0 enabled; medium)<br>SRC-A ×1 (TLS 1.1 enabled; medium) |
 
@@ -1959,7 +1959,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-326, CWE-327, CWE-310 |
 | OWASP WSTG | WSTG-CRYP-01 |
 | OWASP ASVS 5.0 (chapter) | V12 Secure Communication, V11 Cryptography |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 12.1.2, 11.6.2 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 12.1.2, 11.6.2 |
 | CVE | CVE-2016-2183, CVE-2015-4000 |
 | Seen in sources | SRC-A ×1 (TLS/SSL Sweet32 attack; medium)<br>SRC-A ×1 (TLS/SSL LOGJAM attack; medium)<br>SRC-A ×1 (TLS/SSL Weak Cipher Suites; medium)<br>SRC-A ×1 (TLS/SSL (EC)DHE Key Reuse; info)<br>SRC-E ×1 (ssl-static-key-ciphers (VA); severe; Fixed) |
 
@@ -2091,7 +2091,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-326 |
 | OWASP WSTG | WSTG-CRYP-01 |
 | OWASP ASVS 5.0 (chapter) | V12 Secure Communication, V11 Cryptography |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 11.6.1 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 11.6.1, 12.2.2 |
 | CVE | — |
 | Seen in sources | SRC-E ×1 (Weak Cryptographic Signature: Insufficient Key Size; medium; Fixed) |
 
@@ -2216,7 +2216,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-295 |
 | OWASP WSTG | WSTG-CRYP-01 |
 | OWASP ASVS 5.0 (chapter) | V12 Secure Communication |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | none: Public key pinning is deprecated and ASVS 5.0 does not require it |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | none: Public key pinning is deprecated and ASVS 5.0 does not require it |
 | CVE | — |
 | Seen in sources | SRC-E ×1 (Insecure Transport: Missing Public Key Pinning; low; Fixed) |
 
@@ -2336,7 +2336,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-321 |
 | OWASP WSTG | — |
 | OWASP ASVS 5.0 (chapter) | V11 Cryptography, V13 Configuration |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 13.3.1 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 13.3.1 |
 | CVE | — |
 | Seen in sources | SRC-B ×1 (Key Management: Hardcoded Encryption Key; high) |
 
@@ -2458,7 +2458,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-319 |
 | OWASP WSTG | WSTG-CRYP-03 |
 | OWASP ASVS 5.0 (chapter) | V12 Secure Communication, V4 API and Web Service |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 12.2.1, 4.1.2 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 12.2.1, 4.1.2 |
 | CVE | — |
 | Seen in sources | SRC-E ×1 (Endpoints reachable over plain HTTP on service ports (web scan targets); medium) |
 
@@ -2583,7 +2583,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-89 |
 | OWASP WSTG | WSTG-INPV-05 |
 | OWASP ASVS 5.0 (chapter) | V1 Encoding and Sanitization |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 1.2.4 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 1.2.4 |
 | CVE | — |
 | Seen in sources | SRC-E ×1 (SQL Injection; critical; Fixed) |
 
@@ -2714,7 +2714,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-94, CWE-1336 |
 | OWASP WSTG | WSTG-INPV-11, WSTG-INPV-18 |
 | OWASP ASVS 5.0 (chapter) | V1 Encoding and Sanitization |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 1.3.2, 1.3.7 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 1.3.2, 1.3.7 |
 | CVE | — |
 | Seen in sources | SRC-E ×1 (Server-Side Script Injection (report export); critical; Fixed) |
 
@@ -2836,7 +2836,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-90 |
 | OWASP WSTG | WSTG-INPV-06 |
 | OWASP ASVS 5.0 (chapter) | V1 Encoding and Sanitization |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 1.2.6 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 1.2.6 |
 | CVE | — |
 | Seen in sources | SRC-E ×1 (LDAP Injection; medium; Fixed) |
 
@@ -2958,7 +2958,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-79 |
 | OWASP WSTG | WSTG-INPV-01, WSTG-CLNT-01 |
 | OWASP ASVS 5.0 (chapter) | V1 Encoding and Sanitization, V3 Web Frontend Security |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 1.2.1, 1.2.3, 3.2.2 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 1.2.1, 1.2.3, 3.2.2 |
 | CVE | — |
 | Seen in sources | SRC-E ×1 (Cross-Site Scripting: Reflected; medium; Fixed) |
 
@@ -3088,7 +3088,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-113, CWE-644 |
 | OWASP WSTG | WSTG-INPV-15 |
 | OWASP ASVS 5.0 (chapter) | V1 Encoding and Sanitization, V4 API and Web Service |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 4.1.3, 4.2.4, 4.2.5 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 1.2.1, 4.1.3, 4.2.4, 4.2.5 |
 | CVE | — |
 | Seen in sources | SRC-B ×513 (Header Manipulation (request headers copied into outgoing headers in proxy helpers); high)<br>SRC-C ×513 (Header Manipulation; high)<br>SRC-D ×51 (Header Manipulation; high) |
 
@@ -3222,7 +3222,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-22, CWE-98 |
 | OWASP WSTG | WSTG-ATHZ-01 |
 | OWASP ASVS 5.0 (chapter) | V5 File Handling, V1 Encoding and Sanitization |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 5.3.2 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 5.3.2 |
 | CVE | — |
 | Seen in sources | SRC-E ×1 (Dangerous File Inclusion: Local; high; Fixed) |
 
@@ -3344,7 +3344,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-319, CWE-523 |
 | OWASP WSTG | WSTG-CONF-07 |
 | OWASP ASVS 5.0 (chapter) | V3 Web Frontend Security, V12 Secure Communication |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 3.4.1 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 3.4.1 |
 | CVE | — |
 | Seen in sources | SRC-A ×1 (HTTP Strict Transport Security (HSTS) not implemented; medium)<br>SRC-E ×1 (Insecure Transport: HSTS not Set; medium; Fixed) |
 
@@ -3471,7 +3471,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-693, CWE-1021 |
 | OWASP WSTG | WSTG-CONF-12 |
 | OWASP ASVS 5.0 (chapter) | V3 Web Frontend Security |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 3.4.3 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 3.4.3 |
 | CVE | — |
 | Seen in sources | SRC-A ×1 (Content Security Policy (CSP) not implemented; low) |
 
@@ -3601,7 +3601,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-1021 |
 | OWASP WSTG | WSTG-CLNT-09 |
 | OWASP ASVS 5.0 (chapter) | V3 Web Frontend Security |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 3.4.6 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 3.4.6 |
 | CVE | — |
 | Seen in sources | SRC-A ×1 (Clickjacking-related classification (CWE-1021); low) |
 
@@ -3722,7 +3722,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-16, CWE-430 |
 | OWASP WSTG | WSTG-CONF-12 |
 | OWASP ASVS 5.0 (chapter) | V3 Web Frontend Security, V4 API and Web Service |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 3.4.4, 4.1.1 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 3.4.4, 4.1.1 |
 | CVE | — |
 | Seen in sources | SRC-E ×1 (Web Server Misconfiguration: Insecure Content-Type Setting; low; Fixed) |
 
@@ -3847,7 +3847,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-538, CWE-527 |
 | OWASP WSTG | WSTG-CONF-04 |
 | OWASP ASVS 5.0 (chapter) | V13 Configuration |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 13.4.1, 13.4.7 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 13.4.1, 13.4.7 |
 | CVE | — |
 | Seen in sources | — (required by NavSentry scope, no source occurrence yet) |
 
@@ -3979,7 +3979,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-11, CWE-489 |
 | OWASP WSTG | WSTG-CONF-02 |
 | OWASP ASVS 5.0 (chapter) | V13 Configuration |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 13.4.2 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 13.4.2 |
 | CVE | — |
 | Seen in sources | SRC-A ×1 (ASP.NET debugging enabled; medium) |
 
@@ -4111,7 +4111,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-650, CWE-16 |
 | OWASP WSTG | WSTG-CONF-06 |
 | OWASP ASVS 5.0 (chapter) | V13 Configuration, V4 API and Web Service |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 4.1.4, 13.4.4 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 4.1.4, 13.4.4 |
 | CVE | — |
 | Seen in sources | SRC-E ×1 (http-options-method-enabled (VA); severe; Exception)<br>SRC-E ×1 (Often Misused: HTTP Method Override; medium; Fixed) |
 
@@ -4243,7 +4243,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-524, CWE-525 |
 | OWASP WSTG | WSTG-ATHN-06 |
 | OWASP ASVS 5.0 (chapter) | V14 Data Protection |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 14.2.2, 14.3.2 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 14.2.2, 14.3.2 |
 | CVE | — |
 | Seen in sources | SRC-E ×1 (Cache Management: Insecure Policy; low; Fixed) |
 
@@ -4366,7 +4366,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-444 |
 | OWASP WSTG | WSTG-INPV-15 |
 | OWASP ASVS 5.0 (chapter) | V4 API and Web Service, V12 Secure Communication |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 4.2.1, 4.2.2, 4.2.3 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 4.2.1, 4.2.2, 4.2.3 |
 | CVE | — |
 | Seen in sources | SRC-E ×1 (Insecure Deployment: HTTP Request Smuggling; critical; Fixed) |
 
@@ -4502,7 +4502,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-200, CWE-497 |
 | OWASP WSTG | WSTG-INFO-02 |
 | OWASP ASVS 5.0 (chapter) | V13 Configuration |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 13.4.6 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 13.4.6 |
 | CVE | — |
 | Seen in sources | SRC-A ×1 (Error page web server version disclosure; low) |
 
@@ -4632,7 +4632,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-798, CWE-540 |
 | OWASP WSTG | WSTG-INFO-05 |
 | OWASP ASVS 5.0 (chapter) | V13 Configuration, V14 Data Protection |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 13.3.1 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 13.3.1 |
 | CVE | — |
 | Seen in sources | — (required by NavSentry scope, no source occurrence yet) |
 
@@ -4764,7 +4764,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-532 |
 | OWASP WSTG | WSTG-INFO-05 |
 | OWASP ASVS 5.0 (chapter) | V16 Security Logging and Error Handling, V14 Data Protection |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | none: ASVS 5.0 covers server-side logs (V16) and browser storage (14.3.3), not the browser console |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | none: ASVS 5.0 covers server-side logs (V16) and browser storage (14.3.3), not the browser console |
 | CVE | — |
 | Seen in sources | — (required by NavSentry scope, no source occurrence yet) |
 
@@ -4898,7 +4898,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-540 |
 | OWASP WSTG | WSTG-INFO-05 |
 | OWASP ASVS 5.0 (chapter) | V13 Configuration, V15 Secure Coding and Architecture |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 13.4.7, 15.2.3 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 13.4.7, 15.2.3 |
 | CVE | — |
 | Seen in sources | — (required by NavSentry scope, no source occurrence yet) |
 
@@ -5030,7 +5030,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-200 |
 | OWASP WSTG | WSTG-INFO-05 |
 | OWASP ASVS 5.0 (chapter) | V13 Configuration |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | none: ASVS 5.0 has no requirement on internal IP addresses in responses; 13.4.6 covers component versions only |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | none: ASVS 5.0 has no requirement on internal IP addresses in responses; 13.4.6 covers component versions only |
 | CVE | — |
 | Seen in sources | SRC-E ×1 (System Information Leak: Internal IP; low; Fixed) |
 
@@ -5158,7 +5158,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-200, CWE-359 |
 | OWASP WSTG | WSTG-INFO-05 |
 | OWASP ASVS 5.0 (chapter) | V14 Data Protection |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 14.2.6 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 14.2.6 |
 | CVE | — |
 | Seen in sources | SRC-A ×1 (Email addresses; info)<br>SRC-E ×1 (Privacy Violation: Email Disclosure; high; Fixed) |
 
@@ -5288,7 +5288,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | — |
 | OWASP WSTG | WSTG-INFO-10 |
 | OWASP ASVS 5.0 (chapter) | — |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | — (outside ASVS) |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | — (outside ASVS) |
 | CVE | — |
 | Seen in sources | SRC-A ×1 (Web Application Firewall detected; info) |
 
@@ -5408,7 +5408,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-359, CWE-200 |
 | OWASP WSTG | WSTG-INFO-05 |
 | OWASP ASVS 5.0 (chapter) | V14 Data Protection, V8 Authorization, V15 Secure Coding and Architecture |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 14.2.6, 15.3.1 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 14.2.6, 15.3.1 |
 | CVE | — |
 | Seen in sources | SRC-E ×1 (Privacy Violation: National ID Disclosure; critical; Exception) |
 
@@ -5540,7 +5540,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-598 |
 | OWASP WSTG | WSTG-INFO-05 |
 | OWASP ASVS 5.0 (chapter) | V14 Data Protection |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 14.2.1 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 14.2.1 |
 | CVE | — |
 | Seen in sources | SRC-E ×1 (Privacy Violation: HTTP GET; medium; Fixed) |
 
@@ -5665,7 +5665,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-209, CWE-248, CWE-550 |
 | OWASP WSTG | WSTG-ERRH-01, WSTG-ERRH-02 |
 | OWASP ASVS 5.0 (chapter) | V16 Security Logging and Error Handling |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 16.5.1, 16.5.4 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 16.5.1, 16.5.4 |
 | CVE | — |
 | Seen in sources | SRC-A ×1 (Application error messages; medium)<br>SRC-A ×1 (ASP.NET error message; medium)<br>SRC-E ×1 (Poor Error Handling: Unhandled Exception; critical; Fixed)<br>SRC-E ×1 (Web Server Misconfiguration: Server Error Message; medium; Fixed) |
 
@@ -5790,7 +5790,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-400, CWE-1284 |
 | OWASP WSTG | WSTG-BUSL-07 |
 | OWASP ASVS 5.0 (chapter) | V2 Validation and Business Logic, V15 Secure Coding and Architecture |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 15.2.2 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 15.2.2 |
 | CVE | CVE-2010-4476 |
 | Seen in sources | SRC-E ×1 (Denial of Service: Parse Double; medium; Fixed) |
 
@@ -5926,7 +5926,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-1104, CWE-1395 |
 | OWASP WSTG | WSTG-CONF-01 |
 | OWASP ASVS 5.0 (chapter) | V15 Secure Coding and Architecture |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 15.2.1 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 15.2.1 |
 | CVE | CVE-2021-31166 |
 | Seen in sources | SRC-E ×1 (Insecure Deployment: Unpatched Application (web server connector / HTTP stack); critical; Exception) |
 
@@ -6060,7 +6060,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-1395 |
 | OWASP WSTG | WSTG-INFO-08 |
 | OWASP ASVS 5.0 (chapter) | V15 Secure Coding and Architecture |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 15.2.1 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 15.2.1 |
 | CVE | — |
 | Seen in sources | — (required by NavSentry scope, no source occurrence yet) |
 
@@ -6192,7 +6192,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-778, CWE-117 |
 | OWASP WSTG | — |
 | OWASP ASVS 5.0 (chapter) | V16 Security Logging and Error Handling |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 16.3.1, 16.3.2, 16.3.3 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 16.3.1, 16.3.2, 16.3.3 |
 | CVE | — |
 | Seen in sources | — (required by NavSentry scope, no source occurrence yet) |
 
@@ -6314,7 +6314,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-840 |
 | OWASP WSTG | WSTG-BUSL-01 |
 | OWASP ASVS 5.0 (chapter) | V2 Validation and Business Logic |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | 2.3.1, 2.3.2 |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | 2.3.1, 2.3.2 |
 | CVE | — |
 | Seen in sources | — (required by NavSentry scope, no source occurrence yet) |
 
@@ -6447,7 +6447,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-200 |
 | OWASP WSTG | — |
 | OWASP ASVS 5.0 (chapter) | — |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | — (outside ASVS) |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | — (outside ASVS) |
 | CVE | CVE-1999-0524 |
 | Seen in sources | SRC-E ×1 (generic-icmp-timestamp (VA); severe; Fixed) |
 
@@ -6565,7 +6565,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-16 |
 | OWASP WSTG | — |
 | OWASP ASVS 5.0 (chapter) | — |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | — (outside ASVS) |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | — (outside ASVS) |
 | CVE | — |
 | Seen in sources | SRC-E ×1 (linux-icmp-redirect (VA); severe; Fixed) |
 
@@ -6683,7 +6683,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-276, CWE-732 |
 | OWASP WSTG | — |
 | OWASP ASVS 5.0 (chapter) | — |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | — (outside ASVS) |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | — (outside ASVS) |
 | CVE | — |
 | Seen in sources | SRC-E ×1 (unix-umask-unsafe + unix-user-home-dir-mode (VA); severe; Fixed) |
 
@@ -6801,7 +6801,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-327 |
 | OWASP WSTG | — |
 | OWASP ASVS 5.0 (chapter) | — |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | — (outside ASVS) |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | — (outside ASVS) |
 | CVE | — |
 | Seen in sources | SRC-E ×1 (ssh-weak-message-authentication-code-algorithms (VA); severe; Fixed) |
 
@@ -6919,7 +6919,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-319 |
 | OWASP WSTG | — |
 | OWASP ASVS 5.0 (chapter) | — |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | — (outside ASVS) |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | — (outside ASVS) |
 | CVE | — |
 | Seen in sources | SRC-E ×1 (ftp-plaintext-auth (VA); severe; Fixed) |
 
@@ -7037,7 +7037,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-284, CWE-668 |
 | OWASP WSTG | — |
 | OWASP ASVS 5.0 (chapter) | — |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | — (outside ASVS) |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | — (outside ASVS) |
 | CVE | — |
 | Seen in sources | SRC-E ×1 (database-open-access (VA); severe; Exception) |
 
@@ -7155,7 +7155,7 @@ Role: independent QA agent (not the agent that wrote the fix). Read-only.
 | CWE | CWE-1104 |
 | OWASP WSTG | — |
 | OWASP ASVS 5.0 (chapter) | — |
-| OWASP ASVS 5.0.0 (requirements, pending-independent-review) | — (outside ASVS) |
+| OWASP ASVS 5.0.0 (requirements, reviewed) | — (outside ASVS) |
 | CVE | CVE-2023-46316, CVE-2024-7264 |
 | Seen in sources | SRC-E ×1 (OS advisories (traceroute, curl, container runtime) + public package repository (VA); severe; Fixed/Waiting) |
 

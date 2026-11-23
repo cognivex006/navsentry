@@ -11,6 +11,7 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 - macOS/Linux: the visual driver's Unix socket moves to a fresh 0700 directory under the OS temp dir when the work-directory path is longer than `sun_path` allows (104 bytes on macOS), and that directory is removed when the session ends.
 
 ### Changed
+- ASVS 5.0 requirement IDs are independently reviewed (2026-11-20). The known-ID list now covers all 345 IDs, including V10 and V17. NSC-AUTH-001 drops 13.2.3 (default credentials, not hardcoded ones). NSC-CRYPT-003 adds 12.2.2 (publicly trusted certificates). NSC-INJ-005 adds 1.2.1 (encoding for HTTP header fields). IDs still appear only in the generated catalog docs.
 - macOS: PowerShell is optional; `doctor` points to `--transport curl-cli` when it is missing.
 - `powershell-http` on macOS trusts only the official `.pkg` path `/usr/local/microsoft/powershell/7/pwsh`.
 - Platform matrix: Linux (Docker, Node 22/24/26) and macOS x64 runs recorded in TESTING.md.

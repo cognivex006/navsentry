@@ -63,8 +63,8 @@ An item moves to the next phase when it needs something not yet allowed: a depen
 - `src/asvs5.ts` maps 49 cases to requirement IDs, matched by hand on 2026-11-12 against the requirement text in OWASP/ASVS `5.0/en/` at tag `v5.0.0_release` (commit `5cf9b032440be53ce345ab3c130fda46ba1ce7a2`). Only IDs are stored, never requirement text.
 - Three cases map no requirement, and each one says why: NSC-INFO-003 (internal IPs), NSC-INFO-006 (browser console) and NSC-CRYPT-004 (pinning, deprecated). The infrastructure cases and NSC-INFO-005 are outside ASVS.
 - Four chapter mappings were missing a chapter that their requirement belongs to, and are extended: NSC-INFO-008 +V15, NSC-PRIV-001 +V15, NSC-CRYPT-006 +V4, NSC-AC-005 +V13. These reach `run.json` through the existing `asvs5Chapter` field.
-- Status is `pending-independent-review`. Until someone other than the author checks each mapping and flips the status, the IDs appear only in the generated catalog docs, not in `run.json`, reports or SARIF (next phase).
-- Tests (`test/asvs5.test.ts`): every ID exists in the 297-ID list from the pinned source, belongs to a chapter the case maps, has no duplicates, and an empty mapping always gives a reason.
+- Status is `reviewed` (2026-11-20). Before that review it was `pending-independent-review`: until someone other than the author checks each mapping and flips the status, the IDs appear only in the generated catalog docs, not in `run.json`, reports or SARIF (next phase).
+- Tests (`test/asvs5.test.ts`): every ID exists in the 345-ID list from the pinned source, belongs to a chapter the case maps, has no duplicates, and an empty mapping always gives a reason.
 
 ## 6. Out of scope for this phase
 Everything in the table marked phase หน้า. Nothing in this spec makes an unavailable capability usable.
