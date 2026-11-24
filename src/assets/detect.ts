@@ -77,6 +77,8 @@ const RULES: Rule[] = [
   // Client library licence banners (SPEC-0.1.3 §6.4-B STA-LIBVULN). Only the banner comment form counts, so a
   // plugin's "requires jQuery v1.7" is not mistaken for the bundled library.
   { detector: "STA-LIBVULN", kind: "library-banner", library: "bootstrap", re: /\/\*!\s*Bootstrap v\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?\s+\(https?:\/\/getbootstrap\.com|^\s*\*\s*Bootstrap v\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?\s+\(https?:\/\/getbootstrap\.com/gm },
+  // AngularJS 1.x (npm `angular`): the whole banner line, full ("* @license AngularJS v1.8.2") or minified (" AngularJS v1.8.2").
+  { detector: "STA-LIBVULN", kind: "library-banner", library: "angular", re: /^[ \t]*(?:\*[ \t]*)?(?:@license[ \t]+)?AngularJS v1\.\d+\.\d+(?:-[0-9A-Za-z.]+)?[ \t]*\r?$/gm },
   { detector: "STA-LIBVULN", kind: "library-banner", library: "jquery", re: /\/\*!\s*jQuery v\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?\b|^\s*\*\s*jQuery JavaScript Library v\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?\b/gm },
   { detector: "STA-SOURCEMAP", kind: "sourcemap-file-url", re: /[#@] sourceMappingURL=file:\/\/[^\s'"]+/g },
   { detector: "STA-SOURCEMAP", kind: "sources-content", re: /"sourcesContent"\s*:\s*\[\s*"/g },

@@ -166,3 +166,63 @@ test("CVE-2018-14040: 2.3.0–3.3.x and 4.0.0–4.1.1 affected; 2.2.2, 3.4.0, 4.
   assert.deepEqual(["2.2.2", "2.3.0", "3.3.7", "3.4.0", "4.0.0", "4.1.1", "4.1.2"].map(at),
     ["not-affected", "affected", "affected", "not-affected", "affected", "affected", "not-affected"]);
 });
+
+// ───────────── AngularJS (npm `angular`, reviewed 2026-11-24) ─────────────
+
+const ngFull = (v: string) => `/**\n * @license AngularJS v${v}\n * (c) 2010-2020 Google LLC. http://angularjs.org\n * License: MIT\n */\n(function(window){"use strict";window.angular={};})(window);\n`;
+const ngMin = (v: string) => `/*\n AngularJS v${v}\n (c) 2010-2020 Google LLC. http://angularjs.org\n License: MIT\n*/\n(function(w){w.angular={}})(window);\n`;
+
+async function scanNg(body: string) {
+  const server = http.createServer((req, res) => {
+    const p = new URL(req.url ?? "/", "http://x").pathname;
+    if (p === "/") return void res.writeHead(200, { "content-type": "text/html; charset=utf-8" }).end('<!doctype html><title>Ng</title><script src="/js/angular.min.js"></script>');
+    if (p === "/js/angular.min.js") return void res.writeHead(200, { "content-type": "text/javascript" }).end(body);
+    res.writeHead(404, { "content-type": "text/plain" }).end("not found");
+  });
+  const origin = await new Promise<string>((r) => server.listen(0, "127.0.0.1", () => r(`http://127.0.0.1:${(server.address() as AddressInfo).port}`)));
+  const work = mkdtempSync(join(tmpdir(), "navsentry-libvuln-ng-"));
+  try {
+    const m = localManifest(origin, { checks: { disabled: ["NSC-CRYPT-006", "NSC-CONF-009"] } });
+    return await executeTest(m, { assets: true, workDir: work, urls: [`${origin}/`], snapshot: SNAPSHOT });
+  } finally {
+    rmSync(work, { recursive: true, force: true });
+    await new Promise<void>((c) => server.close(() => c()));
+  }
+}
+
+test("vulnerable: AngularJS 1.7.8 → SUSPECTED, including the pre-1.7.9 merge() and pre-1.8.0 JQLite advisories", async () => {
+  const r = await scanNg(ngMin("1.7.8"));
+  const fail = supply(r).find((c) => c.status === "FAIL")!;
+  assert.ok(fail, JSON.stringify(supply(r)));
+  assert.equal(fail.lifecycle, "SUSPECTED");
+  for (const id of ["CVE-2019-10768", "GHSA-5cp4-xmrw-59wf", "CVE-2020-7676", "CVE-2022-25844", "CVE-2026-11998"]) assert.ok(fail.observations.some((o) => o.includes(id)), id);
+  assert.ok(!fail.observations.some((o) => o.includes("CVE-2019-14863")), "fixed in 1.5.0-beta.1");
+  assert.ok(!fail.observations.some((o) => o.includes("GHSA-28hp-fgcr-2r4h")), "fixed in 1.6.0");
+});
+
+test("AngularJS 1.8.3 (last release) still matches the unfixed advisories only; ranges at their boundaries", async () => {
+  const fail = supply(await scanNg(ngFull("1.8.3"))).find((c) => c.status === "FAIL")!;
+  assert.match(fail.summary, /matches 10 reviewed/);
+  assert.ok(!fail.observations.some((o) => o.includes("CVE-2019-10768") || o.includes("CVE-2020-7676")));
+  const at = (id: string, version: string) => applicability(SNAPSHOT.records.find((x) => x.id === id)!, { ecosystem: "npm", name: "angular", version, provenance: "client-banner" }).applicability;
+  assert.deepEqual(["1.6.10", "1.7.0", "1.8.3"].map((v) => at("GHSA-m2h2-264f-f486", v)), ["not-affected", "affected", "affected"]);
+  assert.deepEqual(["1.2.0-rc.2", "1.2.0-rc.3", "1.8.3"].map((v) => at("GHSA-7x27-g8rg-x87w", v)), ["not-affected", "affected", "affected"]);
+  assert.deepEqual(["1.4.14", "1.5.0-beta.1"].map((v) => at("GHSA-r5fx-8r73-v86c", v)), ["affected", "not-affected"]);
+});
+
+test("secure contract: a non-AngularJS bundle on the same path gets no SUPPLY-002 finding and the same response shape", async () => {
+  const r = await scanNg("/*! app 2.0 | MIT */\n(function(w){w.app={}})(window);\n");
+  assert.ok(!r.run.findings.some((f) => f.ruleId === "NSC-SUPPLY-002"));
+  const v = await scanNg(ngMin("1.7.8"));
+  const shape = (x: typeof r) => x.run.requests.filter((q) => q.url.includes("/js/")).map((q) => `${q.status} ${q.contract?.contentType}`).sort();
+  assert.deepEqual(shape(r), shape(v));
+});
+
+test("AngularJS banner forms: full and minified banner lines match; prose and Angular 2+ do not", () => {
+  const facts = (text: string) => { const s = new StreamScanner(); s.feed(Buffer.from(text)); return s.end().facts.filter((f) => f.detector === "STA-LIBVULN").map((f) => f.library); };
+  assert.deepEqual(facts(ngFull("1.8.2")), [{ ecosystem: "npm", name: "angular", version: "1.8.2" }]);
+  assert.deepEqual(facts(ngMin("1.5.0-beta.1")), [{ ecosystem: "npm", name: "angular", version: "1.5.0-beta.1" }]);
+  assert.deepEqual(facts(ngFull("1.8.2").replace(/\n/g, "\r\n")).map((l) => l?.version), ["1.8.2"]);
+  assert.deepEqual(facts("// requires AngularJS v1.5.0 or later\n"), []);
+  assert.deepEqual(facts("/**\n * @license Angular v17.3.0\n */"), []);
+});
