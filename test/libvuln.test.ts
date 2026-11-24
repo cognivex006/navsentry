@@ -83,3 +83,70 @@ test("only the banner comment form counts; a plugin mentioning an old jQuery is 
   assert.deepEqual(facts(bundle("3.4.1")).map((f) => f.library), [{ ecosystem: "npm", name: "jquery", version: "3.4.1" }]);
   assert.deepEqual(facts("/*!\n * jQuery JavaScript Library v1.12.4\n */").map((f) => f.library?.version), ["1.12.4"]);
 });
+
+// ───────────── Bootstrap (npm `bootstrap`, reviewed 2026-11-24) ─────────────
+
+const bsJs = (v: string) => `/*!\n * Bootstrap v${v} (https://getbootstrap.com/)\n * Copyright 2011-2019 The Bootstrap Authors\n * Licensed under MIT\n */\n!function(t){"use strict";t.tooltip=function(){}}(window);\n`;
+const bsCss = (v: string) => `/*!\n * Bootstrap v${v} (https://getbootstrap.com/)\n * Licensed under MIT\n */\n:root{--blue:#007bff}\n`;
+
+function startBs(js: string, css: string): Promise<{ origin: string; close(): Promise<void> }> {
+  const server = http.createServer((req, res) => {
+    const p = new URL(req.url ?? "/", "http://x").pathname;
+    if (p === "/") return void res.writeHead(200, { "content-type": "text/html; charset=utf-8" }).end('<!doctype html><title>Bs</title><link rel="stylesheet" href="/css/bootstrap.min.css"><script src="/js/bootstrap.min.js"></script>');
+    if (p === "/js/bootstrap.min.js") return void res.writeHead(200, { "content-type": "text/javascript" }).end(bsJs(js));
+    if (p === "/css/bootstrap.min.css") return void res.writeHead(200, { "content-type": "text/css" }).end(bsCss(css));
+    res.writeHead(404, { "content-type": "text/plain" }).end("not found");
+  });
+  return new Promise((r) => server.listen(0, "127.0.0.1", () => r({ origin: `http://127.0.0.1:${(server.address() as AddressInfo).port}`, close: () => new Promise<void>((c) => server.close(() => c())) })));
+}
+
+async function scanBs(js: string, css = js) {
+  const app = await startBs(js, css);
+  const work = mkdtempSync(join(tmpdir(), "navsentry-libvuln-bs-"));
+  try {
+    const m = localManifest(app.origin, { checks: { disabled: ["NSC-CRYPT-006", "NSC-CONF-009"] } });
+    return await executeTest(m, { assets: true, workDir: work, urls: [`${app.origin}/`], snapshot: SNAPSHOT });
+  } finally {
+    rmSync(work, { recursive: true, force: true });
+    await app.close();
+  }
+}
+
+test("vulnerable: Bootstrap 3.3.7 JS banner → SUSPECTED with the 3.x advisories, including the unfixed CVE-2024-6485", async () => {
+  const r = await scanBs("3.3.7");
+  const fail = supply(r).find((c) => c.status === "FAIL" && c.target.includes("bootstrap.min.js"))!;
+  assert.ok(fail, JSON.stringify(supply(r)));
+  assert.equal(fail.lifecycle, "SUSPECTED");
+  for (const cve of ["CVE-2019-8331", "CVE-2018-20676", "CVE-2018-20677", "CVE-2018-14042", "CVE-2024-6485"]) assert.ok(fail.observations.some((o) => o.includes(cve)), cve);
+  assert.ok(!fail.observations.some((o) => o.includes("CVE-2018-14041")), "scrollspy advisory is 4.x only");
+  assert.ok(!fail.observations.some((o) => o.includes("CVE-2024-6484")), "withdrawn advisory is not in the snapshot");
+  const css = supply(r).find((c) => c.target.includes("bootstrap.min.css"))!;
+  assert.equal(css.status, "NOT_TESTED", "a stylesheet banner is not a JavaScript match");
+  assert.match(css.reason ?? "", /stylesheet alone is not affected/);
+});
+
+test("vulnerable: Bootstrap 4.1.1 → CVE-2018-14041/14042 and CVE-2019-8331; 3.4.1 → only the unfixed CVE-2024-6485", async () => {
+  const four = supply(await scanBs("4.1.1")).find((c) => c.status === "FAIL")!;
+  assert.deepEqual(["CVE-2018-14041", "CVE-2018-14042", "CVE-2019-8331"].filter((c) => four.observations.some((o) => o.includes(c))).length, 3);
+  assert.ok(!four.observations.some((o) => o.includes("CVE-2024-6485")));
+  const last3 = supply(await scanBs("3.4.1")).find((c) => c.status === "FAIL")!;
+  assert.match(last3.summary, /matches 1 reviewed/);
+  assert.ok(last3.observations.some((o) => o.includes("CVE-2024-6485")));
+});
+
+test("secure: Bootstrap 5.3.3 keeps the same contract and gets no SUPPLY-002 finding", async () => {
+  const r = await scanBs("5.3.3");
+  assert.ok(supply(r).length > 0 && supply(r).every((c) => c.status === "NOT_TESTED"), JSON.stringify(supply(r)));
+  assert.ok(!r.run.findings.some((f) => f.ruleId === "NSC-SUPPLY-002"));
+  const v = await scanBs("3.3.7");
+  const shape = (x: typeof r) => x.run.requests.filter((q) => /\/(js|css)\//.test(q.url)).map((q) => `${q.status} ${q.contract?.contentType}`).sort();
+  assert.deepEqual(shape(r), shape(v));
+});
+
+test("Bootstrap banner forms: v3 and v4 comment blocks match; a component file or prose mention does not", () => {
+  const facts = (text: string) => { const s = new StreamScanner(); s.feed(Buffer.from(text)); return s.end().facts.filter((f) => f.detector === "STA-LIBVULN").map((f) => f.library); };
+  assert.deepEqual(facts("/*!\n * Bootstrap v3.3.7 (http://getbootstrap.com)\n */"), [{ ecosystem: "npm", name: "bootstrap", version: "3.3.7" }]);
+  assert.deepEqual(facts("/*!\n  * Bootstrap v4.1.1 (https://getbootstrap.com/)\n  */"), [{ ecosystem: "npm", name: "bootstrap", version: "4.1.1" }]);
+  assert.deepEqual(facts("/* theme: requires Bootstrap v3.3.7 or later */"), []);
+  assert.deepEqual(facts("/*!\n  * Bootstrap tooltip.js v4.1.1 (https://getbootstrap.com/)\n  */"), []);
+});

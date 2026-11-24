@@ -33,6 +33,8 @@ interface Rule {
   kind: FactKind;
   re: RegExp;
   marker?: string;
+  /** STA-LIBVULN only: the npm package the banner identifies. */
+  library?: string;
   validate?: (m: string) => boolean;
   /**
    * Fast prefilter for rules whose precise pattern starts with an open character class: only
@@ -74,7 +76,8 @@ const RULES: Rule[] = [
   { detector: "STA-HIDDENLOG", kind: "debug-toggle", re: /[?&]debug=(?:1|true)\b|localStorage\.(?:getItem|setItem)\(\s*["'`](?:debug|DEBUG|loglevel|logLevel)["'`]/g },
   // Client library licence banners (SPEC-0.1.3 §6.4-B STA-LIBVULN). Only the banner comment form counts, so a
   // plugin's "requires jQuery v1.7" is not mistaken for the bundled library.
-  { detector: "STA-LIBVULN", kind: "library-banner", re: /\/\*!\s*jQuery v\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?\b|^\s*\*\s*jQuery JavaScript Library v\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?\b/gm },
+  { detector: "STA-LIBVULN", kind: "library-banner", library: "bootstrap", re: /\/\*!\s*Bootstrap v\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?\s+\(https?:\/\/getbootstrap\.com|^\s*\*\s*Bootstrap v\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?\s+\(https?:\/\/getbootstrap\.com/gm },
+  { detector: "STA-LIBVULN", kind: "library-banner", library: "jquery", re: /\/\*!\s*jQuery v\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?\b|^\s*\*\s*jQuery JavaScript Library v\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?\b/gm },
   { detector: "STA-SOURCEMAP", kind: "sourcemap-file-url", re: /[#@] sourceMappingURL=file:\/\/[^\s'"]+/g },
   { detector: "STA-SOURCEMAP", kind: "sources-content", re: /"sourcesContent"\s*:\s*\[\s*"/g },
 ];
@@ -127,7 +130,7 @@ export class StreamScanner {
         if (!final && endRel === win.length && win.length - m.index <= MAX_MATCH) continue;
         if (m[0].length > MAX_MATCH || (r.validate && !r.validate(m[0]))) continue;
         const version = r.detector === "STA-LIBVULN" ? /v(\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?)/.exec(m[0])?.[1] : undefined;
-        this.add({ detector: r.detector, kind: r.kind, ...(r.marker ? { marker: r.marker } : {}), ...this.pos(lines, base, m.index), len: m[0].length, ...(version ? { library: { ecosystem: "npm" as const, name: "jquery", version } } : {}) });
+        this.add({ detector: r.detector, kind: r.kind, ...(r.marker ? { marker: r.marker } : {}), ...this.pos(lines, base, m.index), len: m[0].length, ...(version ? { library: { ecosystem: "npm" as const, name: r.library ?? "jquery", version } } : {}) });
       }
     }
     SOURCEMAP_URL.lastIndex = 0;
