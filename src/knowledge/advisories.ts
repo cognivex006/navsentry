@@ -10,6 +10,14 @@
  * field against the GHSA pages, the NVD API and the jQuery 3.4.0 / 3.5.0 release notes and accepted all
  * three; the records were then promoted from `candidate` to `reviewed`. Where NVD differs (its own
  * CVSS scores, a 1.2 lower bound for CVE-2020-11022 that contradicts its own description), GHSA is kept.
+ *
+ * Bootstrap 2026-11-24: six npm `bootstrap` records copied by hand from their GHSA pages (npm ranges only;
+ * other ecosystems on the same page are not used). GHSA-9mvj-f7w8-pvh2 (CVE-2024-6484) is not included:
+ * GitHub withdrew it on 2025-09-11 and the CVE was rescinded. CVE-2024-6485 has no fixed release.
+ * Review 2026-11-24: an independent, fresh-context agent re-checked every field against the GHSA pages
+ * and accepted all six; they were promoted from `candidate` to `reviewed`. Known gaps (not in the snapshot,
+ * so not proof of absence): GHSA-4p24-vmcr-4gqj / CVE-2016-10735 (data-target, all 3.x before 3.4.0) and
+ * CVE-2018-14040 (collapse data-parent, GHSA id not yet verified) need their own verification and review.
  */
 import type { Snapshot } from "./model.js";
 
@@ -18,9 +26,25 @@ const CLIENT = ["client-side JavaScript library loaded by the page"];
 const LIBVULN = "STA-LIBVULN matches the jQuery licence banner in served bundles (SUSPECTED); a patched or re-bundled copy can keep an old banner";
 const UPGRADE_GUARD = "jQuery 3.5 changed htmlPrefilter: re-run every story flow that renders HTML (dialogs, templates, plugins) after the upgrade and compare with `navsentry compare`.";
 
+const BOOTSTRAP = { ecosystem: "npm", name: "bootstrap", packaging: "upstream" } as const;
+const BS_LIBVULN = "STA-LIBVULN matches the Bootstrap licence banner in served JavaScript bundles (SUSPECTED); a stylesheet banner alone is not used, and a patched or re-bundled copy can keep an old banner";
+const BS_EVIDENCE = "Bootstrap version from an owner-provided inventory or a served JavaScript banner; never a payload";
+const BS_GUARD = "Re-run every story flow that opens tooltips, popovers, collapses, scrollspy or affix after the upgrade and compare with `navsentry compare`; Bootstrap 3 → 4/5 is a breaking migration.";
+const bs = (id: string, cve: string, affected: { introduced?: string; fixed?: string; lastAffected?: string }[], pre: string, vector: string, score: number, fix: string, published: string, updated: string) => ({
+  id, revision: 2, state: "reviewed" as const, product: BOOTSTRAP,
+  identifiers: { cve: [cve], advisory: [id], aliases: [] },
+  versionScheme: "semver" as const, affected, preconditions: [pre], surface: CLIENT,
+  severity: { source: "GitHub Advisory Database", score, vector, scoringVersion: vector.slice(5, 8) },
+  safeEvidence: BS_EVIDENCE, nsc: "NSC-SUPPLY-002" as const, detector: "STA-LIBVULN", capability: BS_LIBVULN,
+  fix, regressionGuard: BS_GUARD,
+  sources: [{ url: `https://github.com/advisories/${id}`, published, updated }],
+  verifiedAt: "2026-11-24", nextReviewAt: "2027-05-24",
+});
+const V30 = "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N";
+
 export const SNAPSHOT: Snapshot = {
-  version: "2026-11-04.1",
-  generatedAt: "2026-11-04",
+  version: "2026-11-24.1",
+  generatedAt: "2026-11-24",
   records: [
     {
       id: "GHSA-gxr4-xjj5-5px2", revision: 2, state: "reviewed",
@@ -67,6 +91,24 @@ export const SNAPSHOT: Snapshot = {
       sources: [{ url: "https://github.com/advisories/GHSA-6c3j-c64m-qhgq", published: "2019-04-26", updated: "2024-11-05" }],
       verifiedAt: "2026-11-03", nextReviewAt: "2027-05-03",
     },
+    bs("GHSA-9v3m-8fp8-mj99", "CVE-2019-8331", [{ introduced: "3.0.0", fixed: "3.4.1" }, { introduced: "4.0.0", fixed: "4.3.1" }],
+      "the page passes an untrusted value to the data-template (or template) option of a tooltip or popover",
+      "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N", 6.1, "Upgrade Bootstrap to 3.4.1, or 4.3.1 or later (CWE-79).", "2019-02-22", "2026-06-02"),
+    bs("GHSA-3mgp-fx93-9xv5", "CVE-2018-20676", [{ fixed: "3.4.0" }],
+      "the page passes an untrusted value to the data-viewport (or viewport) option of a tooltip",
+      V30, 6.1, "Upgrade Bootstrap to 3.4.0 or later (CWE-79).", "2019-01-17", "2024-08-05"),
+    bs("GHSA-ph58-4vrj-w6hr", "CVE-2018-20677", [{ fixed: "3.4.0" }],
+      "the page passes an untrusted value to the target option of the affix plugin",
+      V30, 6.1, "Upgrade Bootstrap to 3.4.0 or later (CWE-79).", "2019-01-17", "2024-08-05"),
+    bs("GHSA-pj7m-g53m-7638", "CVE-2018-14041", [{ introduced: "4.0.0", fixed: "4.1.2" }],
+      "the page passes an untrusted value to the data-target (or target) option of scrollspy",
+      V30, 6.1, "Upgrade Bootstrap to 4.1.2 or later (CWE-79).", "2018-09-13", "2025-11-19"),
+    bs("GHSA-7mvr-5x2g-wfc8", "CVE-2018-14042", [{ introduced: "2.3.0", fixed: "3.4.0" }, { introduced: "4.0.0", fixed: "4.1.2" }],
+      "the page passes an untrusted value to the data-container (or container) option of a tooltip",
+      V30, 6.1, "Upgrade Bootstrap to 3.4.0, or 4.1.2 or later (CWE-79).", "2018-09-13", "2026-06-08"),
+    bs("GHSA-vxmc-5x29-h64v", "CVE-2024-6485", [{ introduced: "1.4.0", lastAffected: "3.4.1" }],
+      "the page puts an untrusted value in the data-loading-text attribute of a button handled by the button plugin",
+      "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:L/A:L", 6.4, "No fixed Bootstrap 3 release exists: migrate to Bootstrap 4 or later, or stop using the button plugin's loading state with untrusted text (CWE-79).", "2024-07-11", "2025-11-03"),
   ],
   aliases: [],
 };

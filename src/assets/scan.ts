@@ -289,6 +289,11 @@ function assetVerdicts(ctx: AssetContext, s: Scanned, url: string, check: (...a:
 function libraryVerdict(ctx: AssetContext, ex: Exchange, url: string, f: Fact, check: (...a: Parameters<CheckFn>) => void, addFinding: AddFn): void {
   const lib = f.library!;
   const label = `npm/${lib.name} ${lib.version}`;
+  // Bootstrap's CSS carries the same banner, but its advisories are in the JavaScript plugins.
+  if (lib.name === "bootstrap" && (/\.css$/i.test(new URL(url).pathname) || /\bcss\b/i.test(ex.record.contract?.contentType ?? ""))) {
+    check("NSC-SUPPLY-002", ex, url, "NOT_TESTED", `${label} identified from a stylesheet banner`, [`banner at ${f.line}:${f.col}`], { reason: "the stylesheet alone is not affected: the reviewed Bootstrap advisories are in its JavaScript plugins" });
+    return;
+  }
   const records = (ctx.snapshot?.records ?? []).filter((r) => r.product.ecosystem === lib.ecosystem && r.product.name === lib.name);
   const reviewed = records.filter((r) => r.state === "reviewed");
   if (!reviewed.length) {
