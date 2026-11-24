@@ -31,7 +31,7 @@ Principle: each milestone ships working, tested behavior — never empty interfa
 ## Immediate next steps (ordered)
 1. Owner: remove `workflow` scope from the GitHub CLI token; enable private vulnerability reporting in repository settings.
 2. Run `npm test` on macOS arm64 and on macOS with the PowerShell 7 `.pkg`; update [TESTING.md](TESTING.md#platform-matrix).
-3. More reviewed client-library records (STA-LIBVULN recognises jQuery and Bootstrap banners today) and other library banners, each with primary-source verification and independent review.
+3. More reviewed client-library records (STA-LIBVULN recognises jQuery, Bootstrap and AngularJS banners today) and other library banners, each with primary-source verification and independent review.
 4. Owner decisions A1–A5 in the [`active-approved` design](specs/DESIGN-ACTIVE-APPROVED.md) unblock active testing (D1–D6 were decided in 0.5.0).
 
 ## Risks

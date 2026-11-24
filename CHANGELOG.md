@@ -5,6 +5,7 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 ## [Unreleased]
 
 ### Added
+- STA-LIBVULN recognises AngularJS 1.x banner lines (full and minified, npm `angular`) and checks them against fifteen reviewed GitHub Advisory Database records. Ten have no fixed release because AngularJS is end of life, so even 1.8.3 matches. A match is SUSPECTED (NSC-SUPPLY-002). AngularJS module files carry the same banner, and Angular 2+ banners are not matched.
 - STA-LIBVULN recognises Bootstrap licence banners in served JavaScript and checks them against eight reviewed npm `bootstrap` advisories from the GitHub Advisory Database (CVE-2016-10735, CVE-2018-14040, CVE-2019-8331, CVE-2018-20676, CVE-2018-20677, CVE-2018-14041, CVE-2018-14042, CVE-2024-6485; the last has no fixed release). A match is SUSPECTED (NSC-SUPPLY-002). A Bootstrap banner in a stylesheet alone is NOT_TESTED, because the advisories are in the JavaScript plugins. The withdrawn CVE-2024-6484 is not included.
 
 ### Changed
