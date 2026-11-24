@@ -8,6 +8,7 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 - Console output is easier for people to read on a terminal: section headings are bold, status labels have consistent colours (red FAIL/error, green PASS/USABLE/OK, yellow PARTIAL/warning, dim for info and paths) across help, doctor, scan, test, verify, correlate, browse and flow, and stderr errors and warnings are coloured too. Colour appears only on a TTY and is off with `NO_COLOR`, `--no-color`, `--json` or piped output; the words are unchanged, so agents and scripts see the same text as before. JSON, report files, `run.json` and SARIF are unchanged. No new dependency.
 
 ### Fixed
+- Console colour: `warning:` lines printed to stdout (for example by `flow`) are now yellow, like the ones on stderr.
 - `npm test` and GATE-02 pass a test glob (`dist/test/*.test.js`) instead of a directory, which Node 22/24 refuse.
 - macOS: output written under a linked system directory (`/var` → `/private/var`) is no longer reported as WORKSPACE_DIRTY; authorized paths are compared after resolving links.
 - macOS: the Chromium headless shell is found when Playwright's full build is an `.app` bundle.

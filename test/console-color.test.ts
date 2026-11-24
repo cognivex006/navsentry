@@ -33,6 +33,14 @@ test("paint colours statuses, headings and labels, and only inserts ANSI codes",
   assert.ok(!ESC.test(paint("NSC-INFO-004 x-PASS PASS_X", true)), "IDs and compound words stay plain");
 });
 
+test("stdout warning lines are yellow like stderr ones", () => {
+  const t = "warning: step s1 has no assertion\n  warning: nested";
+  const on = paint(t, true);
+  assert.equal(strip(on), t);
+  assert.equal(on.match(/\x1b\[33mwarning:/g)?.length, 2);
+  assert.ok(!/\x1b\[33m/.test(paint("no warning: here", true)), "only at the start of a line");
+});
+
 test("stderr lines: errors red, warnings yellow, plain text kept", () => {
   for (const l of ["error: boom", "warning: careful", "missing --config", "using navsentry.json in the current directory", "LEFTOVER a b: c"]) assert.equal(strip(paintErr(l, true)), l);
   assert.match(paintErr("error: boom", true), /\x1b\[31m/);
