@@ -16,8 +16,8 @@
  * GitHub withdrew it on 2025-09-11 and the CVE was rescinded. CVE-2024-6485 has no fixed release.
  * Review 2026-11-24: an independent, fresh-context agent re-checked every field against the GHSA pages
  * and accepted all six; they were promoted from `candidate` to `reviewed`. GHSA-4p24-vmcr-4gqj / CVE-2016-10735
- * was added and independently reviewed the same way later on 2026-11-24. Known gap (not in the snapshot, so
- * not proof of absence): CVE-2018-14040 (collapse data-parent, GHSA id not yet verified).
+ * and GHSA-3wqf-4x89-9g79 / CVE-2018-14040 were added and independently reviewed the same way later on
+ * 2026-11-24.
  */
 import type { Snapshot } from "./model.js";
 
@@ -43,7 +43,7 @@ const bs = (id: string, cve: string, affected: { introduced?: string; fixed?: st
 const V30 = "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N";
 
 export const SNAPSHOT: Snapshot = {
-  version: "2026-11-24.2",
+  version: "2026-11-24.3",
   generatedAt: "2026-11-24",
   records: [
     {
@@ -112,6 +112,9 @@ export const SNAPSHOT: Snapshot = {
     bs("GHSA-4p24-vmcr-4gqj", "CVE-2016-10735", [{ introduced: "2.0.4", fixed: "3.4.0" }, { introduced: "4.0.0-beta", fixed: "4.0.0-beta.2" }],
       "the page passes an untrusted value to a data-target attribute handled by a Bootstrap plugin (a different issue from CVE-2018-14041)",
       V30, 6.1, "Upgrade Bootstrap 3 to 3.4.0 or later, or Bootstrap 4 to 4.0.0-beta.2 or later (CWE-79).", "2019-01-17", "2024-08-05"),
+    bs("GHSA-3wqf-4x89-9g79", "CVE-2018-14040", [{ introduced: "2.3.0", fixed: "3.4.0" }, { introduced: "4.0.0", fixed: "4.1.2" }],
+      "the page passes an untrusted value to the collapse plugin's data-parent attribute",
+      V30, 6.1, "Upgrade Bootstrap 3 to 3.4.0 or later, or Bootstrap 4 to 4.1.2 or later (CWE-79).", "2022-05-13", "2024-08-05"),
   ],
   aliases: [],
 };

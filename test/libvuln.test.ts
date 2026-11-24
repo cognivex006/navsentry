@@ -117,7 +117,7 @@ test("vulnerable: Bootstrap 3.3.7 JS banner → SUSPECTED with the 3.x advisorie
   const fail = supply(r).find((c) => c.status === "FAIL" && c.target.includes("bootstrap.min.js"))!;
   assert.ok(fail, JSON.stringify(supply(r)));
   assert.equal(fail.lifecycle, "SUSPECTED");
-  for (const cve of ["CVE-2016-10735", "CVE-2019-8331", "CVE-2018-20676", "CVE-2018-20677", "CVE-2018-14042", "CVE-2024-6485"]) assert.ok(fail.observations.some((o) => o.includes(cve)), cve);
+  for (const cve of ["CVE-2018-14040", "CVE-2016-10735", "CVE-2019-8331", "CVE-2018-20676", "CVE-2018-20677", "CVE-2018-14042", "CVE-2024-6485"]) assert.ok(fail.observations.some((o) => o.includes(cve)), cve);
   assert.ok(!fail.observations.some((o) => o.includes("CVE-2018-14041")), "scrollspy advisory is 4.x only");
   assert.ok(!fail.observations.some((o) => o.includes("CVE-2024-6484")), "withdrawn advisory is not in the snapshot");
   const css = supply(r).find((c) => c.target.includes("bootstrap.min.css"))!;
@@ -125,9 +125,9 @@ test("vulnerable: Bootstrap 3.3.7 JS banner → SUSPECTED with the 3.x advisorie
   assert.match(css.reason ?? "", /stylesheet alone is not affected/);
 });
 
-test("vulnerable: Bootstrap 4.1.1 → CVE-2018-14041/14042 and CVE-2019-8331; 3.4.1 → only the unfixed CVE-2024-6485", async () => {
+test("vulnerable: Bootstrap 4.1.1 → CVE-2018-14040/14041/14042 and CVE-2019-8331; 3.4.1 → only the unfixed CVE-2024-6485", async () => {
   const four = supply(await scanBs("4.1.1")).find((c) => c.status === "FAIL")!;
-  assert.deepEqual(["CVE-2018-14041", "CVE-2018-14042", "CVE-2019-8331"].filter((c) => four.observations.some((o) => o.includes(c))).length, 3);
+  assert.deepEqual(["CVE-2018-14040", "CVE-2018-14041", "CVE-2018-14042", "CVE-2019-8331"].filter((c) => four.observations.some((o) => o.includes(c))).length, 4);
   assert.ok(!four.observations.some((o) => o.includes("CVE-2024-6485")));
   const last3 = supply(await scanBs("3.4.1")).find((c) => c.status === "FAIL")!;
   assert.match(last3.summary, /matches 1 reviewed/);
@@ -158,4 +158,11 @@ test("CVE-2016-10735: 4.0.0-beta / beta.1 affected, beta.2 / 4.0.0 not (prerelea
     ["affected", "affected", "not-affected", "not-affected", "not-affected", "affected", "affected", "not-affected"]);
   const beta = supply(await scanBs("4.0.0-beta")).find((c) => c.status === "FAIL");
   assert.ok(beta?.observations.some((o) => o.includes("CVE-2016-10735")), JSON.stringify(supply(await scanBs("4.0.0-beta"))));
+});
+
+test("CVE-2018-14040: 2.3.0–3.3.x and 4.0.0–4.1.1 affected; 2.2.2, 3.4.0, 4.1.2 not", () => {
+  const rec = SNAPSHOT.records.find((x) => x.id === "GHSA-3wqf-4x89-9g79")!;
+  const at = (version: string) => applicability(rec, { ecosystem: "npm", name: "bootstrap", version, provenance: "client-banner" }).applicability;
+  assert.deepEqual(["2.2.2", "2.3.0", "3.3.7", "3.4.0", "4.0.0", "4.1.1", "4.1.2"].map(at),
+    ["not-affected", "affected", "affected", "not-affected", "affected", "affected", "not-affected"]);
 });
