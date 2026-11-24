@@ -11,7 +11,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { StreamScanner } from "../src/assets/detect.js";
 import { SNAPSHOT } from "../src/knowledge/advisories.js";
-import type { Snapshot } from "../src/knowledge/model.js";
+import { applicability, type Snapshot } from "../src/knowledge/model.js";
 import { executeTest } from "../src/runner.js";
 import { localManifest } from "./helpers.js";
 
@@ -117,7 +117,7 @@ test("vulnerable: Bootstrap 3.3.7 JS banner → SUSPECTED with the 3.x advisorie
   const fail = supply(r).find((c) => c.status === "FAIL" && c.target.includes("bootstrap.min.js"))!;
   assert.ok(fail, JSON.stringify(supply(r)));
   assert.equal(fail.lifecycle, "SUSPECTED");
-  for (const cve of ["CVE-2019-8331", "CVE-2018-20676", "CVE-2018-20677", "CVE-2018-14042", "CVE-2024-6485"]) assert.ok(fail.observations.some((o) => o.includes(cve)), cve);
+  for (const cve of ["CVE-2016-10735", "CVE-2019-8331", "CVE-2018-20676", "CVE-2018-20677", "CVE-2018-14042", "CVE-2024-6485"]) assert.ok(fail.observations.some((o) => o.includes(cve)), cve);
   assert.ok(!fail.observations.some((o) => o.includes("CVE-2018-14041")), "scrollspy advisory is 4.x only");
   assert.ok(!fail.observations.some((o) => o.includes("CVE-2024-6484")), "withdrawn advisory is not in the snapshot");
   const css = supply(r).find((c) => c.target.includes("bootstrap.min.css"))!;
@@ -149,4 +149,13 @@ test("Bootstrap banner forms: v3 and v4 comment blocks match; a component file o
   assert.deepEqual(facts("/*!\n  * Bootstrap v4.1.1 (https://getbootstrap.com/)\n  */"), [{ ecosystem: "npm", name: "bootstrap", version: "4.1.1" }]);
   assert.deepEqual(facts("/* theme: requires Bootstrap v3.3.7 or later */"), []);
   assert.deepEqual(facts("/*!\n  * Bootstrap tooltip.js v4.1.1 (https://getbootstrap.com/)\n  */"), []);
+});
+
+test("CVE-2016-10735: 4.0.0-beta / beta.1 affected, beta.2 / 4.0.0 not (prerelease range)", async () => {
+  const rec = SNAPSHOT.records.find((x) => x.id === "GHSA-4p24-vmcr-4gqj")!;
+  const at = (version: string) => applicability(rec, { ecosystem: "npm", name: "bootstrap", version, provenance: "client-banner" }).applicability;
+  assert.deepEqual(["4.0.0-beta", "4.0.0-beta.1", "4.0.0-beta.2", "4.0.0", "2.0.3", "2.0.4", "3.3.7", "3.4.0"].map(at),
+    ["affected", "affected", "not-affected", "not-affected", "not-affected", "affected", "affected", "not-affected"]);
+  const beta = supply(await scanBs("4.0.0-beta")).find((c) => c.status === "FAIL");
+  assert.ok(beta?.observations.some((o) => o.includes("CVE-2016-10735")), JSON.stringify(supply(await scanBs("4.0.0-beta"))));
 });

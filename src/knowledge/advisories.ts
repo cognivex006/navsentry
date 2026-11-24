@@ -15,9 +15,9 @@
  * other ecosystems on the same page are not used). GHSA-9mvj-f7w8-pvh2 (CVE-2024-6484) is not included:
  * GitHub withdrew it on 2025-09-11 and the CVE was rescinded. CVE-2024-6485 has no fixed release.
  * Review 2026-11-24: an independent, fresh-context agent re-checked every field against the GHSA pages
- * and accepted all six; they were promoted from `candidate` to `reviewed`. Known gaps (not in the snapshot,
- * so not proof of absence): GHSA-4p24-vmcr-4gqj / CVE-2016-10735 (data-target, all 3.x before 3.4.0) and
- * CVE-2018-14040 (collapse data-parent, GHSA id not yet verified) need their own verification and review.
+ * and accepted all six; they were promoted from `candidate` to `reviewed`. GHSA-4p24-vmcr-4gqj / CVE-2016-10735
+ * was added and independently reviewed the same way later on 2026-11-24. Known gap (not in the snapshot, so
+ * not proof of absence): CVE-2018-14040 (collapse data-parent, GHSA id not yet verified).
  */
 import type { Snapshot } from "./model.js";
 
@@ -43,7 +43,7 @@ const bs = (id: string, cve: string, affected: { introduced?: string; fixed?: st
 const V30 = "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N";
 
 export const SNAPSHOT: Snapshot = {
-  version: "2026-11-24.1",
+  version: "2026-11-24.2",
   generatedAt: "2026-11-24",
   records: [
     {
@@ -109,6 +109,9 @@ export const SNAPSHOT: Snapshot = {
     bs("GHSA-vxmc-5x29-h64v", "CVE-2024-6485", [{ introduced: "1.4.0", lastAffected: "3.4.1" }],
       "the page puts an untrusted value in the data-loading-text attribute of a button handled by the button plugin",
       "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:L/A:L", 6.4, "No fixed Bootstrap 3 release exists: migrate to Bootstrap 4 or later, or stop using the button plugin's loading state with untrusted text (CWE-79).", "2024-07-11", "2025-11-03"),
+    bs("GHSA-4p24-vmcr-4gqj", "CVE-2016-10735", [{ introduced: "2.0.4", fixed: "3.4.0" }, { introduced: "4.0.0-beta", fixed: "4.0.0-beta.2" }],
+      "the page passes an untrusted value to a data-target attribute handled by a Bootstrap plugin (a different issue from CVE-2018-14041)",
+      V30, 6.1, "Upgrade Bootstrap 3 to 3.4.0 or later, or Bootstrap 4 to 4.0.0-beta.2 or later (CWE-79).", "2019-01-17", "2024-08-05"),
   ],
   aliases: [],
 };
